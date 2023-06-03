@@ -1,7 +1,9 @@
 defmodule Inngest do
-  @moduledoc """
-  Documentation for `Inngest`.
-  """
+  @external_resource "README.md"
+  @moduledoc @external_resource
+             |> File.read!()
+             |> String.split("<!-- MDOC ! -->")
+             |> Enum.fetch!(1)
 
   @doc """
   Hello world.
