@@ -31,14 +31,15 @@ defmodule Inngest.MixProject do
   defp package do
     [
       maintainers: ["Darwin Wu"],
+      licenses: ["GPL-3.0-or-later"],
       links: %{github: "https://github.com/darwin67/ex-inngest"},
-      files: ~w(lib mix.exs README.md LICENSE.md CHANGELOG.md)
+      files: ~w(lib mix.exs README.md LICENSE CHANGELOG.md)
     ]
   end
 
   defp docs do
     [
-      main: "Phoenix.LiveDashboard",
+      # main: "",
       source_ref: "v#{@version}",
       source_url: "https://github.com/darwin67/ex-inngest"
       # extra_section: "GUIDES",
