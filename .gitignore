@@ -27,3 +27,6 @@ inngest-*.tar
 
 # ElixirLS
 /.elixir_ls/
+
+# direnv / nix-shell
+/.direnv/
