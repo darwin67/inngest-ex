@@ -52,7 +52,7 @@ defmodule Inngest.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
-      {:tesla, "~> 1.4.0"},
+      {:tesla, "~> 1.4"},
       {:hackney, "~> 1.10"},
       {:jason, "~> 1.4"}
     ]
