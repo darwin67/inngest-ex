@@ -1,4 +1,6 @@
 defmodule Inngest do
+  alias Inngest.{Client, Event}
+
   @external_resource "README.md"
   @moduledoc @external_resource
              |> File.read!()
@@ -6,15 +8,8 @@ defmodule Inngest do
              |> Enum.fetch!(1)
 
   @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Inngest.hello()
-      :world
-
+  Send one or a batch of events to Inngest
   """
-  def hello do
-    :world
-  end
+  @spec send(Event.t() | [Event.t()]) :: :ok | :error
+  def send(payload), do: Client.send(payload)
 end
