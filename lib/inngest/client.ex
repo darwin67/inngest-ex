@@ -1,4 +1,8 @@
 defmodule Inngest.Client do
+  @moduledoc """
+  Module representing an Inngest client (subject to change).
+  """
+
   alias Inngest.Event
 
   @doc """

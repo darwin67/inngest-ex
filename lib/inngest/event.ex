@@ -1,4 +1,8 @@
 defmodule Inngest.Event do
+  @moduledoc """
+  Module representing an Inngest event.
+  """
+
   defstruct [
     :name,
     :data,
