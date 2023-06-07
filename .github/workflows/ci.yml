@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+env:
+  MIX_ENV: test
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: 25.3
+          elixir-version: 1.14.4
+
+      - name: Dependency cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: mix-test-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            mix-test-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+            mix-test-${{ runner.os }}-
+            mix-test-
+
+      - name: Install dependencies
+        run: make deps
+
+      - name: Run tests
+        run: make test
+
+      # - name: Run tests with coverage
+      #   run: mix coveralls.lcov
+      #   env:
+      #     MIX_ENV: test
+
+      # - name: Upload coverage reports to Codecov
+      #   uses: codecov/codecov-action@v3
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: ./cover/lcov.info
+
+  formatter:
+    name: Formatter
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: 25.3
+          elixir-version: 1.14.4
+
+      - name: Dependency cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: mix-fmt-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            mix-fmt-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+            mix-fmt-${{ runner.os }}-
+            mix-fmt-
+
+      - name: Install dependencies
+        run: make deps
+
+      - name: Run Formatter
+        run: make fmt
+
+  linter:
+    name: Linter
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: 25.3
+          elixir-version: 1.14.4
+
+      - name: Dependency cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: mix-lint-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            mix-lint-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+            mix-lint-${{ runner.os }}-
+            mix-lint-
+
+      - name: Install dependencies
+        run: make deps
+
+      - name: Run Linter
+        run: make lint
+
+  dialyzer:
+    name: Dialyzer
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: dev
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: 25.3
+          elixir-version: 1.14.4
+
+      - name: Dependency cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: mix-dialyzer-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            mix-dialyzer-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+            mix-dialyzer-${{ runner.os }}-
+            mix-dialyzer-
+
+      - name: Install dependencies
+        run: make deps
+
+      - name: Run Dialyzer
+        run: make dialyzer

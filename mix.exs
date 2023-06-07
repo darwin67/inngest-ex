@@ -11,6 +11,7 @@ defmodule Inngest.MixProject do
       # build_embedded: Mix.env() == :prod,
       # start_permanent: Mix.env() == :prod,
       deps: deps(),
+      aliases: aliases(),
       package: package(),
 
       # Docs
@@ -51,10 +52,23 @@ defmodule Inngest.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, "~> 0.27", only: :dev, runtime: false},
       {:tesla, "~> 1.4"},
       {:hackney, "~> 1.10"},
-      {:jason, "~> 1.4"}
+      {:jason, "~> 1.4"},
+
+      # dev / test
+      {:ex_doc, "~> 0.27", only: :dev, runtime: false},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+    ]
+  end
+
+  defp aliases() do
+    [
+      lint: ["credo"],
+      "fmt:check": [
+        "format --check-formatted mix.exs 'lib/**/*.{ex,exs}' 'test/**/*.{ex,exs}'"
+      ]
     ]
   end
 end
