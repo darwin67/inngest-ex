@@ -5,16 +5,5 @@ defmodule Inngest do
              |> String.split("<!-- MDOC ! -->")
              |> Enum.fetch!(1)
 
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Inngest.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
+  defdelegate send(payload), to: Inngest.Client
 end
