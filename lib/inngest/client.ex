@@ -1,13 +1,13 @@
 defmodule Inngest.Client do
   defstruct [
     :endpoint,
-    ingest_key: ""
+    :ingest_key
   ]
 
   alias Inngest.Event
 
   @type t() :: %__MODULE__{
-          endpoint: binary(),
+          endpoint: binary() | nil,
           ingest_key: binary()
         }
 
@@ -16,12 +16,12 @@ defmodule Inngest.Client do
   @doc """
   Send one or a batch of events to Inngest
   """
-  @spec send(Event.t() | [Event.t()]) :: :ok | {:error, binary()}
-  def send(payload) do
-    event_key = System.get_env("INNGEST_EVENT_KEY", "test")
-    client = httpclient()
+  @spec send(t(), Event.t() | [Event.t()]) :: :ok | {:error, binary()}
+  def send(client, payload) do
+    event_key = event_key(client)
+    httpclient = httpclient(client)
 
-    case Tesla.post(client, "/e/#{event_key}", payload) do
+    case Tesla.post(httpclient, "/e/#{event_key}", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
         :ok
 
@@ -39,12 +39,29 @@ defmodule Inngest.Client do
     end
   end
 
-  defp httpclient() do
+  @spec httpclient(t()) :: Tesla.Client.t()
+  defp httpclient(client) do
+    base_url =
+      case client.endpoint do
+        nil -> @dev_base_url
+        url -> url
+      end
+
     middleware = [
-      {Tesla.Middleware.BaseUrl, @dev_base_url},
+      {Tesla.Middleware.BaseUrl, base_url},
       Tesla.Middleware.JSON
     ]
 
     Tesla.client(middleware)
+  end
+
+  @spec event_key(t()) :: binary()
+  defp event_key(client) do
+    with nil <- System.get_env("INNGEST_EVENT_KEY"),
+         nil <- client.ingest_key do
+      "test"
+    else
+      key -> key
+    end
   end
 end

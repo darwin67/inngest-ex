@@ -5,5 +5,5 @@ defmodule Inngest do
              |> String.split("<!-- MDOC ! -->")
              |> Enum.fetch!(1)
 
-  defdelegate send(payload), to: Inngest.Client
+  defdelegate send(client, payload), to: Inngest.Client
 end
