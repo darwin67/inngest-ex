@@ -21,9 +21,41 @@
   <!-- Body -->
   <div class="w-full">
     <div class="bg-slate-100 py-16">
-      <div class="mx-auto max-w-7xl text-3xl flex flex-row space-x-2">
-        <.icon name="hero-check-circle-solid" class="block text-green-500 h-10 w-10" />
-        <span class="text-gray-700">Your functions are setup correctly</span>
+      <div class="mx-auto max-w-7xl">
+        <div class="flex flex-row space-x-2">
+          <.icon name="hero-check-circle-solid" class="block text-green-500 h-10 w-10" />
+
+          <div class="flex flex-col space-y-1">
+            <span class="text-3xl text-slate-700">Your functions are setup correctly</span>
+
+            <div class="flex space-x-2">
+              <%= for sdk <- @sdk_versions do %>
+                <div class="bg-violet-500 py-1 px-3 rounded-md text-white">
+                  <%= sdk %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="mx-auto max-w-7xl py-8">
+      <div class="text-slate-700">
+        Functions found: <%= Enum.count(@functions) %>
+      </div>
+
+      <div>
+        <.table id="funcs" rows={@functions}>
+          <:col :let={func} label="Name"><%= func.name %></:col>
+          <:col :let={func} label="ID"><%= func.id %></:col>
+          <:col :let={func} label="Event / Cron">
+            <%= for trigger <- func.triggers do %>
+              <span class="bg-slate-100 py-1 px-2 rounded-md"><%= trigger.event %></span>
+            <% end %>
+          </:col>
+        </.table>
       </div>
     </div>
   </div>
