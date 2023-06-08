@@ -26,4 +26,10 @@ defmodule Inngest.Config do
         key
     end
   end
+
+  @spec version() :: binary()
+  def version(), do: Application.spec(:inngest, :vsn)
+
+  @spec sdk_version() :: binary()
+  def sdk_version(), do: "elixir:v#{version()}"
 end
