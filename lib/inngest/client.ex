@@ -2,15 +2,14 @@ defmodule Inngest.Client do
   @moduledoc """
   Module representing an Inngest client (subject to change).
   """
-
-  alias Inngest.Event
+  alias Inngest.{Config, Event}
 
   @doc """
   Send one or a batch of events to Inngest
   """
   @spec send(Event.t() | [Event.t()]) :: :ok | {:error, binary()}
   def send(payload) do
-    event_key = Application.get_env(:inngest, :event_key, "test")
+    event_key = Config.event_key()
     httpclient = httpclient()
 
     case Tesla.post(httpclient, "/e/#{event_key}", payload) do
@@ -46,7 +45,7 @@ defmodule Inngest.Client do
   @spec httpclient() :: Tesla.Client.t()
   defp httpclient() do
     middleware = [
-      {Tesla.Middleware.BaseUrl, Application.get_env(:inngest, :event_base_url)},
+      {Tesla.Middleware.BaseUrl, Config.event_base_url()},
       Tesla.Middleware.JSON
     ]
 
