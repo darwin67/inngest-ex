@@ -10,7 +10,7 @@ defmodule Inngest.Client do
   """
   @spec send(Event.t() | [Event.t()]) :: :ok | {:error, binary()}
   def send(payload) do
-    event_key = event_key()
+    event_key = Application.get_env(:inngest, :event_key, "test")
     httpclient = httpclient()
 
     case Tesla.post(httpclient, "/e/#{event_key}", payload) do
@@ -31,21 +31,25 @@ defmodule Inngest.Client do
     end
   end
 
+  def dev_info() do
+    httpclient = httpclient()
+
+    case Tesla.get(httpclient, "/dev") do
+      {:ok, %Tesla.Env{status: 200, body: body} = _resp} ->
+        body
+
+      _ ->
+        {:error, "failed to retrieve dev server info"}
+    end
+  end
+
   @spec httpclient() :: Tesla.Client.t()
   defp httpclient() do
     middleware = [
-      {Tesla.Middleware.BaseUrl, Application.fetch_env!(:inngest, :event_base_url)},
+      {Tesla.Middleware.BaseUrl, Application.get_env(:inngest, :event_base_url)},
       Tesla.Middleware.JSON
     ]
 
     Tesla.client(middleware)
-  end
-
-  @spec event_key() :: binary()
-  defp event_key() do
-    case Application.fetch_env(:inngest, :event_key) do
-      {:ok, key} -> key
-      :error -> "test"
-    end
   end
 end
