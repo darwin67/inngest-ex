@@ -17,7 +17,7 @@ defmodule InngestDevWeb.InngestLive.Index do
       socket
       |> assign(
         sdk_versions: sdk_versions,
-        functions: functions |> Enum.map(&Inngest.Function.from/1) |> IO.inspect()
+        functions: functions |> Enum.map(&Inngest.Function.from/1)
       )
 
     {:ok, socket, layout: false}
