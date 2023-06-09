@@ -1,29 +1,35 @@
 defmodule Inngest.Config do
   @moduledoc """
   Configuration settings for Inngest
+
+  Order of configuration to be read
+  1. Environment variables
+  2. Application configs
+  3. Default values
   """
   @event_url "https://inn.gs"
   @dev_url "http://127.0.0.1:8288"
 
-  def event_base_url do
-    if Mix.env() == :dev do
-      @dev_url
+  @spec event_url() :: binary()
+  def event_url() do
+    with nil <- System.get_env("INNGEST_EVENT_URL"),
+         nil <- Application.get_env(:inngest, :event_url) do
+      case Application.get_env(:inngest, :env, :prod) do
+        :dev -> @dev_url
+        _ -> @event_url
+      end
     else
-      @event_url
+      url -> url
     end
   end
 
-  def event_key do
-    case System.get_env("INNGEST_EVENT_KEY") do
-      nil ->
-        if Mix.env() == :dev do
-          "test"
-        else
-          nil
-        end
-
-      key ->
-        key
+  @spec event_key() :: binary()
+  def event_key() do
+    with nil <- System.get_env("INNGEST_EVENT_KEY"),
+         nil <- Application.get_env(:inngest, :event_key) do
+      "test"
+    else
+      key -> key
     end
   end
 

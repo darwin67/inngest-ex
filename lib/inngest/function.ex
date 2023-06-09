@@ -1,4 +1,6 @@
 defmodule Inngest.Function do
+  @moduledoc false
+
   defstruct [
     :id,
     :name,
@@ -21,7 +23,6 @@ defmodule Inngest.Function do
           "id" => id,
           "name" => name,
           "triggers" => triggers,
-          "concurrency" => concurrency,
           "steps" => steps
         } = _data
       ) do
@@ -29,13 +30,15 @@ defmodule Inngest.Function do
       id: id,
       name: name,
       triggers: triggers |> Enum.map(&Inngest.Function.Trigger.from/1),
-      concurrency: concurrency,
+      concurrency: 1,
       steps: steps
     }
   end
 end
 
 defmodule Inngest.Function.Trigger do
+  @moduledoc false
+
   defstruct [
     :event,
     :expression,
@@ -59,6 +62,8 @@ defmodule Inngest.Function.Trigger do
 end
 
 defmodule Inngest.Function.Step do
+  @moduledoc false
+
   defstruct [
     :id,
     :name,
@@ -69,6 +74,8 @@ defmodule Inngest.Function.Step do
 end
 
 defmodule Inngest.FunctionOpts do
+  @moduledoc false
+
   defstruct [
     :name,
     :id,
@@ -87,6 +94,8 @@ defmodule Inngest.FunctionOpts do
 end
 
 defmodule Inngest.ServableFunction do
+  @moduledoc false
+
   @doc """
   Returns the function's human-readable ID, such as "sign-up-flow"
   """

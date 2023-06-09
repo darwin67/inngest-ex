@@ -1,10 +1,12 @@
 defmodule Inngest.Handler do
-  def register(funcs) do
-    # load config
-    # loop through functions
-    #   construct inngest function for registration
-    # send registration request
-  end
+  @moduledoc false
+
+  # def register(funcs) do
+  #   # load config
+  #   # loop through functions
+  #   #   construct inngest function for registration
+  #   # send registration request
+  # end
 end
 
 defmodule Inngest.SDK.RegisterRequest do

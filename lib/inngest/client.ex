@@ -35,7 +35,7 @@ defmodule Inngest.Client do
 
     case Tesla.get(httpclient, "/dev") do
       {:ok, %Tesla.Env{status: 200, body: body} = _resp} ->
-        body
+        {:ok, body}
 
       _ ->
         {:error, "failed to retrieve dev server info"}
@@ -45,7 +45,7 @@ defmodule Inngest.Client do
   @spec httpclient() :: Tesla.Client.t()
   defp httpclient() do
     middleware = [
-      {Tesla.Middleware.BaseUrl, Config.event_base_url()},
+      {Tesla.Middleware.BaseUrl, Config.event_url()},
       Tesla.Middleware.JSON
     ]
 
