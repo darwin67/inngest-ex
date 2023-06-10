@@ -17,7 +17,7 @@ defmodule Inngest.V1.Function do
           ],
           concurrency: 10,
           steps: %{
-            dummy: %{
+            "dummy-step" => %{
               id: "dummy-step",
               name: "dummy step",
               runtime: %{

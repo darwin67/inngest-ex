@@ -40,10 +40,10 @@ defmodule Inngest.SDK.RegisterRequest do
 
     # The version for this response, which let's us upgrade the SDKs and APIs
     # with backwards compatibility
-    v: "1"
+    v: "1",
     # Represents how this was deployed, e.g. via a ping. This allows us
     # to change flows in the future, or support multiple registration flows
     # within a single fetch response
-    deploy_type: "ping",
+    deploy_type: "ping"
   ]
 end
