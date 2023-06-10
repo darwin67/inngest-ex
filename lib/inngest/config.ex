@@ -8,7 +8,7 @@ defmodule Inngest.Config do
   3. Default values
   """
   @event_url "https://inn.gs"
-  @register_url "https://app.inngest.com"
+  @app_url "https://app.inngest.com"
   @dev_url "http://127.0.0.1:8288"
 
   @spec event_url() :: binary()
@@ -24,12 +24,12 @@ defmodule Inngest.Config do
     end
   end
 
-  def register_url() do
+  def app_url() do
     with nil <- System.get_env("INNGEST_REGISTER_URL"),
-         nil <- Application.get_env(:inngest, :register_url) do
+         nil <- Application.get_env(:inngest, :app_url) do
       case Application.get_env(:inngest, :env, :prod) do
         :dev -> @dev_url
-        _ -> @register_url
+        _ -> @app_url
       end
     else
       url -> url
