@@ -1,5 +1,79 @@
 defmodule Inngest.Function do
-  @moduledoc false
+  @moduledoc """
+  Module to be used within user code to setup an Inngest function.
+  Making it servable and invokable.
+  """
+
+  @doc false
+  defmacro __using__(opts) do
+    quote do
+      def serve(), do: serve(unquote(opts))
+
+      def serve([name: name, event: event] = opts) do
+        id =
+          if Keyword.get(opts, :id),
+            do: Keyword.get(opts, :id),
+            else:
+              name
+              |> String.replace(~r/[\.\/\s]+/, "-")
+              |> String.downcase()
+
+        %{
+          id: id,
+          name: name,
+          triggers: [
+            %{event: event}
+          ],
+          concurrency: 10,
+          steps: %{
+            "dummy-step" => %{
+              id: "dummy-step",
+              name: "dummy step",
+              runtime: %{
+                type: "http",
+                url: "http://127.0.0.1:4000/api/inngest"
+              },
+              retries: %{
+                attempts: 1
+              }
+            }
+          }
+        }
+      end
+
+      def serve([name: name, cron: cron] = opts) do
+        id =
+          if Keyword.get(opts, :id),
+            do: Keyword.get(opts, :id),
+            else:
+              name
+              |> String.replace(~r/[\.\/\s]+/, "-")
+              |> String.downcase()
+
+        %{
+          id: id,
+          name: name,
+          triggers: [
+            %{cron: cron}
+          ],
+          concurrency: 10,
+          steps: %{
+            "dummy-step" => %{
+              id: "dummy-step",
+              name: "dummy step",
+              runtime: %{
+                type: "http",
+                url: "http://127.0.0.1:4000/api/inngest"
+              },
+              retries: %{
+                attempts: 1
+              }
+            }
+          }
+        }
+      end
+    end
+  end
 
   defstruct [
     :id,
