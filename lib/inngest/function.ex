@@ -7,6 +7,8 @@ defmodule Inngest.Function do
   @doc false
   defmacro __using__(opts) do
     quote do
+      alias Inngest.Function.Trigger
+
       def serve(), do: serve(unquote(opts))
 
       def serve([name: name, event: event] = opts) do
@@ -22,7 +24,7 @@ defmodule Inngest.Function do
           id: id,
           name: name,
           triggers: [
-            %{event: event}
+            %Trigger{event: event}
           ],
           concurrency: 10,
           steps: %{
@@ -54,7 +56,7 @@ defmodule Inngest.Function do
           id: id,
           name: name,
           triggers: [
-            %{cron: cron}
+            %Trigger{cron: cron}
           ],
           concurrency: 10,
           steps: %{
@@ -90,49 +92,6 @@ defmodule Inngest.Function do
           concurrency: number(),
           steps: map()
         }
-
-  @spec from(map()) :: t()
-  def from(
-        %{
-          "id" => id,
-          "name" => name,
-          "triggers" => triggers,
-          "steps" => steps
-        } = _data
-      ) do
-    %__MODULE__{
-      id: id,
-      name: name,
-      triggers: triggers |> Enum.map(&Inngest.Function.Trigger.from/1),
-      concurrency: 1,
-      steps: steps
-    }
-  end
-end
-
-defmodule Inngest.Function.Trigger do
-  @moduledoc false
-
-  defstruct [
-    :event,
-    :expression,
-    :cron
-  ]
-
-  @type t() :: %__MODULE__{
-          event: map() | nil,
-          expression: binary() | nil,
-          cron: map() | nil
-        }
-
-  @spec from(map()) :: t()
-  def from(%{"event" => event} = _data) do
-    %__MODULE__{event: event}
-  end
-
-  def from(%{"cron" => cron} = _data) do
-    %__MODULE__{cron: cron}
-  end
 end
 
 defmodule Inngest.Function.Step do

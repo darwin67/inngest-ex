@@ -1,6 +1,8 @@
 defmodule Inngest.FunctionTest do
   use ExUnit.Case, async: true
 
+  alias Inngest.Function.Trigger
+
   defmodule TestEventFunction do
     use Inngest.Function, name: "Awesome Event Func", event: "my/awesome.event"
   end
@@ -15,7 +17,7 @@ defmodule Inngest.FunctionTest do
                id: "awesome-event-func",
                name: "Awesome Event Func",
                triggers: [
-                 %{event: "my/awesome.event"}
+                 %Trigger{event: "my/awesome.event"}
                ],
                concurrency: _,
                steps: %{
@@ -39,7 +41,7 @@ defmodule Inngest.FunctionTest do
                id: "awesome-cron-func",
                name: "Awesome Cron Func",
                triggers: [
-                 %{cron: "America/Los_Angeles * * * * *"}
+                 %Trigger{cron: "America/Los_Angeles * * * * *"}
                ]
              } = TestCronFunction.serve()
     end
