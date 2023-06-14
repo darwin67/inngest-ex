@@ -91,44 +91,31 @@ defmodule Inngest.Function do
       @impl true
       def func(), do: "placeholder"
 
+      def steps(),
+        do: %{
+          "dummy-step" => %{
+            id: "dummy-step",
+            name: "dummy step",
+            runtime: %{
+              type: "http",
+              url: "http://127.0.0.1:4000/api/inngest"
+            },
+            retries: %{
+              attempts: 1
+            }
+          }
+        }
+
       def serve() do
         %{
           id: slug(),
           name: name(),
           triggers: [trigger()],
-          steps: %{
-            "dummy-step" => %{
-              id: "dummy-step",
-              name: "dummy step",
-              runtime: %{
-                type: "http",
-                url: "http://127.0.0.1:4000/api/inngest"
-              },
-              retries: %{
-                attempts: 1
-              }
-            }
-          }
+          steps: steps()
         }
       end
     end
   end
-
-  defstruct [
-    :id,
-    :name,
-    :triggers,
-    :concurrency,
-    :steps
-  ]
-
-  @type t() :: %__MODULE__{
-          id: binary(),
-          name: binary(),
-          triggers: [any()],
-          concurrency: number(),
-          steps: map()
-        }
 end
 
 defmodule Inngest.Function.Step do
