@@ -11,6 +11,28 @@ defmodule Inngest.FunctionTest do
     use Inngest.Function, name: "Awesome Cron Func", cron: "America/Los_Angeles * * * * *"
   end
 
+  describe "slug/0" do
+    test "return name of function as slug" do
+      assert "awesome-event-func" == TestEventFunction.slug()
+    end
+  end
+
+  describe "name/0" do
+    test "return name of function" do
+      assert "Awesome Event Func" == TestEventFunction.name()
+    end
+  end
+
+  describe "trigger/0" do
+    test "return an event trigger for event functions" do
+      assert %Trigger{event: "my/awesome.event"} == TestEventFunction.trigger()
+    end
+
+    test "return a cron trigger for cron functions" do
+      assert %Trigger{cron: "America/Los_Angeles * * * * *"} == TestCronFunction.trigger()
+    end
+  end
+
   describe "serve/0" do
     test "event function should return approprivate map" do
       assert %{
