@@ -42,8 +42,7 @@ defmodule Inngest.Function do
   @doc """
   Returns the event name or schedule that triggers the function
   """
-  # TODO: Provide proper types for triggers
-  @callback trigger() :: any()
+  @callback trigger() :: Inngest.Function.Trigger.t()
 
   @doc """
   Returns the zero event type to marshal the event into, given an
@@ -82,7 +81,9 @@ defmodule Inngest.Function do
       def config(), do: %Inngest.FunctionOpts{}
 
       @impl true
-      def trigger(), do: "placeholder"
+      def trigger(), do: @opts |> Map.new() |> trigger()
+      defp trigger(%{event: event} = _opts), do: %Trigger{event: event}
+      defp trigger(%{cron: cron} = _opts), do: %Trigger{cron: cron}
 
       @impl true
       def zero_event(), do: "placeholder"
@@ -90,34 +91,11 @@ defmodule Inngest.Function do
       @impl true
       def func(), do: "placeholder"
 
-      def serve(), do: serve(@opts)
-
-      defp serve([name: name, event: event] = opts) do
+      def serve() do
         %{
           id: slug(),
           name: name(),
-          triggers: [%Trigger{event: event}],
-          steps: %{
-            "dummy-step" => %{
-              id: "dummy-step",
-              name: "dummy step",
-              runtime: %{
-                type: "http",
-                url: "http://127.0.0.1:4000/api/inngest"
-              },
-              retries: %{
-                attempts: 1
-              }
-            }
-          }
-        }
-      end
-
-      defp serve([name: name, cron: cron] = opts) do
-        %{
-          id: slug(),
-          name: name(),
-          triggers: [%Trigger{cron: cron}],
+          triggers: [trigger()],
           steps: %{
             "dummy-step" => %{
               id: "dummy-step",
