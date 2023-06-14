@@ -19,7 +19,6 @@ defmodule Inngest.FunctionTest do
                triggers: [
                  %Trigger{event: "my/awesome.event"}
                ],
-               concurrency: _,
                steps: %{
                  "dummy-step" => %{
                    id: _,
