@@ -2,16 +2,15 @@ defmodule Inngest.Client do
   @moduledoc """
   Module representing an Inngest client (subject to change).
   """
-
-  alias Inngest.Event
+  alias Inngest.{Config, Event}
 
   @doc """
   Send one or a batch of events to Inngest
   """
   @spec send(Event.t() | [Event.t()]) :: :ok | {:error, binary()}
   def send(payload) do
-    event_key = event_key()
-    httpclient = httpclient()
+    event_key = Config.event_key()
+    httpclient = httpclient(:event)
 
     case Tesla.post(httpclient, "/e/#{event_key}", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
@@ -31,21 +30,60 @@ defmodule Inngest.Client do
     end
   end
 
-  @spec httpclient() :: Tesla.Client.t()
-  defp httpclient() do
+  def register(functions) do
+    data = %{
+      url: "http://127.0.0.1:4000/api/inngest",
+      v: "1",
+      deployType: "ping",
+      sdk: Config.sdk_version(),
+      framework: "phoenix",
+      appName: "test app",
+      functions: functions |> Enum.map(& &1.serve/0)
+    }
+
+    case Tesla.post(httpclient(:app), "/fn/register", data) do
+      {:ok, %Tesla.Env{status: 200}} ->
+        :ok
+
+      {:ok, %Tesla.Env{status: 201}} ->
+        :ok
+
+      {:ok, %Tesla.Env{status: _, body: error}} ->
+        {:error, error}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  def dev_info() do
+    httpclient = httpclient(:app)
+
+    case Tesla.get(httpclient, "/dev") do
+      {:ok, %Tesla.Env{status: 200, body: body} = _resp} ->
+        {:ok, body}
+
+      _ ->
+        {:error, "failed to retrieve dev server info"}
+    end
+  end
+
+  @spec httpclient(:event | :app) :: Tesla.Client.t()
+  defp httpclient(:event) do
     middleware = [
-      {Tesla.Middleware.BaseUrl, Application.fetch_env!(:inngest, :event_base_url)},
+      {Tesla.Middleware.BaseUrl, Config.event_url()},
       Tesla.Middleware.JSON
     ]
 
     Tesla.client(middleware)
   end
 
-  @spec event_key() :: binary()
-  defp event_key() do
-    case Application.fetch_env(:inngest, :event_key) do
-      {:ok, key} -> key
-      :error -> "test"
-    end
+  defp httpclient(:app) do
+    middleware = [
+      {Tesla.Middleware.BaseUrl, Config.app_url()},
+      Tesla.Middleware.JSON
+    ]
+
+    Tesla.client(middleware)
   end
 end

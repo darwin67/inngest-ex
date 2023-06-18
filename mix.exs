@@ -57,6 +57,11 @@ defmodule Inngest.MixProject do
       {:jason, "~> 1.4"},
 
       # dev / test
+      {:phoenix, "~> 1.6", only: :dev},
+      {:phoenix_html, "~> 3.3"},
+      {:phoenix_live_view, "~> 0.19", only: :dev},
+      {:phoenix_live_reload, "~> 1.2", only: :dev},
+      {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
