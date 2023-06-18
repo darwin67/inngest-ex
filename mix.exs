@@ -55,6 +55,7 @@ defmodule Inngest.MixProject do
       {:tesla, "~> 1.4"},
       {:hackney, "~> 1.10"},
       {:jason, "~> 1.4"},
+      {:phoenix_live_view, "~> 0.19"},
 
       # dev / test
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},

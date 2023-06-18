@@ -1,6 +1,7 @@
 defmodule Inngest.Function.Trigger do
   @moduledoc false
 
+  @derive Jason.Encoder
   defstruct [
     :event,
     :expression,
