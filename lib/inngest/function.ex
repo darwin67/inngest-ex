@@ -116,6 +116,12 @@ defmodule Inngest.Function do
       end
     end
   end
+
+  # TODO: This is required for the local dev UI
+  # Implement it when addressing that.
+  def from(_) do
+    %{}
+  end
 end
 
 defmodule Inngest.Function.Step do
