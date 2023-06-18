@@ -1,4 +1,8 @@
 defmodule Inngest.Router.API do
+  @moduledoc """
+  Router for registering functions with Inngest
+  """
+
   use Phoenix.Controller, formats: [:json]
   import Plug.Conn
 
