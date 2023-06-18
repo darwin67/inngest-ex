@@ -55,9 +55,10 @@ defmodule Inngest.MixProject do
       {:tesla, "~> 1.4"},
       {:hackney, "~> 1.10"},
       {:jason, "~> 1.4"},
-      {:phoenix_live_view, "~> 0.19"},
 
       # dev / test
+      {:phoenix, "~> 1.6", only: :dev},
+      {:phoenix_live_view, "~> 0.19", only: :dev},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
