@@ -29,9 +29,16 @@ defmodule Inngest.Router.Endpoint do
     }
 
     func = Map.get(funcs, Map.get(ctx, "fn_id"))
-    resp = func.mod.perform(args)
 
-    conn
-    |> json(resp)
+    case func.mod.perform(args) do
+      {:ok, resp} ->
+        conn
+        |> json(resp)
+
+      {:error, error} ->
+        conn
+        |> put_status(400)
+        |> json(error)
+    end
   end
 end

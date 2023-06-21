@@ -40,7 +40,7 @@ defmodule Inngest.Handler do
   @doc """
   The user provided logic that will be invoked
   """
-  @callback perform(Args.t()) :: map() | nil
+  @callback perform(Args.t()) :: {:ok, any()} | {:error, any()}
 end
 
 defmodule Inngest.SDK.RegisterRequest do
