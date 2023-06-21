@@ -22,8 +22,8 @@ defmodule Inngest.Router do
           import Phoenix.Router, only: [post: 4, put: 4]
           import Phoenix.LiveView.Router, only: [live: 4, live_session: 3]
 
-          post "/", Inngest.Router.API, :invoke, route_opts |> Inngest.Router.reduce_funcs()
-          put "/", Inngest.Router.API, :register, route_opts
+          post "/", Inngest.Router.Endpoint, :invoke, route_opts |> Inngest.Router.reduce_funcs()
+          put "/", Inngest.Router.Endpoint, :register, route_opts
 
           live_session session_name, session_opts do
             live "/",

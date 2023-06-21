@@ -1,4 +1,4 @@
-defmodule Inngest.Router.API do
+defmodule Inngest.Router.Endpoint do
   @moduledoc """
   Router for registering functions with Inngest
   """
@@ -17,9 +17,10 @@ defmodule Inngest.Router.API do
     end
   end
 
-  def invoke(%{assigns: %{funcs: funcs}} = conn, params) do
+  def invoke(%{assigns: %{funcs: funcs}} = conn, %{"event" => event} = params) do
     funcs |> IO.inspect()
     params |> IO.inspect()
+    Inngest.Event.from(event) |> IO.inspect()
 
     conn
     |> json(%{hello: "world"})
