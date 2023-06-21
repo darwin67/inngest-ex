@@ -8,6 +8,7 @@ defmodule Inngest.Event do
     :data,
     :ts,
     :datetime,
+    :v,
     id: "",
     user: %{}
   ]
@@ -17,6 +18,7 @@ defmodule Inngest.Event do
           name: binary(),
           data: any(),
           user: map(),
+          v: binary(),
           ts: number(),
           datetime: DateTime.t()
         }

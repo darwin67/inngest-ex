@@ -1,50 +1,13 @@
 defmodule Inngest.Function do
-  alias Inngest.Function.Args
-
   @moduledoc """
   Module to be used within user code to setup an Inngest function.
   Making it servable and invokable.
   """
 
-  @doc """
-  Returns the function's human-readable ID, such as "sign-up-flow"
-  """
-  @callback slug() :: String.t()
-
-  @doc """
-  Returns the function name
-  """
-  @callback name() :: String.t()
-
-  @doc """
-  Returns the function's configs
-  """
-  @callback config() :: any()
-
-  @doc """
-  Returns the event name or schedule that triggers the function
-  """
-  @callback trigger() :: Inngest.Function.Trigger.t()
-
-  @doc """
-  Returns the zero event type to marshal the event into, given an
-  event name
-  """
-  @callback zero_event() :: any()
-
-  @doc """
-  Returns the SDK function to call. This must alawys be of type SDKFunction,
-  but has an any type as we register many functions of different types into a
-  type-agnostic handler; this is a generic implementation detail, unfortunately.
-  """
-  @callback func() :: any()
-
-  @callback perform(Args.t()) :: map() | nil
-
   defmacro __using__(opts) do
     quote location: :keep do
       alias Inngest.Function.Trigger
-      @behaviour Inngest.Function
+      @behaviour Inngest.Handler
 
       @opts unquote(opts)
 
@@ -107,16 +70,4 @@ defmodule Inngest.Function do
   def from(_) do
     %{}
   end
-end
-
-defmodule Inngest.Function.Step do
-  @moduledoc false
-
-  defstruct [
-    :id,
-    :name,
-    :path,
-    :retries,
-    :runtime
-  ]
 end

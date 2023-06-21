@@ -1,12 +1,46 @@
 defmodule Inngest.Handler do
-  @moduledoc false
+  @moduledoc """
+  Handler is a behavior for how an Inngest function should look like
+  """
+  alias Inngest.Function.Args
 
-  # def register(funcs) do
-  #   # load config
-  #   # loop through functions
-  #   #   construct inngest function for registration
-  #   # send registration request
-  # end
+  @doc """
+  Returns the function's human-readable ID, such as "sign-up-flow"
+  """
+  @callback slug() :: String.t()
+
+  @doc """
+  Returns the function name
+  """
+  @callback name() :: String.t()
+
+  @doc """
+  Returns the function's configs
+  """
+  @callback config() :: any()
+
+  @doc """
+  Returns the event name or schedule that triggers the function
+  """
+  @callback trigger() :: Inngest.Function.Trigger.t()
+
+  @doc """
+  Returns the zero event type to marshal the event into, given an
+  event name
+  """
+  @callback zero_event() :: any()
+
+  @doc """
+  Returns the SDK function to call. This must alawys be of type SDKFunction,
+  but has an any type as we register many functions of different types into a
+  type-agnostic handler; this is a generic implementation detail, unfortunately.
+  """
+  @callback func() :: any()
+
+  @doc """
+  The user provided logic that will be invoked
+  """
+  @callback perform(Args.t()) :: map() | nil
 end
 
 defmodule Inngest.SDK.RegisterRequest do

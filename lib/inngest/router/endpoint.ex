@@ -29,7 +29,7 @@ defmodule Inngest.Router.Endpoint do
     }
 
     func = Map.get(funcs, Map.get(ctx, "fn_id"))
-    resp = func.mod.perform(args) |> IO.inspect()
+    resp = func.mod.perform(args)
 
     conn
     |> json(resp)
