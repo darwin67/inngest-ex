@@ -2,7 +2,6 @@ defmodule Inngest.Router.API do
   @moduledoc """
   Router for registering functions with Inngest
   """
-
   use Phoenix.Controller, formats: [:json]
   import Plug.Conn
 
@@ -16,5 +15,13 @@ defmodule Inngest.Router.API do
         |> put_status(400)
         |> json(%{error: error})
     end
+  end
+
+  def invoke(%{assigns: %{funcs: funcs}} = conn, params) do
+    funcs |> IO.inspect()
+    params |> IO.inspect()
+
+    conn
+    |> json(%{hello: "world"})
   end
 end

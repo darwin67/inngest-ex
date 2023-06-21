@@ -89,19 +89,19 @@ defmodule Inngest.Function do
       def zero_event(), do: "placeholder"
 
       @impl true
-      def func(), do: "placeholder"
+      def func(), do: __MODULE__
 
       def steps(),
         do: %{
-          "dummy-step" => %{
-            id: "dummy-step",
-            name: "dummy step",
+          "step" => %{
+            id: "step",
+            name: "step",
             runtime: %{
               type: "http",
-              url: "http://127.0.0.1:4000/api/inngest"
+              url: "http://127.0.0.1:4000/api/inngest?fnId=#{name()}&step=step"
             },
             retries: %{
-              attempts: 1
+              attempts: 3
             }
           }
         }
@@ -111,7 +111,8 @@ defmodule Inngest.Function do
           id: slug(),
           name: name(),
           triggers: [trigger()],
-          steps: steps()
+          steps: steps(),
+          mod: __MODULE__
         }
       end
     end

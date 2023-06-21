@@ -19,12 +19,17 @@ defmodule Inngest.Router do
         scope path, alias: false, as: false do
           {session_name, session_opts, route_opts} = Inngest.Router.__options__(opts)
 
-          import Phoenix.Router, only: [put: 4]
+          import Phoenix.Router, only: [post: 4, put: 4]
           import Phoenix.LiveView.Router, only: [live: 4, live_session: 3]
 
+          post "/", Inngest.Router.API, :invoke, route_opts |> Inngest.Router.reduce_funcs()
+          put "/", Inngest.Router.API, :register, route_opts
+
           live_session session_name, session_opts do
-            live "/", Inngest.Live.InngestLive.Dev, :dev_view, route_opts
-            put "/", Inngest.Router.API, :register, route_opts
+            live "/",
+                 Inngest.Live.InngestLive.Dev,
+                 :dev_view,
+                 route_opts |> Keyword.drop([:assigns])
           end
         end
       end
@@ -79,7 +84,9 @@ defmodule Inngest.Router do
       [
         private: %{
           live_socket_path: live_socket_path,
-          csp_nonce_assign_key: csp_nonce_assign_key,
+          csp_nonce_assign_key: csp_nonce_assign_key
+        },
+        assigns: %{
           funcs: funcs
         },
         as: :inngest
@@ -100,5 +107,21 @@ defmodule Inngest.Router do
         script: conn.assigns[csp_nonce_assign_key[:script]]
       }
     }
+  end
+
+  @spec reduce_funcs(Keyword.t()) :: Keyword.t()
+  def reduce_funcs(keywords) do
+    funcs =
+      keywords
+      |> Keyword.get(:assigns, %{})
+      |> Map.get(:funcs, %{})
+
+    dict =
+      Enum.reduce(funcs, %{}, fn func, x ->
+        slug = func.slug()
+        x |> Map.put(slug, func.serve())
+      end)
+
+    keywords |> Keyword.put(:assigns, %{funcs: dict})
   end
 end
