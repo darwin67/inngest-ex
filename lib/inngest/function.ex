@@ -1,24 +1,6 @@
-defmodule Inngest.FunctionOpts do
-  @moduledoc false
-
-  defstruct [
-    :name,
-    :id,
-    :concurrency,
-    :idempotency,
-    :retries
-  ]
-
-  @type t() :: %__MODULE__{
-          name: String.t(),
-          id: String.t(),
-          concurrency: number(),
-          idempotency: String.t(),
-          retries: number()
-        }
-end
-
 defmodule Inngest.Function do
+  alias Inngest.Function.Args
+
   @moduledoc """
   Module to be used within user code to setup an Inngest function.
   Making it servable and invokable.
@@ -37,7 +19,7 @@ defmodule Inngest.Function do
   @doc """
   Returns the function's configs
   """
-  @callback config() :: Inngest.FunctionOpts.t()
+  @callback config() :: any()
 
   @doc """
   Returns the event name or schedule that triggers the function
@@ -56,6 +38,8 @@ defmodule Inngest.Function do
   type-agnostic handler; this is a generic implementation detail, unfortunately.
   """
   @callback func() :: any()
+
+  @callback perform(Args.t()) :: map() | nil
 
   defmacro __using__(opts) do
     quote location: :keep do
@@ -78,7 +62,7 @@ defmodule Inngest.Function do
       def name(), do: Keyword.get(@opts, :name)
 
       @impl true
-      def config(), do: %Inngest.FunctionOpts{}
+      def config(), do: %{}
 
       @impl true
       def trigger(), do: @opts |> Map.new() |> trigger()

@@ -5,6 +5,8 @@ defmodule Inngest.Router.Endpoint do
   use Phoenix.Controller, formats: [:json]
   import Plug.Conn
 
+  alias Inngest.Function.Args
+
   def register(%{assigns: %{funcs: funcs}} = conn, _params) do
     case Inngest.Client.register(funcs) do
       :ok ->
@@ -17,12 +19,19 @@ defmodule Inngest.Router.Endpoint do
     end
   end
 
-  def invoke(%{assigns: %{funcs: funcs}} = conn, %{"event" => event} = params) do
+  def invoke(%{assigns: %{funcs: funcs}} = conn, %{"event" => event, "ctx" => ctx} = params) do
     funcs |> IO.inspect()
     params |> IO.inspect()
-    Inngest.Event.from(event) |> IO.inspect()
+
+    args = %Args{
+      event: Inngest.Event.from(event),
+      run_id: Map.get(ctx, "run_id")
+    }
+
+    func = Map.get(funcs, Map.get(ctx, "fn_id"))
+    resp = func.mod.perform(args) |> IO.inspect()
 
     conn
-    |> json(%{hello: "world"})
+    |> json(resp)
   end
 end
