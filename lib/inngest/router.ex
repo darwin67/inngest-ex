@@ -14,39 +14,39 @@ defmodule Inngest.Router do
         opts
       end
 
-    scope =
-      quote bind_quoted: binding() do
-        scope path, alias: false, as: false do
-          {session_name, session_opts, route_opts} = Inngest.Router.__options__(opts)
+    # scope =
+    #   quote bind_quoted: binding() do
+    #     scope path, alias: false, as: false do
+    #       {session_name, session_opts, route_opts} = Inngest.Router.__options__(opts)
 
-          import Phoenix.Router, only: [post: 4, put: 4]
-          import Phoenix.LiveView.Router, only: [live: 4, live_session: 3]
+    #       import Phoenix.Router, only: [post: 4, put: 4]
+    #       import Phoenix.LiveView.Router, only: [live: 4, live_session: 3]
 
-          post "/", Inngest.Router.Endpoint, :invoke, route_opts |> Inngest.Router.reduce_funcs()
-          put "/", Inngest.Router.Endpoint, :register, route_opts
+    #       post "/", Inngest.Router.Endpoint, :invoke, route_opts |> Inngest.Router.reduce_funcs()
+    #       put "/", Inngest.Router.Endpoint, :register, route_opts
 
-          live_session session_name, session_opts do
-            live "/",
-                 Inngest.Live.InngestLive.Dev,
-                 :dev_view,
-                 route_opts |> Keyword.drop([:assigns])
-          end
-        end
-      end
+    #       live_session session_name, session_opts do
+    #         live "/",
+    #              Inngest.Live.InngestLive.Dev,
+    #              :dev_view,
+    #              route_opts |> Keyword.drop([:assigns])
+    #       end
+    #     end
+    #   end
 
-    # Remove check once we require Phoenix v1.7
-    if Code.ensure_loaded?(Phoenix.VerifiedRoutes) do
-      quote do
-        unquote(scope)
+    # # Remove check once we require Phoenix v1.7
+    # if Code.ensure_loaded?(Phoenix.VerifiedRoutes) do
+    #   quote do
+    #     unquote(scope)
 
-        unless Module.get_attribute(__MODULE__, :inngest_prefix) do
-          @inngest_prefix Phoenix.Router.scoped_path(__MODULE__, path)
-          def __inngest_prefix__, do: @inngest_prefix
-        end
-      end
-    else
-      scope
-    end
+    #     unless Module.get_attribute(__MODULE__, :inngest_prefix) do
+    #       @inngest_prefix Phoenix.Router.scoped_path(__MODULE__, path)
+    #       def __inngest_prefix__, do: @inngest_prefix
+    #     end
+    #   end
+    # else
+    #   scope
+    # end
   end
 
   defp expand_alias({:__aliases__, _, _} = alias, env),
