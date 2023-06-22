@@ -8,6 +8,7 @@ defmodule Inngest.MixProject do
       app: :inngest,
       version: @version,
       elixir: "~> 1.14",
+      elixirc_path: elixirc_paths(Mix.env()),
       # build_embedded: Mix.env() == :prod,
       # start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -21,6 +22,9 @@ defmodule Inngest.MixProject do
       homepage_url: "https://inngest.com"
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help compile.app" to learn about applications.
   def application do
