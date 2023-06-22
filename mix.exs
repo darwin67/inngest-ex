@@ -55,6 +55,9 @@ defmodule Inngest.MixProject do
       {:tesla, "~> 1.4"},
       {:hackney, "~> 1.10"},
       {:jason, "~> 1.4"},
+      {:plug, "~> 1.14"},
+      {:plug_cowboy, "~> 2.0"},
+      # {:bandit, "~> 0.6"},
 
       # dev / test
       {:phoenix, "~> 1.6", only: :dev},
