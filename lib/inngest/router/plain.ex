@@ -1,11 +1,22 @@
-defmodule Inngest.Router.Register do
+defmodule Inngest.Router.Endpoint do
   import Plug.Conn
 
-  def call(conn, _opts) do
+  @content_type "application/json"
+
+  def register(conn, opts) do
+    opts |> IO.inspect()
     resp = Jason.encode!(%{register: false})
 
     conn
-    |> put_resp_content_type("application/json")
+    |> put_resp_content_type(@content_type)
+    |> send_resp(200, resp)
+  end
+
+  def invoke(conn, _opts) do
+    resp = Jason.encode!(%{invoke: false})
+
+    conn
+    |> put_resp_content_type(@content_type)
     |> send_resp(200, resp)
   end
 end
@@ -25,10 +36,15 @@ defmodule Inngest.Router.Plain do
       end
 
     quote location: :keep do
+      post unquote(path) do
+        var!(conn)
+        |> Inngest.Router.Endpoint.invoke(unquote(opts))
+      end
+
       # register path
       put unquote(path) do
-        conn
-        |> Inngest.Router.Register.call(unquote(opts))
+        var!(conn)
+        |> Inngest.Router.Endpoint.register(unquote(opts))
       end
     end
   end

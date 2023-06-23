@@ -9,7 +9,7 @@ defmodule Inngest.Dev.Router do
   plug :match
   plug :dispatch
 
-  # inngest("/api/inngest", funcs: [])
+  inngest("/api/inngest", funcs: [])
 
   get "/" do
     data = Jason.encode!(%{hello: "world"})
