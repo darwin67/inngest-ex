@@ -2,40 +2,27 @@ defmodule Inngest.FunctionTest do
   use ExUnit.Case, async: true
 
   alias Inngest.Function.Trigger
-
-  defmodule TestEventFunction do
-    use Inngest.Function, name: "Awesome Event Func", event: "my/awesome.event"
-
-    @impl true
-    def perform(_args), do: {:ok, %{success: true}}
-  end
-
-  defmodule TestCronFunction do
-    use Inngest.Function, name: "Awesome Cron Func", cron: "America/Los_Angeles * * * * *"
-
-    @impl true
-    def perform(_args), do: {:ok, %{success: true}}
-  end
+  alias Inngest.Test.{EventFn, CronFn}
 
   describe "slug/0" do
     test "return name of function as slug" do
-      assert "awesome-event-func" == TestEventFunction.slug()
+      assert "awesome-event-func" == EventFn.slug()
     end
   end
 
   describe "name/0" do
     test "return name of function" do
-      assert "Awesome Event Func" == TestEventFunction.name()
+      assert "Awesome Event Func" == EventFn.name()
     end
   end
 
   describe "trigger/0" do
     test "return an event trigger for event functions" do
-      assert %Trigger{event: "my/awesome.event"} == TestEventFunction.trigger()
+      assert %Trigger{event: "my/awesome.event"} == EventFn.trigger()
     end
 
     test "return a cron trigger for cron functions" do
-      assert %Trigger{cron: "America/Los_Angeles * * * * *"} == TestCronFunction.trigger()
+      assert %Trigger{cron: "America/Los_Angeles * * * * *"} == CronFn.trigger()
     end
   end
 
@@ -60,7 +47,7 @@ defmodule Inngest.FunctionTest do
                    }
                  }
                }
-             } = TestEventFunction.serve()
+             } = EventFn.serve()
     end
 
     test "cron function should return appropriate map" do
@@ -70,7 +57,7 @@ defmodule Inngest.FunctionTest do
                triggers: [
                  %Trigger{cron: "America/Los_Angeles * * * * *"}
                ]
-             } = TestCronFunction.serve()
+             } = CronFn.serve()
     end
   end
 end
