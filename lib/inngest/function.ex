@@ -1,71 +1,19 @@
-defmodule Inngest.FunctionOpts do
-  @moduledoc false
-
-  defstruct [
-    :name,
-    :id,
-    :concurrency,
-    :idempotency,
-    :retries
-  ]
-
-  @type t() :: %__MODULE__{
-          name: String.t(),
-          id: String.t(),
-          concurrency: number(),
-          idempotency: String.t(),
-          retries: number()
-        }
-end
-
 defmodule Inngest.Function do
   @moduledoc """
   Module to be used within user code to setup an Inngest function.
   Making it servable and invokable.
   """
 
-  @doc """
-  Returns the function's human-readable ID, such as "sign-up-flow"
-  """
-  @callback slug() :: String.t()
-
-  @doc """
-  Returns the function name
-  """
-  @callback name() :: String.t()
-
-  @doc """
-  Returns the function's configs
-  """
-  @callback config() :: Inngest.FunctionOpts.t()
-
-  @doc """
-  Returns the event name or schedule that triggers the function
-  """
-  @callback trigger() :: Inngest.Function.Trigger.t()
-
-  @doc """
-  Returns the zero event type to marshal the event into, given an
-  event name
-  """
-  @callback zero_event() :: any()
-
-  @doc """
-  Returns the SDK function to call. This must alawys be of type SDKFunction,
-  but has an any type as we register many functions of different types into a
-  type-agnostic handler; this is a generic implementation detail, unfortunately.
-  """
-  @callback func() :: any()
-
   defmacro __using__(opts) do
     quote location: :keep do
       alias Inngest.Function.Trigger
-      @behaviour Inngest.Function
+      @behaviour Inngest.Handler
 
       @opts unquote(opts)
 
       @impl true
       def slug() do
+        # TOOD: Use app name as prefix
         if Keyword.get(@opts, :id),
           do: Keyword.get(@opts, :id),
           else:
@@ -78,7 +26,7 @@ defmodule Inngest.Function do
       def name(), do: Keyword.get(@opts, :name)
 
       @impl true
-      def config(), do: %Inngest.FunctionOpts{}
+      def config(), do: %{}
 
       @impl true
       def trigger(), do: @opts |> Map.new() |> trigger()
@@ -89,19 +37,19 @@ defmodule Inngest.Function do
       def zero_event(), do: "placeholder"
 
       @impl true
-      def func(), do: "placeholder"
+      def func(), do: __MODULE__
 
       def steps(),
         do: %{
-          "dummy-step" => %{
-            id: "dummy-step",
-            name: "dummy step",
+          "step" => %{
+            id: "step",
+            name: "step",
             runtime: %{
               type: "http",
-              url: "http://127.0.0.1:4000/api/inngest"
+              url: "http://127.0.0.1:4000/api/inngest?fnId=#{slug()}&step=step"
             },
             retries: %{
-              attempts: 1
+              attempts: 3
             }
           }
         }
@@ -111,7 +59,8 @@ defmodule Inngest.Function do
           id: slug(),
           name: name(),
           triggers: [trigger()],
-          steps: steps()
+          steps: steps(),
+          mod: __MODULE__
         }
       end
     end
@@ -122,16 +71,4 @@ defmodule Inngest.Function do
   def from(_) do
     %{}
   end
-end
-
-defmodule Inngest.Function.Step do
-  @moduledoc false
-
-  defstruct [
-    :id,
-    :name,
-    :path,
-    :retries,
-    :runtime
-  ]
 end

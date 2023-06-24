@@ -8,6 +8,7 @@ defmodule Inngest.MixProject do
       app: :inngest,
       version: @version,
       elixir: "~> 1.14",
+      elixirc_path: elixirc_paths(Mix.env()),
       # build_embedded: Mix.env() == :prod,
       # start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -21,6 +22,9 @@ defmodule Inngest.MixProject do
       homepage_url: "https://inngest.com"
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help compile.app" to learn about applications.
   def application do
@@ -55,13 +59,11 @@ defmodule Inngest.MixProject do
       {:tesla, "~> 1.4"},
       {:hackney, "~> 1.10"},
       {:jason, "~> 1.4"},
+      {:plug, "~> 1.14"},
+      {:plug_cowboy, "~> 2.0"},
+      # {:bandit, "~> 0.6"},
 
       # dev / test
-      {:phoenix, "~> 1.6", only: :dev},
-      {:phoenix_html, "~> 3.3"},
-      {:phoenix_live_view, "~> 0.19", only: :dev},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
@@ -73,7 +75,8 @@ defmodule Inngest.MixProject do
       lint: ["credo"],
       "fmt:check": [
         "format --check-formatted mix.exs 'lib/**/*.{ex,exs}' 'test/**/*.{ex,exs}'"
-      ]
+      ],
+      dev: "run --no-halt dev.exs"
     ]
   end
 end
