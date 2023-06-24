@@ -3,11 +3,32 @@ defmodule Inngest.Function do
   Module to be used within user code to setup an Inngest function.
   Making it servable and invokable.
   """
+  alias Inngest.Function.Args
+
+  @doc """
+  Returns the function's human-readable ID, such as "sign-up-flow"
+  """
+  @callback slug() :: String.t()
+
+  @doc """
+  Returns the function name
+  """
+  @callback name() :: String.t()
+
+  @doc """
+  Returns the event name or schedule that triggers the function
+  """
+  @callback trigger() :: Inngest.Function.Trigger.t()
+
+  @doc """
+  The user provided logic that will be invoked
+  """
+  @callback perform(Args.t()) :: {:ok, any()} | {:error, any()}
 
   defmacro __using__(opts) do
     quote location: :keep do
       alias Inngest.Function.Trigger
-      @behaviour Inngest.Handler
+      @behaviour Inngest.Function
 
       @opts unquote(opts)
 
