@@ -1,6 +1,7 @@
 defmodule Inngest.Router.Endpoint do
   import Plug.Conn
   alias Inngest.Function.Args
+  alias Inngest.Handler
 
   @content_type "application/json"
 
@@ -35,29 +36,10 @@ defmodule Inngest.Router.Endpoint do
     }
 
     func = Map.get(funcs, slug)
+    {status, resp} = Handler.invoke(conn, func, args)
 
-    case func.mod.perform(args) do
-      {:ok, resp} ->
-        payload =
-          case Jason.encode(resp) do
-            {:ok, val} -> val
-            {:error, err} -> err.message |> Jason.encode!()
-          end
-
-        conn
-        |> put_resp_content_type(@content_type)
-        |> send_resp(200, payload)
-
-      {:error, error} ->
-        payload =
-          case Jason.encode(error) do
-            {:ok, val} -> val
-            {:error, err} -> err.message |> Jason.encode!()
-          end
-
-        conn
-        |> put_resp_content_type(@content_type)
-        |> send_resp(400, payload)
-    end
+    conn
+    |> put_resp_content_type(@content_type)
+    |> send_resp(status, resp)
   end
 end
