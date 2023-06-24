@@ -26,18 +26,9 @@ defmodule Inngest.Function do
       def name(), do: Keyword.get(@opts, :name)
 
       @impl true
-      def config(), do: %{}
-
-      @impl true
       def trigger(), do: @opts |> Map.new() |> trigger()
       defp trigger(%{event: event} = _opts), do: %Trigger{event: event}
       defp trigger(%{cron: cron} = _opts), do: %Trigger{cron: cron}
-
-      @impl true
-      def zero_event(), do: "placeholder"
-
-      @impl true
-      def func(), do: __MODULE__
 
       def steps(),
         do: %{

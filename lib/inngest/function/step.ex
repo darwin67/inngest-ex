@@ -8,4 +8,7 @@ defmodule Inngest.Function.Step do
     :retries,
     :runtime
   ]
+
+  def run(name, do: block) do
+  end
 end

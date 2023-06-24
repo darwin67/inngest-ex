@@ -15,27 +15,9 @@ defmodule Inngest.Handler do
   @callback name() :: String.t()
 
   @doc """
-  Returns the function's configs
-  """
-  @callback config() :: any()
-
-  @doc """
   Returns the event name or schedule that triggers the function
   """
   @callback trigger() :: Inngest.Function.Trigger.t()
-
-  @doc """
-  Returns the zero event type to marshal the event into, given an
-  event name
-  """
-  @callback zero_event() :: any()
-
-  @doc """
-  Returns the SDK function to call. This must alawys be of type SDKFunction,
-  but has an any type as we register many functions of different types into a
-  type-agnostic handler; this is a generic implementation detail, unfortunately.
-  """
-  @callback func() :: any()
 
   @doc """
   The user provided logic that will be invoked
