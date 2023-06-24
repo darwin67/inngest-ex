@@ -1,4 +1,4 @@
-defmodule Inngest.Router.Plain do
+defmodule Inngest.Router.Plug do
   @moduledoc """
   Router module expected to be used with a plain
   router
@@ -7,7 +7,7 @@ defmodule Inngest.Router.Plain do
   defmacro __using__(_opts) do
     quote do
       use Plug.Router
-      import Inngest.Router.Plain
+      import Inngest.Router.Plug
 
       plug Plug.Logger
 

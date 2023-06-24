@@ -21,7 +21,7 @@ defmodule Inngest.Dev.CronFn do
 end
 
 defmodule Inngest.Dev.Router do
-  use Inngest.Router.Plain
+  use Inngest.Router, :plug
   alias Inngest.Dev.{EventFn, CronFn}
 
   inngest("/api/inngest", funcs: [EventFn, CronFn])
