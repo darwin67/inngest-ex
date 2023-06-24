@@ -1,44 +1,63 @@
 defmodule Inngest.Router.Endpoint do
-  @moduledoc """
-  Router for registering functions with Inngest
-  """
-  # use Phoenix.Controller, formats: [:json]
-  # import Plug.Conn
+  import Plug.Conn
+  alias Inngest.Function.Args
 
-  # alias Inngest.Function.Args
+  @content_type "application/json"
 
-  # def register(%{assigns: %{funcs: funcs}} = conn, _params) do
-  #   case Inngest.Client.register(funcs) do
-  #     :ok ->
-  #       conn |> json(%{})
+  def register(conn, %{funcs: funcs} = _params) do
+    {status, resp} =
+      case Inngest.Client.register(funcs) do
+        :ok ->
+          {200, %{}}
 
-  #     {:error, error} ->
-  #       conn
-  #       |> put_status(400)
-  #       |> json(%{error: error})
-  #   end
-  # end
+        {:error, error} ->
+          {400, error}
+      end
 
-  # def invoke(%{assigns: %{funcs: funcs}} = conn, %{"event" => event, "ctx" => ctx} = params) do
-  #   funcs |> IO.inspect()
-  #   params |> IO.inspect()
+    resp =
+      case Jason.encode(resp) do
+        {:ok, val} -> val
+        {:error, error} -> error
+      end
 
-  #   args = %Args{
-  #     event: Inngest.Event.from(event),
-  #     run_id: Map.get(ctx, "run_id")
-  #   }
+    conn
+    |> put_resp_content_type(@content_type)
+    |> send_resp(status, resp)
+  end
 
-  #   func = Map.get(funcs, Map.get(ctx, "fn_id"))
+  def invoke(
+        %{assigns: %{funcs: funcs}} = conn,
+        %{"event" => event, "ctx" => ctx, "fnId" => slug} = _params
+      ) do
+    args = %Args{
+      event: Inngest.Event.from(event),
+      run_id: Map.get(ctx, "run_id")
+    }
 
-  #   case func.mod.perform(args) do
-  #     {:ok, resp} ->
-  #       conn
-  #       |> json(resp)
+    func = Map.get(funcs, slug)
 
-  #     {:error, error} ->
-  #       conn
-  #       |> put_status(400)
-  #       |> json(error)
-  #   end
-  # end
+    case func.mod.perform(args) do
+      {:ok, resp} ->
+        payload =
+          case Jason.encode(resp) do
+            {:ok, val} -> val
+            {:error, err} -> err.message |> Jason.encode!()
+          end
+
+        conn
+        |> put_resp_content_type(@content_type)
+        |> send_resp(200, payload)
+
+      {:error, error} ->
+        payload =
+          case Jason.encode(error) do
+            {:ok, val} -> val
+            {:error, err} -> err.message |> Jason.encode!()
+          end
+
+        conn
+        |> put_resp_content_type(@content_type)
+        |> send_resp(400, payload)
+    end
+  end
 end

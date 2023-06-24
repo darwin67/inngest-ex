@@ -13,6 +13,7 @@ defmodule Inngest.Function do
 
       @impl true
       def slug() do
+        # TOOD: Use app name as prefix
         if Keyword.get(@opts, :id),
           do: Keyword.get(@opts, :id),
           else:
@@ -45,7 +46,7 @@ defmodule Inngest.Function do
             name: "step",
             runtime: %{
               type: "http",
-              url: "http://127.0.0.1:4000/api/inngest?fnId=#{name()}&step=step"
+              url: "http://127.0.0.1:4000/api/inngest?fnId=#{slug()}&step=step"
             },
             retries: %{
               attempts: 3

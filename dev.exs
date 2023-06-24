@@ -1,15 +1,30 @@
 require Logger
 Logger.configure(level: :debug)
 
+defmodule Inngest.Dev.EventFn do
+  use Inngest.Function,
+    name: "test func",
+    event: "test/event"
+
+  @impl true
+  def perform(_), do: {:ok, %{hello: "event"}}
+  # def perform(_), do: {:error, "errored"}
+end
+
+defmodule Inngest.Dev.CronFn do
+  use Inngest.Function,
+    name: "test cron",
+    cron: "TZ=America/Los_Angeles * * * * *"
+
+  @impl true
+  def perform(_), do: {:ok, %{hello: "cron"}}
+end
+
 defmodule Inngest.Dev.Router do
-  use Plug.Router
-  import Inngest.Router.Plain
+  use Inngest.Router.Plain
+  alias Inngest.Dev.{EventFn, CronFn}
 
-  plug Plug.Logger
-  plug :match
-  plug :dispatch
-
-  inngest("/api/inngest", funcs: [])
+  inngest("/api/inngest", funcs: [EventFn, CronFn])
 
   get "/" do
     data = Jason.encode!(%{hello: "world"})

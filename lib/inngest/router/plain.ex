@@ -1,31 +1,25 @@
-defmodule Inngest.Router.Endpoint do
-  import Plug.Conn
-
-  @content_type "application/json"
-
-  def register(conn, opts) do
-    opts |> IO.inspect()
-    resp = Jason.encode!(%{register: false})
-
-    conn
-    |> put_resp_content_type(@content_type)
-    |> send_resp(200, resp)
-  end
-
-  def invoke(conn, _opts) do
-    resp = Jason.encode!(%{invoke: false})
-
-    conn
-    |> put_resp_content_type(@content_type)
-    |> send_resp(200, resp)
-  end
-end
-
 defmodule Inngest.Router.Plain do
   @moduledoc """
   Router module expected to be used with a plain
   router
   """
+
+  defmacro __using__(_opts) do
+    quote do
+      use Plug.Router
+      import Inngest.Router.Plain
+
+      plug Plug.Logger
+
+      plug Plug.Parsers,
+        parsers: [:urlencoded, :json],
+        pass: ["text/*"],
+        json_decoder: Jason
+
+      plug :match
+      plug :dispatch
+    end
+  end
 
   defmacro inngest(path, opts) do
     opts =
@@ -34,17 +28,41 @@ defmodule Inngest.Router.Plain do
       else
         opts
       end
+      |> Enum.into(%{})
+      |> Macro.escape()
 
     quote location: :keep do
+      # create mapping of function slug to function map
+      # during compile time
+      @funcs unquote(opts)
+             |> Map.get(:funcs, %{})
+             |> Enum.reduce(%{}, fn func, x ->
+               slug = func.slug()
+               Map.put(x, slug, func.serve())
+             end)
+
       post unquote(path) do
-        var!(conn)
-        |> Inngest.Router.Endpoint.invoke(unquote(opts))
+        conn = var!(conn)
+        params = params(conn)
+
+        conn
+        |> assign(:funcs, @funcs)
+        |> Inngest.Router.Endpoint.invoke(params)
       end
 
       # register path
       put unquote(path) do
-        var!(conn)
-        |> Inngest.Router.Endpoint.register(unquote(opts))
+        conn = var!(conn)
+        params = params(conn)
+
+        conn
+        |> Inngest.Router.Endpoint.register(params)
+      end
+
+      defp params(conn) do
+        conn
+        |> Map.get(:params, %{})
+        |> Map.merge(unquote(opts))
       end
     end
   end
