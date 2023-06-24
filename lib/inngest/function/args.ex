@@ -1,4 +1,6 @@
 defmodule Inngest.Function.Args do
+  @moduledoc false
+
   defstruct [
     :run_id,
     :event,
