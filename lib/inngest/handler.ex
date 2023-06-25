@@ -8,6 +8,7 @@ defmodule Inngest.Handler do
       case func.mod.perform(args) do
         {:ok, res} -> {200, res}
         {:error, error} -> {400, error}
+        _ -> {400, "Unknown exit status"}
       end
 
     payload =

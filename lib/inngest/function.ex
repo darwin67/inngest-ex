@@ -27,7 +27,7 @@ defmodule Inngest.Function do
 
   defmacro __using__(opts) do
     quote location: :keep do
-      alias Inngest.Function.Trigger
+      alias Inngest.Function.{Step, Trigger}
       @behaviour Inngest.Function
 
       @opts unquote(opts)
