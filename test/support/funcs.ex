@@ -1,4 +1,4 @@
-defmodule Inngest.Test.EventFn do
+defmodule Inngest.TestEventFn do
   use Inngest.Function,
     name: "Awesome Event Func",
     event: "my/awesome.event"
@@ -7,10 +7,10 @@ defmodule Inngest.Test.EventFn do
   def perform(_args), do: {:ok, %{success: true}}
 end
 
-defmodule Inngest.Test.CronFn do
+defmodule Inngest.TestCronFn do
   use Inngest.Function,
     name: "Awesome Cron Func",
-    cron: "America/Los_Angeles * * * * *"
+    cron: "TZ=America/Los_Angeles * * * * *"
 
   @impl true
   def perform(_args), do: {:ok, %{success: true}}
