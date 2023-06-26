@@ -34,7 +34,8 @@ defmodule Inngest.Function do
       end
 
       alias Inngest.Function.Trigger
-      import Inngest.Function, only: [step: 2]
+      # import Inngest.Function, only: [step: 2, step: 3]
+      import Inngest.Function
       @behaviour Inngest.Function
 
       @opts unquote(opts)
@@ -82,6 +83,8 @@ defmodule Inngest.Function do
           mod: __MODULE__
         }
       end
+
+      @before_compile unquote(__MODULE__)
     end
   end
 
@@ -114,6 +117,10 @@ defmodule Inngest.Function do
             event: map(),
             events: [map()]
           }
+  end
+
+  defmodule FunctionModule do
+    defstruct [:file, :name, :steps]
   end
 
   def __register__(module, _opts) do
@@ -170,8 +177,7 @@ defmodule Inngest.Function do
             file: file,
             line: line
           ] do
-      name =
-        Inngest.Function.register_step(mod, file, line, :step_run, message, []) |> IO.inspect()
+      name = Inngest.Function.register_step(mod, file, line, :step_run, message, [])
 
       def unquote(name)(unquote(var)), do: unquote(contents)
     end
@@ -203,6 +209,24 @@ defmodule Inngest.Function do
     Module.put_attribute(mod, :inngest_fn_steps, step)
 
     name
+  end
+
+  defmacro __before_compile__(env) do
+    steps =
+      env.module
+      |> Module.get_attribute(:inngest_fn_steps)
+      |> Enum.reverse()
+      |> Macro.escape()
+
+    quote do
+      def __inngest__ do
+        %Inngest.Function.FunctionModule{
+          file: __ENV__.file,
+          name: __MODULE__,
+          steps: unquote(steps)
+        }
+      end
+    end
   end
 
   defp normalize_tags(tags) do
