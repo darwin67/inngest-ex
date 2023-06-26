@@ -33,7 +33,7 @@ defmodule Inngest.Function do
         # placeholder
       end
 
-      alias Inngest.Function.Trigger
+      alias Inngest.Function.{Trigger, Step}
       # import Inngest.Function, only: [step: 2, step: 3]
       import Inngest.Function
       @before_compile unquote(__MODULE__)
@@ -42,16 +42,16 @@ defmodule Inngest.Function do
 
       @opts unquote(opts)
 
+      # TOOD: Use app name as prefix
+      @fn_slug if Keyword.get(@opts, :id),
+                 do: Keyword.get(@opts, :id),
+                 else:
+                   Keyword.get(@opts, :name)
+                   |> String.replace(~r/[\.\/\s]+/, "-")
+                   |> String.downcase()
+
       @impl true
-      def slug() do
-        # TOOD: Use app name as prefix
-        if Keyword.get(@opts, :id),
-          do: Keyword.get(@opts, :id),
-          else:
-            Keyword.get(@opts, :name)
-            |> String.replace(~r/[\.\/\s]+/, "-")
-            |> String.downcase()
-      end
+      def slug(), do: @fn_slug
 
       @impl true
       def name(), do: Keyword.get(@opts, :name)
@@ -61,27 +61,26 @@ defmodule Inngest.Function do
       defp trigger(%{event: event} = _opts), do: %Trigger{event: event}
       defp trigger(%{cron: cron} = _opts), do: %Trigger{cron: cron}
 
-      def steps(),
+      def step(),
         do: %{
-          "step" => %{
-            id: "step",
+          step: %Step{
+            id: :step,
             name: "step",
-            runtime: %{
-              type: "http",
+            runtime: %Step.RunTime{
               url: "http://127.0.0.1:4000/api/inngest?fnId=#{slug()}&step=step"
             },
-            retries: %{
-              attempts: 3
-            }
+            retries: %Step.Retry{}
           }
         }
+
+      def steps(), do: __inngest__().steps
 
       def serve() do
         %{
           id: slug(),
           name: name(),
           triggers: [trigger()],
-          steps: steps(),
+          steps: step(),
           mod: __MODULE__
         }
       end
@@ -169,7 +168,20 @@ defmodule Inngest.Function do
         line: line
       })
 
-    step = %Step{name: name, slug: slug, step_type: step_type, tags: tags, mod: mod}
+    fn_slug = Module.get_attribute(mod, :fn_slug)
+
+    step = %Step{
+      id: slug,
+      name: name,
+      step_type: step_type,
+      tags: tags,
+      mod: mod,
+      runtime: %Step.RunTime{
+        url: "http://127.0.0.1:4000/api/inngest/fnId=#{fn_slug}&step=#{slug}"
+      },
+      retries: %Step.Retry{}
+    }
+
     Module.put_attribute(mod, :inngest_fn_steps, step)
 
     slug
