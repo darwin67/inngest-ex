@@ -10,9 +10,9 @@ defmodule Inngest.Dev.EventFn do
     %{hello: "world"}
   end
 
-  # step "test 2nd step" do
-  #   %{yo: "lo"}
-  # end
+  step "test 2nd step" do
+    %{yo: "lo"}
+  end
 
   @impl true
   def perform(_) do
