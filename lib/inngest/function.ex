@@ -25,9 +25,16 @@ defmodule Inngest.Function do
   """
   @callback perform(Args.t()) :: {:ok, any()} | {:error, any()}
 
+  @reserved [:step]
+
   defmacro __using__(opts) do
     quote location: :keep do
-      alias Inngest.Function.{Step, Trigger}
+      unless Inngest.Function.__register__(__MODULE__, unquote(opts)) do
+        # placeholder
+      end
+
+      alias Inngest.Function.Trigger
+      import Inngest.Function, only: [step: 2]
       @behaviour Inngest.Function
 
       @opts unquote(opts)
@@ -78,9 +85,158 @@ defmodule Inngest.Function do
     end
   end
 
-  # TODO: This is required for the local dev UI
-  # Implement it when addressing that.
-  def from(_) do
-    %{}
+  defmodule Step do
+    @moduledoc """
+      A struct representing a function step
+    """
+
+    defstruct [
+      :name,
+      :case,
+      :tags,
+      :mod
+    ]
+  end
+
+  defmodule Args do
+    @moduledoc """
+    A struct representing arguments passed to functions
+    """
+
+    defstruct [
+      :run_id,
+      :event,
+      events: []
+    ]
+
+    @type t() :: %__MODULE__{
+            run_id: binary(),
+            event: map(),
+            events: [map()]
+          }
+  end
+
+  def __register__(module, _opts) do
+    registered? = Module.has_attribute?(module, :inngest_fn_steps)
+
+    unless registered? do
+      accumulate_attributes = [
+        :inngest_fn_steps
+      ]
+
+      Enum.each(
+        accumulate_attributes,
+        &Module.register_attribute(module, &1, accumulate: true, persist: true)
+      )
+    end
+
+    registered?
+  end
+
+  defmacro step(message, var \\ quote(do: _), contents) do
+    unless is_tuple(var) do
+      IO.warn(
+        "step context is always a map. The pattern " <>
+          "#{inspect(Macro.to_string(var))} will never match",
+        Macro.Env.stacktrace(__CALLER__)
+      )
+    end
+
+    contents =
+      case contents do
+        [do: block] ->
+          quote do
+            unquote(block)
+            # :ok
+          end
+
+        _ ->
+          quote do
+            try(unquote(contents))
+            # :ok
+          end
+      end
+
+    var = Macro.escape(var)
+    contents = Macro.escape(contents, unquote: true)
+
+    %{module: mod, file: file, line: line} = __CALLER__
+
+    quote bind_quoted: [
+            var: var,
+            contents: contents,
+            message: message,
+            mod: mod,
+            file: file,
+            line: line
+          ] do
+      name =
+        Inngest.Function.register_step(mod, file, line, :step_run, message, []) |> IO.inspect()
+
+      def unquote(name)(unquote(var)), do: unquote(contents)
+    end
+  end
+
+  def register_step(mod, file, line, step_type, name, tags) do
+    unless Module.has_attribute?(mod, :inngest_fn_steps) do
+      raise "cannot define #{step_type}. Please make sure you have invoked " <>
+              "\"use Inngest.Function\" in the current module"
+    end
+
+    name = validate_step_name("#{step_type} #{name}")
+
+    if Module.defines?(mod, {name, 1}) do
+      raise ~s("#{name}" is already defined in #{inspect(mod)})
+    end
+
+    tags =
+      tags
+      |> normalize_tags()
+      |> validate_tags()
+      |> Map.merge(%{
+        file: file,
+        line: line,
+        step_type: step_type
+      })
+
+    step = %Step{name: name, case: mod, tags: tags, mod: mod}
+    Module.put_attribute(mod, :inngest_fn_steps, step)
+
+    name
+  end
+
+  defp normalize_tags(tags) do
+    Enum.reduce(Enum.reverse(tags), %{}, fn
+      {key, value}, acc -> Map.put(acc, key, value)
+      tag, acc when is_atom(tag) -> Map.put(acc, tag, true)
+      tag, acc when is_list(tag) -> Enum.into(tag, acc)
+    end)
+  end
+
+  defp validate_tags(tags) do
+    for tag <- @reserved, Map.has_key?(tags, tag) do
+      raise "cannot set tag #{inspect(tag)} because it is reserved by Inngest.Function"
+    end
+
+    unless is_atom(tags[:step_type]) do
+      raise("value for tag \":step_type\" must be an atom")
+    end
+
+    tags
+  end
+
+  defp validate_step_name(name) do
+    try do
+      name
+      |> String.replace(~r/\s+/, "_")
+      |> String.to_atom()
+    rescue
+      SystemLimitError ->
+        raise SystemLimitError, """
+        the computed name of a step (which includes its type, \
+        block if present, and the step name itself) must be shorter than 255 characters, \
+        got: #{inspect(name)}
+        """
+    end
   end
 end

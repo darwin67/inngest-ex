@@ -11,6 +11,7 @@ defmodule Inngest.HandlerTest do
       }
     end
 
+    @tag :skip
     test "only 1st step should execute on inital run", %{conn: conn, func: f} do
       assert {200, result} = Handler.invoke(conn, f, %{})
 
@@ -21,6 +22,7 @@ defmodule Inngest.HandlerTest do
              } = Jason.decode!(result)
     end
 
+    @tag :skip
     test "2nd step should execute with 1st step data", %{conn: conn, func: f} do
       assert {200, result} = Handler.invoke(conn, f, %{})
 

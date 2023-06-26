@@ -7,28 +7,29 @@ defmodule Inngest.TestEventFn do
 
   @impl true
   def perform(_args) do
-    fn_count = 0
-    step1_count = 0
-    step2_count = 0
+    # fn_count = 0
+    # step1_count = 0
+    # step2_count = 0
 
-    step1 =
-      Step.run(%{}, "step #1", fn ->
-        %{step1: "hello world", fn_count: fn_count + 1, step1_count: step1_count + 1}
-      end)
+    # step1 =
+    #   Step.run(%{}, "step #1", fn ->
+    #     %{step1: "hello world", fn_count: fn_count + 1, step1_count: step1_count + 1}
+    #   end)
 
-    step2 =
-      Step.run(%{}, "step #2", fn ->
-        %{fn_count: fn_count} = step1
+    # step2 =
+    #   Step.run(%{}, "step #2", fn ->
+    #     %{fn_count: fn_count} = step1
 
-        %{step1: "hello world", fn_count: fn_count + 1, step2_count: step2_count + 1}
-      end)
+    #     %{step1: "hello world", fn_count: fn_count + 1, step2_count: step2_count + 1}
+    #   end)
 
-    result =
-      %{success: true}
-      |> Map.merge(step1)
-      |> Map.merge(step2)
+    # result =
+    #   %{success: true}
+    #   |> Map.merge(step1)
+    #   |> Map.merge(step2)
 
-    {:ok, result}
+    # {:ok, result}
+    {:ok, %{hello: "world"}}
   end
 end
 

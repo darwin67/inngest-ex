@@ -6,9 +6,25 @@ defmodule Inngest.Dev.EventFn do
     name: "test func",
     event: "test/event"
 
+  step "test 1st step" do
+    %{hello: "world"}
+  end
+
+  # step "test 2nd step" do
+  #   %{yo: "lo"}
+  # end
+
   @impl true
-  def perform(_), do: {:ok, %{hello: "event"}}
-  # def perform(_), do: {:error, "errored"}
+  def perform(_) do
+    # val =
+    #   Step.run(_, "test 1st step", fn ->
+    #     %{hello: "World"}
+    #   end)
+
+    val = %{final: "success"}
+
+    {:ok, val}
+  end
 end
 
 defmodule Inngest.Dev.CronFn do
