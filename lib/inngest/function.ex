@@ -3,7 +3,7 @@ defmodule Inngest.Function do
   Module to be used within user code to setup an Inngest function.
   Making it servable and invokable.
   """
-  alias Inngest.Function.Args
+  alias Inngest.Function.{Args, Step, Trigger}
 
   @doc """
   Returns the function's human-readable ID, such as "sign-up-flow"
@@ -18,7 +18,7 @@ defmodule Inngest.Function do
   @doc """
   Returns the event name or schedule that triggers the function
   """
-  @callback trigger() :: Inngest.Function.Trigger.t()
+  @callback trigger() :: Trigger.t()
 
   @doc """
   The user provided logic that will be invoked
@@ -36,6 +36,8 @@ defmodule Inngest.Function do
       alias Inngest.Function.Trigger
       # import Inngest.Function, only: [step: 2, step: 3]
       import Inngest.Function
+      @before_compile unquote(__MODULE__)
+
       @behaviour Inngest.Function
 
       @opts unquote(opts)
@@ -83,44 +85,7 @@ defmodule Inngest.Function do
           mod: __MODULE__
         }
       end
-
-      @before_compile unquote(__MODULE__)
     end
-  end
-
-  defmodule Step do
-    @moduledoc """
-      A struct representing a function step
-    """
-
-    defstruct [
-      :name,
-      :case,
-      :tags,
-      :mod
-    ]
-  end
-
-  defmodule Args do
-    @moduledoc """
-    A struct representing arguments passed to functions
-    """
-
-    defstruct [
-      :run_id,
-      :event,
-      events: []
-    ]
-
-    @type t() :: %__MODULE__{
-            run_id: binary(),
-            event: map(),
-            events: [map()]
-          }
-  end
-
-  defmodule FunctionModule do
-    defstruct [:file, :name, :steps]
   end
 
   def __register__(module, _opts) do
@@ -177,9 +142,9 @@ defmodule Inngest.Function do
             file: file,
             line: line
           ] do
-      name = Inngest.Function.register_step(mod, file, line, :step_run, message, [])
+      slug = Inngest.Function.register_step(mod, file, line, :step_run, message, [])
 
-      def unquote(name)(unquote(var)), do: unquote(contents)
+      def unquote(slug)(unquote(var)), do: unquote(contents)
     end
   end
 
@@ -189,10 +154,10 @@ defmodule Inngest.Function do
               "\"use Inngest.Function\" in the current module"
     end
 
-    name = validate_step_name("#{step_type} #{name}")
+    slug = validate_step_name("#{step_type} #{name}")
 
-    if Module.defines?(mod, {name, 1}) do
-      raise ~s("#{name}" is already defined in #{inspect(mod)})
+    if Module.defines?(mod, {slug, 1}) do
+      raise ~s("#{slug}" is already defined in #{inspect(mod)})
     end
 
     tags =
@@ -201,14 +166,13 @@ defmodule Inngest.Function do
       |> validate_tags()
       |> Map.merge(%{
         file: file,
-        line: line,
-        step_type: step_type
+        line: line
       })
 
-    step = %Step{name: name, case: mod, tags: tags, mod: mod}
+    step = %Step{name: name, slug: slug, step_type: step_type, tags: tags, mod: mod}
     Module.put_attribute(mod, :inngest_fn_steps, step)
 
-    name
+    slug
   end
 
   defmacro __before_compile__(env) do
@@ -220,7 +184,7 @@ defmodule Inngest.Function do
 
     quote do
       def __inngest__ do
-        %Inngest.Function.FunctionModule{
+        %Inngest.Function.Handler{
           file: __ENV__.file,
           name: __MODULE__,
           steps: unquote(steps)
