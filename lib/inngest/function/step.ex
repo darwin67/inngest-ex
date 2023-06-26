@@ -10,4 +10,12 @@ defmodule Inngest.Function.Step do
     :tags,
     :mod
   ]
+
+  @type t() :: %__MODULE__{
+          name: binary(),
+          slug: atom(),
+          step_type: :step_run,
+          tags: map(),
+          mod: module()
+        }
 end
