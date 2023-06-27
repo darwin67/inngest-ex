@@ -11,7 +11,8 @@ defmodule Inngest.Function.Step do
     :tags,
     :mod,
     :runtime,
-    :retries
+    :retries,
+    :state
   ]
 
   @type t() :: %__MODULE__{
@@ -21,7 +22,8 @@ defmodule Inngest.Function.Step do
           tags: map(),
           mod: module(),
           runtime: RunTime.t(),
-          retries: Retry.t()
+          retries: Retry.t(),
+          state: any()
         }
 
   defmodule RunTime do

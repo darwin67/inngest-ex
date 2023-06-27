@@ -20,12 +20,7 @@ defmodule Inngest.Function do
   """
   @callback trigger() :: Trigger.t()
 
-  @doc """
-  The user provided logic that will be invoked
-  """
-  @callback perform(Args.t()) :: {:ok, any()} | {:error, any()}
-
-  @reserved [:step]
+  @reserved [:run, :step, :sleep]
 
   defmacro __using__(opts) do
     quote location: :keep do

@@ -1,35 +1,46 @@
 defmodule Inngest.Function.OpCode do
   defstruct [:code]
 
-  @type code() :: :step_run | :step_sleep
+  @type code() :: binary()
   @type t() :: %__MODULE__{
           code: code()
         }
+
+  # def enum(:step_none), do: 0
+  def enum(:step_run), do: "Step"
+  def enum(:step_planned), do: "StepPlanned"
+  def enum(:step_sleep), do: "Sleep"
+  def enum(:step_wait_for_event), do: "WaitForEvent"
+  def enum(_), do: "None"
 end
 
 defmodule Inngest.Function.UnhashedOp do
   alias Inngest.Function.OpCode
 
-  defstruct [:name, :opt, :opts, :pos, :parent]
+  defstruct [:name, :op]
 
   @type t() :: %__MODULE__{
           name: binary(),
-          opt: OpCode.code(),
-          opts: map(),
-          pos: number(),
-          parent: binary()
+          op: OpCode.code()
+          # opts: map()
         }
 
   @spec new(OpCode.code(), binary()) :: t()
   def new(code, name) do
     %__MODULE__{
       name: name,
-      opt: code
+      op: code
     }
+  end
+
+  def hash(unhashedop) do
+    data = Map.from_struct(unhashedop) |> Jason.encode!()
+    :crypto.hash(:sha, data) |> Base.encode16()
   end
 end
 
 defmodule Inngest.Function.GeneratorOpCode do
+  @derive Jason.Encoder
   defstruct [
     # op represents the type of operation invoked in the function
     :op,

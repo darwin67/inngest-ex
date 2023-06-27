@@ -1,6 +1,6 @@
 defmodule Inngest.Router.Endpoint do
   import Plug.Conn
-  alias Inngest.Function.Args
+  alias Inngest.Function.{Args, Handler}
 
   @content_type "application/json"
 
@@ -49,8 +49,6 @@ defmodule Inngest.Router.Endpoint do
     # 400, error -> non retriable error
     # 500, error -> retriable error
     #
-    params |> IO.inspect()
-
     args = %Args{
       event: Inngest.Event.from(event),
       run_id: Map.get(ctx, "run_id")
@@ -58,15 +56,12 @@ defmodule Inngest.Router.Endpoint do
 
     func = Map.get(funcs, fn_slug)
 
-    {status, result} =
-      case func.mod.perform(args) do
-        {:ok, res} -> {200, res}
-        {:error, error} -> {400, error}
-        _ -> {400, "Unknown exit status"}
-      end
+    {status, resp} =
+      func.mod.__inngest__()
+      |> Handler.invoke(params)
 
     payload =
-      case Jason.encode(result) do
+      case Jason.encode(resp) do
         {:ok, val} -> val
         {:error, err} -> Jason.encode!(err.message)
       end
