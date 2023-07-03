@@ -8,9 +8,8 @@ defmodule Inngest.MixProject do
       app: :inngest,
       version: @version,
       elixir: "~> 1.14",
-      elixirc_path: elixirc_paths(Mix.env()),
-      # build_embedded: Mix.env() == :prod,
-      # start_permanent: Mix.env() == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
+      compilers: Mix.compilers(),
       deps: deps(),
       aliases: aliases(),
       package: package(),
@@ -23,6 +22,7 @@ defmodule Inngest.MixProject do
     ]
   end
 
+  defp elixirc_paths(:dev), do: ["lib", "dev"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
@@ -44,12 +44,8 @@ defmodule Inngest.MixProject do
 
   defp docs do
     [
-      # main: "",
       source_ref: "v#{@version}",
       source_url: "https://github.com/darwin67/ex-inngest"
-      # extra_section: "GUIDES",
-      # extras: extras(),
-      # nest_modules_by_prefix: []
     ]
   end
 

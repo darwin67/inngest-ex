@@ -2,40 +2,27 @@ defmodule Inngest.FunctionTest do
   use ExUnit.Case, async: true
 
   alias Inngest.Function.Trigger
-
-  defmodule TestEventFunction do
-    use Inngest.Function, name: "Awesome Event Func", event: "my/awesome.event"
-
-    @impl true
-    def perform(_args), do: {:ok, %{success: true}}
-  end
-
-  defmodule TestCronFunction do
-    use Inngest.Function, name: "Awesome Cron Func", cron: "America/Los_Angeles * * * * *"
-
-    @impl true
-    def perform(_args), do: {:ok, %{success: true}}
-  end
+  alias Inngest.{TestEventFn, TestCronFn}
 
   describe "slug/0" do
     test "return name of function as slug" do
-      assert "awesome-event-func" == TestEventFunction.slug()
+      assert "awesome-event-func" == TestEventFn.slug()
     end
   end
 
   describe "name/0" do
     test "return name of function" do
-      assert "Awesome Event Func" == TestEventFunction.name()
+      assert "Awesome Event Func" == TestEventFn.name()
     end
   end
 
   describe "trigger/0" do
     test "return an event trigger for event functions" do
-      assert %Trigger{event: "my/awesome.event"} == TestEventFunction.trigger()
+      assert %Trigger{event: "my/awesome.event"} == TestEventFn.trigger()
     end
 
     test "return a cron trigger for cron functions" do
-      assert %Trigger{cron: "America/Los_Angeles * * * * *"} == TestCronFunction.trigger()
+      assert %Trigger{cron: "TZ=America/Los_Angeles * * * * *"} == TestCronFn.trigger()
     end
   end
 
@@ -48,7 +35,7 @@ defmodule Inngest.FunctionTest do
                  %Trigger{event: "my/awesome.event"}
                ],
                steps: %{
-                 "step" => %{
+                 step: %{
                    id: _,
                    name: _,
                    runtime: %{
@@ -60,7 +47,7 @@ defmodule Inngest.FunctionTest do
                    }
                  }
                }
-             } = TestEventFunction.serve()
+             } = TestEventFn.serve()
     end
 
     test "cron function should return appropriate map" do
@@ -68,9 +55,9 @@ defmodule Inngest.FunctionTest do
                id: "awesome-cron-func",
                name: "Awesome Cron Func",
                triggers: [
-                 %Trigger{cron: "America/Los_Angeles * * * * *"}
+                 %Trigger{cron: "TZ=America/Los_Angeles * * * * *"}
                ]
-             } = TestCronFunction.serve()
+             } = TestCronFn.serve()
     end
   end
 end

@@ -31,17 +31,17 @@ defmodule Inngest.Client do
   end
 
   def register(functions) do
-    data = %{
+    payload = %{
       url: "http://127.0.0.1:4000/api/inngest",
       v: "1",
       deployType: "ping",
       sdk: Config.sdk_version(),
-      framework: "phoenix",
+      framework: "plug",
       appName: "test app",
       functions: functions |> Enum.map(& &1.serve/0)
     }
 
-    case Tesla.post(httpclient(:app), "/fn/register", data) do
+    case Tesla.post(httpclient(:app), "/fn/register", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
         :ok
 
