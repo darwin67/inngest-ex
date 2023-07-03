@@ -1,4 +1,8 @@
 defmodule Inngest.Function.OpCode do
+  @moduledoc """
+  Simple enum module for op codes
+  """
+
   defstruct [:code]
 
   @type code() :: binary()
@@ -15,6 +19,10 @@ defmodule Inngest.Function.OpCode do
 end
 
 defmodule Inngest.Function.UnhashedOp do
+  @moduledoc """
+  A struct representing an unhashed op
+  """
+
   alias Inngest.Function.OpCode
 
   defstruct [:name, :op]
@@ -40,6 +48,10 @@ defmodule Inngest.Function.UnhashedOp do
 end
 
 defmodule Inngest.Function.GeneratorOpCode do
+  @moduledoc """
+  Generator response for incoming executor request
+  """
+
   @derive Jason.Encoder
   defstruct [
     # op represents the type of operation invoked in the function

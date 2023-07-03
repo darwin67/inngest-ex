@@ -75,6 +75,8 @@ defmodule Inngest.Function.Handler do
 
       state_data =
         Enum.reduce(steps, %{}, fn s, acc ->
+          # TODO: remove this ignore comment
+          # credo:disable-for-next-line
           if is_nil(s.state), do: acc, else: Map.merge(acc, s.state)
         end)
 

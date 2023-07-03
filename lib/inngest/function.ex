@@ -227,6 +227,7 @@ defmodule Inngest.Function do
       |> String.to_atom()
     rescue
       SystemLimitError ->
+        # credo:disable-for-next-line
         raise SystemLimitError, """
         the computed name of a step (which includes its type, \
         block if present, and the step name itself) must be shorter than 255 characters, \

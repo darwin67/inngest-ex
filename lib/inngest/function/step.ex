@@ -21,8 +21,8 @@ defmodule Inngest.Function.Step do
           step_type: :step_run,
           tags: map(),
           mod: module(),
-          runtime: RunTime.t(),
-          retries: Retry.t(),
+          runtime: RunTime,
+          retries: Retry,
           state: any()
         }
 
@@ -49,6 +49,8 @@ defmodule Inngest.Function.Step do
     @derive Jason.Encoder
     defstruct attempts: 3
 
-    @type t() :: %__MODULE__{attempts: number()}
+    @type t() :: %__MODULE__{
+            attempts: number()
+          }
   end
 end
