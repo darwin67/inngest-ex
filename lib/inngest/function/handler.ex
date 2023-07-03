@@ -3,7 +3,7 @@ defmodule Inngest.Function.Handler do
   A struct that keeps info about function, and
   handles the invoking of steps
   """
-  alias Inngest.Function.{Step, OpCode, UnhashedOp, GeneratorOpCode}
+  alias Inngest.Function.{Step, OpCode, UnhashedOp, GeneratorOpCode, Handler}
 
   defstruct [:name, :file, :steps]
 
@@ -13,13 +13,15 @@ defmodule Inngest.Function.Handler do
           steps: [Step.t()]
         }
 
+  @doc """
+  Handles the invoking of steps and runs from the executor
+  """
+  @spec invoke(Handler.t(), map()) :: {200 | 206 | 400 | 500, map()}
   def invoke(%{steps: []} = _handler, _params) do
     {200, %{status: "completed", result: "no steps"}}
   end
 
-  def invoke(%{steps: steps} = _handler, %{"ctx" => %{"stack" => %{"stack" => []}}} = params) do
-    IO.inspect(params)
-
+  def invoke(%{steps: steps} = _handler, %{"ctx" => %{"stack" => %{"stack" => []}}} = _params) do
     [step | _] = steps
     op = OpCode.enum(:step_run)
 
@@ -28,17 +30,21 @@ defmodule Inngest.Function.Handler do
       op: op
     }
 
-    result = apply(step.mod, step.id, [%{}])
+    case apply(step.mod, step.id, [%{}]) do
+      {:ok, result} ->
+        opcode = %GeneratorOpCode{
+          id: UnhashedOp.hash(unhashed_op),
+          name: step.name,
+          op: op,
+          opts: %{},
+          data: result
+        }
 
-    opcode = %GeneratorOpCode{
-      id: UnhashedOp.hash(unhashed_op),
-      name: step.name,
-      op: op,
-      opts: %{},
-      data: result
-    }
+        {206, [opcode]}
 
-    {206, [opcode]}
+      {:error, error} ->
+        {400, error}
+    end
   end
 
   def invoke(
@@ -61,6 +67,11 @@ defmodule Inngest.Function.Handler do
           %{step | state: Map.get(data, hash)}
         end)
 
+      state =
+        Enum.reduce(steps, %{}, fn s, acc ->
+          if is_nil(s.state), do: acc, else: Map.merge(acc, s.state)
+        end)
+
       next = Enum.find(steps, fn step -> is_nil(step.state) end)
 
       unhashed_op = %UnhashedOp{
@@ -68,17 +79,23 @@ defmodule Inngest.Function.Handler do
         op: OpCode.enum(:step_run)
       }
 
-      result = apply(next.mod, next.id, [%{}])
+      # Invoke the step function
+      case apply(next.mod, next.id, [state]) do
+        # TODO: Allow also simple :ok and use existing map data
+        {:ok, result} ->
+          opcode = %GeneratorOpCode{
+            id: UnhashedOp.hash(unhashed_op),
+            name: next.name,
+            op: OpCode.enum(:step_run),
+            opts: %{},
+            data: result
+          }
 
-      opcode = %GeneratorOpCode{
-        id: UnhashedOp.hash(unhashed_op),
-        name: next.name,
-        op: OpCode.enum(:step_run),
-        opts: %{},
-        data: result
-      }
+          {206, [opcode]}
 
-      {206, [opcode]}
+        {:error, error} ->
+          {400, error}
+      end
     end
   end
 end

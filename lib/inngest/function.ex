@@ -68,7 +68,7 @@ defmodule Inngest.Function do
           }
         }
 
-      def steps(), do: __inngest__().steps
+      def steps(), do: __handler__().steps
 
       def serve() do
         %{
@@ -190,7 +190,7 @@ defmodule Inngest.Function do
       |> Macro.escape()
 
     quote do
-      def __inngest__ do
+      def __handler__ do
         %Inngest.Function.Handler{
           file: __ENV__.file,
           name: __MODULE__,

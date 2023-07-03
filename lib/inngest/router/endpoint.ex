@@ -57,7 +57,7 @@ defmodule Inngest.Router.Endpoint do
     func = Map.get(funcs, fn_slug)
 
     {status, resp} =
-      func.mod.__inngest__()
+      func.mod.__handler__()
       |> Handler.invoke(params)
 
     payload =

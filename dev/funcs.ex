@@ -4,11 +4,15 @@ defmodule Inngest.Dev.EventFn do
     event: "test/event"
 
   step "test 1st step" do
-    %{hello: "world"}
+    {:ok, %{hello: "world"}}
   end
 
   step "test 2nd step" do
-    %{yo: "lo"}
+    {:ok, %{yo: "lo"}}
+  end
+
+  step "test 3rd - state accumulate" do
+    {:ok, %{result: "ok"}}
   end
 end
 
