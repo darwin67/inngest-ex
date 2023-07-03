@@ -27,30 +27,8 @@ defmodule Inngest.Function.Handler do
         %{event: event, params: %{"ctx" => %{"stack" => %{"stack" => []}}}} = _args
       ) do
     [step | _] = steps
-    op = Enums.opcode(:step_run)
-
-    unhashed_op = %UnhashedOp{
-      name: step.name,
-      op: op
-    }
-
     fn_arg = %{event: event, data: %{}}
-
-    case apply(step.mod, step.id, [fn_arg]) do
-      {:ok, result} ->
-        opcode = %GeneratorOpCode{
-          id: UnhashedOp.hash(unhashed_op),
-          name: step.name,
-          op: op,
-          opts: %{},
-          data: result
-        }
-
-        {206, [opcode]}
-
-      {:error, error} ->
-        {400, error}
-    end
+    exec_step(step, fn_arg)
   end
 
   def invoke(
@@ -82,31 +60,33 @@ defmodule Inngest.Function.Handler do
         end)
 
       next = Enum.find(steps, fn step -> is_nil(step.state) end)
-
-      unhashed_op = %UnhashedOp{
-        name: next.name,
-        op: Enums.opcode(:step_run)
-      }
-
       fn_arg = %{event: event, data: state_data}
+      exec_step(next, fn_arg)
+    end
+  end
 
-      # Invoke the step function
-      case apply(next.mod, next.id, [fn_arg]) do
-        # TODO: Allow also simple :ok and use existing map data
-        {:ok, result} ->
-          opcode = %GeneratorOpCode{
-            id: UnhashedOp.hash(unhashed_op),
-            name: next.name,
-            op: Enums.opcode(:step_run),
-            opts: %{},
-            data: result
-          }
+  defp exec_step(step, args) do
+    unhashed_op = %UnhashedOp{
+      name: step.name,
+      op: Enums.opcode(:step_run)
+    }
 
-          {206, [opcode]}
+    # Invoke the step function
+    case apply(step.mod, step.id, [args]) do
+      # TODO: Allow also simple :ok and use existing map data
+      {:ok, result} ->
+        opcode = %GeneratorOpCode{
+          id: UnhashedOp.hash(unhashed_op),
+          name: step.name,
+          op: Enums.opcode(:step_run),
+          opts: %{},
+          data: result
+        }
 
-        {:error, error} ->
-          {400, error}
-      end
+        {206, [opcode]}
+
+      {:error, error} ->
+        {400, error}
     end
   end
 end
