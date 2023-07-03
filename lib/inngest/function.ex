@@ -142,6 +142,15 @@ defmodule Inngest.Function do
     end
   end
 
+  defmacro sleep(duration) do
+    %{module: mod, file: file, line: line} = __CALLER__
+
+    quote bind_quoted: [duration: duration, mod: mod, file: file, line: line] do
+      slug = Inngest.Function.register_step(mod, file, line, :step_sleep, duration, [])
+      def unquote(slug)(), do: nil
+    end
+  end
+
   def register_step(mod, file, line, step_type, name, tags) do
     unless Module.has_attribute?(mod, :inngest_fn_steps) do
       raise "cannot define #{step_type}. Please make sure you have invoked " <>

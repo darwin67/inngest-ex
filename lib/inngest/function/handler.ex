@@ -46,10 +46,20 @@ defmodule Inngest.Function.Handler do
         steps
         |> Enum.map(fn step ->
           hash =
-            %UnhashedOp{name: step.name, op: Enums.opcode(:step_run)}
+            %UnhashedOp{name: step.name, op: Enums.opcode(step.step_type)}
             |> UnhashedOp.hash()
 
-          %{step | state: Map.get(data, hash)}
+          if Map.has_key?(data, hash) do
+            state_data = Map.get(data, hash)
+
+            if step.step_type == :step_sleep && is_nil(state_data) do
+              %{step | state: %{}}
+            else
+              %{step | state: state_data}
+            end
+          else
+            step
+          end
         end)
 
       state_data =
@@ -60,8 +70,18 @@ defmodule Inngest.Function.Handler do
         end)
 
       next = Enum.find(steps, fn step -> is_nil(step.state) end)
-      fn_arg = %{event: event, data: state_data}
-      exec_step(next, fn_arg)
+
+      case next.step_type do
+        :step_run ->
+          fn_arg = %{event: event, data: state_data}
+          exec_step(next, fn_arg)
+
+        :step_sleep ->
+          exec_sleep(next)
+
+        _ ->
+          {200, "done"}
+      end
     end
   end
 
@@ -79,7 +99,6 @@ defmodule Inngest.Function.Handler do
           id: UnhashedOp.hash(unhashed_op),
           name: step.name,
           op: Enums.opcode(:step_run),
-          opts: %{},
           data: result
         }
 
@@ -88,5 +107,21 @@ defmodule Inngest.Function.Handler do
       {:error, error} ->
         {400, error}
     end
+  end
+
+  defp exec_sleep(step) do
+    # TODO: Need something to make the hash unique
+    unhashed_op = %UnhashedOp{
+      name: step.name,
+      op: Enums.opcode(:step_sleep)
+    }
+
+    opcode = %GeneratorOpCode{
+      id: UnhashedOp.hash(unhashed_op),
+      name: step.name,
+      op: Enums.opcode(:step_sleep)
+    }
+
+    {206, [opcode]}
   end
 end

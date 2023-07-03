@@ -7,6 +7,8 @@ defmodule Inngest.Dev.EventFn do
     {:ok, %{hello: "world"}}
   end
 
+  sleep "2s"
+
   step "test 2nd step" do
     {:ok, %{yo: "lo"}}
   end
