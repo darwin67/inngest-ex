@@ -21,7 +21,10 @@ defmodule Inngest.Function.Handler do
     {200, %{status: "completed", result: "no steps"}}
   end
 
-  def invoke(%{steps: steps} = _handler, %{"ctx" => %{"stack" => %{"stack" => []}}} = _params) do
+  def invoke(
+        %{steps: steps} = _handler,
+        %{event: event, params: %{"ctx" => %{"stack" => %{"stack" => []}}}} = _args
+      ) do
     [step | _] = steps
     op = OpCode.enum(:step_run)
 
@@ -30,7 +33,9 @@ defmodule Inngest.Function.Handler do
       op: op
     }
 
-    case apply(step.mod, step.id, [%{}]) do
+    fn_arg = %{event: event, data: %{}}
+
+    case apply(step.mod, step.id, [fn_arg]) do
       {:ok, result} ->
         opcode = %GeneratorOpCode{
           id: UnhashedOp.hash(unhashed_op),
@@ -49,7 +54,8 @@ defmodule Inngest.Function.Handler do
 
   def invoke(
         %{steps: steps} = _handler,
-        %{"ctx" => %{"stack" => %{"stack" => stack}}, "steps" => data} = _params
+        %{event: event, params: %{"ctx" => %{"stack" => %{"stack" => stack}}, "steps" => data}} =
+          _args
       ) do
     total_steps = Enum.count(steps)
     executed_steps = Enum.count(stack)
@@ -67,7 +73,7 @@ defmodule Inngest.Function.Handler do
           %{step | state: Map.get(data, hash)}
         end)
 
-      state =
+      state_data =
         Enum.reduce(steps, %{}, fn s, acc ->
           if is_nil(s.state), do: acc, else: Map.merge(acc, s.state)
         end)
@@ -79,8 +85,10 @@ defmodule Inngest.Function.Handler do
         op: OpCode.enum(:step_run)
       }
 
+      fn_arg = %{event: event, data: state_data}
+
       # Invoke the step function
-      case apply(next.mod, next.id, [state]) do
+      case apply(next.mod, next.id, [fn_arg]) do
         # TODO: Allow also simple :ok and use existing map data
         {:ok, result} ->
           opcode = %GeneratorOpCode{

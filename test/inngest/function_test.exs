@@ -35,7 +35,7 @@ defmodule Inngest.FunctionTest do
                  %Trigger{event: "my/awesome.event"}
                ],
                steps: %{
-                 "step" => %{
+                 step: %{
                    id: _,
                    name: _,
                    runtime: %{

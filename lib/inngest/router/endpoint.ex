@@ -1,6 +1,6 @@
 defmodule Inngest.Router.Endpoint do
   import Plug.Conn
-  alias Inngest.Function.{Args, Handler}
+  alias Inngest.Function.Handler
 
   @content_type "application/json"
 
@@ -49,16 +49,17 @@ defmodule Inngest.Router.Endpoint do
     # 400, error -> non retriable error
     # 500, error -> retriable error
     #
-    args = %Args{
-      event: Inngest.Event.from(event),
-      run_id: Map.get(ctx, "run_id")
-    }
-
     func = Map.get(funcs, fn_slug)
+
+    args = %{
+      event: Inngest.Event.from(event),
+      run_id: Map.get(ctx, "run_id"),
+      params: params
+    }
 
     {status, resp} =
       func.mod.__handler__()
-      |> Handler.invoke(params)
+      |> Handler.invoke(args)
 
     payload =
       case Jason.encode(resp) do
