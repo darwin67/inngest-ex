@@ -3,7 +3,7 @@ defmodule Inngest.Function do
   Module to be used within user code to setup an Inngest function.
   Making it servable and invokable.
   """
-  alias Inngest.Function.{Args, Step, Trigger}
+  alias Inngest.Function.{Step, Trigger}
 
   @doc """
   Returns the function's human-readable ID, such as "sign-up-flow"

@@ -1,39 +1,19 @@
-defmodule Inngest.Function.OpCode do
-  @moduledoc """
-  Simple enum module for op codes
-  """
-
-  defstruct [:code]
-
-  @type code() :: binary()
-  @type t() :: %__MODULE__{
-          code: code()
-        }
-
-  # def enum(:step_none), do: 0
-  def enum(:step_run), do: "Step"
-  def enum(:step_planned), do: "StepPlanned"
-  def enum(:step_sleep), do: "Sleep"
-  def enum(:step_wait_for_event), do: "WaitForEvent"
-  def enum(_), do: "None"
-end
-
 defmodule Inngest.Function.UnhashedOp do
   @moduledoc """
   A struct representing an unhashed op
   """
 
-  alias Inngest.Function.OpCode
+  alias Inngest.Enums
 
   defstruct [:name, :op]
 
   @type t() :: %__MODULE__{
           name: binary(),
-          op: OpCode.code()
+          op: Enums.opcode()
           # opts: map()
         }
 
-  @spec new(OpCode.code(), binary()) :: t()
+  @spec new(Enums.opcode(), binary()) :: t()
   def new(code, name) do
     %__MODULE__{
       name: name,
@@ -51,6 +31,7 @@ defmodule Inngest.Function.GeneratorOpCode do
   @moduledoc """
   Generator response for incoming executor request
   """
+  alias Inngest.Enums
 
   @derive Jason.Encoder
   defstruct [
@@ -72,7 +53,7 @@ defmodule Inngest.Function.GeneratorOpCode do
   ]
 
   @type t() :: %__MODULE__{
-          op: Inngest.Function.OpCode.code(),
+          op: Enums.opcode(),
           id: binary(),
           name: binary(),
           opts: any(),

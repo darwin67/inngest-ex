@@ -1,9 +1,8 @@
 defmodule Inngest.Function.HandlerTest do
   use ExUnit.Case, async: true
 
-  alias Inngest.Event
-  alias Inngest.Function.{Handler, GeneratorOpCode, OpCode}
-  alias Inngest.TestEventFn
+  alias Inngest.{Event, Enums, TestEventFn}
+  alias Inngest.Function.{Handler, GeneratorOpCode}
 
   describe "invoke/2" do
     @run_id "01H4E9105QZNAZHGFRF14VCE2K"
@@ -24,6 +23,7 @@ defmodule Inngest.Function.HandlerTest do
     @step1_hash "D7573B282133611D94397905FAE32EB6AE45FA05"
     @step2_hash "8C04C8CD6DE995809D6AD0D04325358E88211027"
     @step3_hash "E72FB021F48D701CE33B0DB74DCA48ECEED86D4E"
+    @op Enums.opcode(:step_run)
 
     setup do
       %{
@@ -35,11 +35,9 @@ defmodule Inngest.Function.HandlerTest do
     test "initial invoke returns result of 1st step", %{handler: handler, args: args} do
       assert {206, result} = Handler.invoke(handler, args)
 
-      op = OpCode.enum(:step_run)
-
       assert [
                %GeneratorOpCode{
-                 op: ^op,
+                 op: @op,
                  id: @step1_hash,
                  name: "step1",
                  opts: %{},
@@ -71,11 +69,10 @@ defmodule Inngest.Function.HandlerTest do
 
       # Invoke
       assert {206, result} = Handler.invoke(handler, args)
-      op = OpCode.enum(:step_run)
 
       assert [
                %GeneratorOpCode{
-                 op: ^op,
+                 op: @op,
                  id: @step2_hash,
                  name: "step2",
                  opts: %{},
@@ -113,11 +110,10 @@ defmodule Inngest.Function.HandlerTest do
 
       # Invoke
       assert {206, result} = Handler.invoke(handler, args)
-      op = OpCode.enum(:step_run)
 
       assert [
                %GeneratorOpCode{
-                 op: ^op,
+                 op: @op,
                  id: @step3_hash,
                  name: "step3",
                  opts: %{},

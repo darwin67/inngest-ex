@@ -3,7 +3,8 @@ defmodule Inngest.Function.Handler do
   A struct that keeps info about function, and
   handles the invoking of steps
   """
-  alias Inngest.Function.{Step, OpCode, UnhashedOp, GeneratorOpCode, Handler}
+  alias Inngest.Enums
+  alias Inngest.Function.{Step, UnhashedOp, GeneratorOpCode, Handler}
 
   defstruct [:name, :file, :steps]
 
@@ -26,7 +27,7 @@ defmodule Inngest.Function.Handler do
         %{event: event, params: %{"ctx" => %{"stack" => %{"stack" => []}}}} = _args
       ) do
     [step | _] = steps
-    op = OpCode.enum(:step_run)
+    op = Enums.opcode(:step_run)
 
     unhashed_op = %UnhashedOp{
       name: step.name,
@@ -67,7 +68,7 @@ defmodule Inngest.Function.Handler do
         steps
         |> Enum.map(fn step ->
           hash =
-            %UnhashedOp{name: step.name, op: OpCode.enum(:step_run)}
+            %UnhashedOp{name: step.name, op: Enums.opcode(:step_run)}
             |> UnhashedOp.hash()
 
           %{step | state: Map.get(data, hash)}
@@ -84,7 +85,7 @@ defmodule Inngest.Function.Handler do
 
       unhashed_op = %UnhashedOp{
         name: next.name,
-        op: OpCode.enum(:step_run)
+        op: Enums.opcode(:step_run)
       }
 
       fn_arg = %{event: event, data: state_data}
@@ -96,7 +97,7 @@ defmodule Inngest.Function.Handler do
           opcode = %GeneratorOpCode{
             id: UnhashedOp.hash(unhashed_op),
             name: next.name,
-            op: OpCode.enum(:step_run),
+            op: Enums.opcode(:step_run),
             opts: %{},
             data: result
           }
