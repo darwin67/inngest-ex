@@ -40,7 +40,6 @@ defmodule Inngest.Function.HandlerTest do
                  op: @op,
                  id: @step1_hash,
                  name: "step1",
-                 opts: %{},
                  data: %{
                    step: "hello world",
                    fn_count: 1,
@@ -75,7 +74,6 @@ defmodule Inngest.Function.HandlerTest do
                  op: @op,
                  id: @step2_hash,
                  name: "step2",
-                 opts: %{},
                  data: %{
                    step: "yolo",
                    fn_count: 2,
@@ -116,7 +114,6 @@ defmodule Inngest.Function.HandlerTest do
                  op: @op,
                  id: @step3_hash,
                  name: "step3",
-                 opts: %{},
                  data: %{
                    step: "final",
                    fn_count: 3,
