@@ -18,10 +18,12 @@ defmodule Inngest.Function.Handler do
   Handles the invoking of steps and runs from the executor
   """
   @spec invoke(Handler.t(), map()) :: {200 | 206 | 400 | 500, map()}
+  # No steps detected
   def invoke(%{steps: []} = _handler, _params) do
-    {200, %{status: "completed", result: "no steps"}}
+    {200, %{status: "completed", result: "no steps detected"}}
   end
 
+  # Initial invoke when stack list is empty
   def invoke(
         %{steps: steps} = _handler,
         %{event: event, params: %{"ctx" => %{"stack" => %{"stack" => []}}}} = _args
@@ -52,6 +54,8 @@ defmodule Inngest.Function.Handler do
           if Map.has_key?(data, hash) do
             state_data = Map.get(data, hash)
 
+            # TODO: remove this ignore comment
+            # credo:disable-for-next-line
             if step.step_type == :step_sleep && is_nil(state_data) do
               %{step | state: %{}}
             else
