@@ -47,8 +47,10 @@ defmodule Inngest.Function.Handler do
       steps =
         steps
         |> Enum.map(fn step ->
+          pos = Map.get(step.tags, :idx, 0)
+
           hash =
-            %UnhashedOp{name: step.name, op: Enums.opcode(step.step_type)}
+            %UnhashedOp{name: step.name, op: Enums.opcode(step.step_type), pos: pos}
             |> UnhashedOp.hash()
 
           if Map.has_key?(data, hash) do
@@ -92,7 +94,8 @@ defmodule Inngest.Function.Handler do
   defp exec_step(step, args) do
     unhashed_op = %UnhashedOp{
       name: step.name,
-      op: Enums.opcode(:step_run)
+      op: Enums.opcode(:step_run),
+      pos: Map.get(step.tags, :idx, 0)
     }
 
     # Invoke the step function
@@ -117,7 +120,8 @@ defmodule Inngest.Function.Handler do
     # TODO: Need something to make the hash unique
     unhashed_op = %UnhashedOp{
       name: step.name,
-      op: Enums.opcode(:step_sleep)
+      op: Enums.opcode(:step_sleep),
+      pos: Map.get(step.tags, :idx, 0)
     }
 
     opcode = %GeneratorOpCode{

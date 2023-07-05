@@ -13,6 +13,8 @@ defmodule Inngest.Dev.EventFn do
     {:ok, %{yo: "lo"}}
   end
 
+  sleep "2s"
+
   step "test 3rd - state accumulate" do
     {:ok, %{result: "ok"}}
   end

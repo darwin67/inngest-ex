@@ -2,25 +2,17 @@ defmodule Inngest.Function.UnhashedOp do
   @moduledoc """
   A struct representing an unhashed op
   """
-
   alias Inngest.Enums
 
-  defstruct [:name, :op]
+  defstruct [:name, :op, pos: 0]
 
   @type t() :: %__MODULE__{
           name: binary(),
-          op: Enums.opcode()
-          # opts: map()
+          op: Enums.opcode(),
+          pos: number()
         }
 
-  @spec new(Enums.opcode(), binary()) :: t()
-  def new(code, name) do
-    %__MODULE__{
-      name: name,
-      op: code
-    }
-  end
-
+  @spec hash(t()) :: binary()
   def hash(unhashedop) do
     data = Map.from_struct(unhashedop) |> Jason.encode!()
     :crypto.hash(:sha, data) |> Base.encode16()

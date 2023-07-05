@@ -145,8 +145,12 @@ defmodule Inngest.Function do
   defmacro sleep(duration) do
     %{module: mod, file: file, line: line} = __CALLER__
 
-    quote bind_quoted: [duration: duration, mod: mod, file: file, line: line] do
-      slug = Inngest.Function.register_step(mod, file, line, :step_sleep, duration, [])
+    # Add differentiator for sleeps with potentially similar duration
+    idx = Module.get_attribute(mod, :inngest_sleep_idx, 0)
+    Module.put_attribute(mod, :inngest_sleep_idx, idx + 1)
+
+    quote bind_quoted: [duration: duration, mod: mod, file: file, line: line, idx: idx] do
+      slug = Inngest.Function.register_step(mod, file, line, :step_sleep, duration, idx: idx)
       def unquote(slug)(), do: nil
     end
   end
@@ -157,7 +161,11 @@ defmodule Inngest.Function do
               "\"use Inngest.Function\" in the current module"
     end
 
-    slug = validate_step_name("#{step_type} #{name}")
+    slug =
+      case Keyword.get(tags, :idx) do
+        nil -> validate_step_name("#{step_type} #{name}")
+        idx -> validate_step_name("#{step_type} #{name} #{idx}")
+      end
 
     if Module.defines?(mod, {slug, 1}) do
       raise ~s("#{slug}" is already defined in #{inspect(mod)})
@@ -210,7 +218,9 @@ defmodule Inngest.Function do
   end
 
   defp normalize_tags(tags) do
-    Enum.reduce(Enum.reverse(tags), %{}, fn
+    tags
+    |> Enum.reverse()
+    |> Enum.reduce(%{}, fn
       {key, value}, acc -> Map.put(acc, key, value)
       tag, acc when is_atom(tag) -> Map.put(acc, tag, true)
       tag, acc when is_list(tag) -> Enum.into(tag, acc)
