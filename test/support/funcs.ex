@@ -23,6 +23,8 @@ defmodule Inngest.TestEventFn do
      )}
   end
 
+  sleep "2s"
+
   step "step2", %{data: %{fn_count: fn_count, step1_count: step1_count}} do
     {:ok,
      %{
@@ -32,6 +34,8 @@ defmodule Inngest.TestEventFn do
        step2_count: 1
      }}
   end
+
+  sleep "2s"
 
   step "step3", %{data: %{fn_count: fn_count, step1_count: step1_count, step2_count: step2_count}} do
     {:ok,
