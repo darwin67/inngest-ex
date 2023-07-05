@@ -14,6 +14,15 @@ defmodule Inngest.MixProject do
       aliases: aliases(),
       package: package(),
 
+      # tests
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ],
+
       # Docs
       name: "Inngest",
       docs: docs(),
@@ -62,7 +71,8 @@ defmodule Inngest.MixProject do
       # dev / test
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:excoveralls, "~> 0.10", only: :test}
     ]
   end
 
