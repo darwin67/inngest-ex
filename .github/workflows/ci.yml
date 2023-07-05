@@ -37,19 +37,11 @@ jobs:
       - name: Install dependencies
         run: make deps
 
-      - name: Run tests
-        run: make test
-
-      # - name: Run tests with coverage
-      #   run: mix coveralls.lcov
-      #   env:
-      #     MIX_ENV: test
-
-      # - name: Upload coverage reports to Codecov
-      #   uses: codecov/codecov-action@v3
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     files: ./cover/lcov.info
+      - name: Run tests with coverage
+        run: mix coveralls.github
+        env:
+          MIX_ENV: test
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   formatter:
     name: Formatter
