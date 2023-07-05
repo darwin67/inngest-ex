@@ -20,10 +20,12 @@ defmodule Inngest.Function.HandlerTest do
     }
     @event %Event{name: "test event", data: %{"yo" => "lo"}}
 
-    @step1_hash "D7573B282133611D94397905FAE32EB6AE45FA05"
-    @step2_hash "8C04C8CD6DE995809D6AD0D04325358E88211027"
-    @step3_hash "E72FB021F48D701CE33B0DB74DCA48ECEED86D4E"
-    @op Enums.opcode(:step_run)
+    @step1_hash "BD01C51E32280A0F2A0C50EFDA6B47AB1A685ED9"
+    @step2_hash "AAB4F015B1D26D76C015B987F32E28E0869E7636"
+    @step3_hash "C3C14E4F5420C304AF2FDEE2683C4E31E15B3CC2"
+
+    @sleep1_hash "145E2844A2497AB79D89CAFF7C8CCA0CC7F114AE"
+    @sleep2_hash "8128323524ACBAE2631A0C09D663302A0D7E2FB9"
 
     setup do
       %{
@@ -34,13 +36,13 @@ defmodule Inngest.Function.HandlerTest do
 
     test "initial invoke returns result of 1st step", %{handler: handler, args: args} do
       assert {206, result} = Handler.invoke(handler, args)
+      opcode = Enums.opcode(:step_run)
 
       assert [
                %GeneratorOpCode{
-                 op: @op,
+                 op: ^opcode,
                  id: @step1_hash,
                  name: "step1",
-                 opts: %{},
                  data: %{
                    step: "hello world",
                    fn_count: 1,
@@ -51,7 +53,7 @@ defmodule Inngest.Function.HandlerTest do
              ] = result
     end
 
-    test "2nd invoke returns result of 2nd step", %{handler: handler, args: args} do
+    test "2nd invoke returns 2s sleep", %{handler: handler, args: args} do
       # return data from step 1
       current_state = %{
         @step1_hash => %{
@@ -64,18 +66,51 @@ defmodule Inngest.Function.HandlerTest do
 
       args =
         args
-        |> put_in([:params, "ctx", "stack", "stack"], [@step1_hash])
+        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
         |> put_in([:params, "steps"], current_state)
+
+      opcode = Enums.opcode(:step_sleep)
 
       # Invoke
       assert {206, result} = Handler.invoke(handler, args)
 
       assert [
                %GeneratorOpCode{
-                 op: @op,
+                 op: ^opcode,
+                 id: @sleep1_hash,
+                 name: "2s",
+                 data: nil
+               }
+             ] = result
+    end
+
+    test "3rd invoke returns result of 2nd step", %{handler: handler, args: args} do
+      # return data from step 1
+      current_state = %{
+        @step1_hash => %{
+          step: "hello world",
+          fn_count: 1,
+          step1_count: 1,
+          step2_count: 0
+        },
+        @sleep1_hash => nil
+      }
+
+      args =
+        args
+        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
+        |> put_in([:params, "steps"], current_state)
+
+      opcode = Enums.opcode(:step_run)
+
+      # Invoke
+      assert {206, result} = Handler.invoke(handler, args)
+
+      assert [
+               %GeneratorOpCode{
+                 op: ^opcode,
                  id: @step2_hash,
                  name: "step2",
-                 opts: %{},
                  data: %{
                    step: "yolo",
                    fn_count: 2,
@@ -86,7 +121,7 @@ defmodule Inngest.Function.HandlerTest do
              ] = result
     end
 
-    test "3rd invoke returns result of 3rd step", %{handler: handler, args: args} do
+    test "4th invoke returns another 2s sleep", %{handler: handler, args: args} do
       # return data from step 1
       current_state = %{
         @step1_hash => %{
@@ -100,23 +135,64 @@ defmodule Inngest.Function.HandlerTest do
           fn_count: 2,
           step1_count: 1,
           step2_count: 1
-        }
+        },
+        @sleep1_hash => nil
       }
 
       args =
         args
-        |> put_in([:params, "ctx", "stack", "stack"], [@step1_hash, @step2_hash])
+        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
         |> put_in([:params, "steps"], current_state)
+
+      opcode = Enums.opcode(:step_sleep)
 
       # Invoke
       assert {206, result} = Handler.invoke(handler, args)
 
       assert [
                %GeneratorOpCode{
-                 op: @op,
+                 op: ^opcode,
+                 id: @sleep2_hash,
+                 name: "2s",
+                 data: nil
+               }
+             ] = result
+    end
+
+    test "5th invoke returns result of 3rd step", %{handler: handler, args: args} do
+      # return data from step 1
+      current_state = %{
+        @step1_hash => %{
+          step: "hello world",
+          fn_count: 1,
+          step1_count: 1,
+          step2_count: 0
+        },
+        @step2_hash => %{
+          step: "yolo",
+          fn_count: 2,
+          step1_count: 1,
+          step2_count: 1
+        },
+        @sleep1_hash => nil,
+        @sleep2_hash => nil
+      }
+
+      args =
+        args
+        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
+        |> put_in([:params, "steps"], current_state)
+
+      opcode = Enums.opcode(:step_run)
+
+      # Invoke
+      assert {206, result} = Handler.invoke(handler, args)
+
+      assert [
+               %GeneratorOpCode{
+                 op: ^opcode,
                  id: @step3_hash,
                  name: "step3",
-                 opts: %{},
                  data: %{
                    step: "final",
                    fn_count: 3,

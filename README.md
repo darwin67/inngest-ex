@@ -16,7 +16,7 @@ Elixir SDK for [Inngest][inngest].
 ### Step execution
 
 - [x] Step runs
-- [ ] Sleep
+- [x] Sleep
 - [ ] Sleep until
 - [ ] Wait for event
 - [ ] Fan out

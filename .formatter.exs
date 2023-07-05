@@ -29,7 +29,10 @@ export_locals_without_parens = [
   options: 4,
   live: 3,
   live: 4,
-  live_session: 3
+  live_session: 3,
+  step: 1,
+  step: 2,
+  sleep: 1
 ]
 
 [

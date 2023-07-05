@@ -3,7 +3,6 @@ defmodule Inngest.Function.Handler do
   A struct that keeps info about function, and
   handles the invoking of steps
   """
-  alias Inngest.Enums
   alias Inngest.Function.{Step, UnhashedOp, GeneratorOpCode, Handler}
 
   defstruct [:name, :file, :steps]
@@ -18,10 +17,12 @@ defmodule Inngest.Function.Handler do
   Handles the invoking of steps and runs from the executor
   """
   @spec invoke(Handler.t(), map()) :: {200 | 206 | 400 | 500, map()}
+  # No steps detected
   def invoke(%{steps: []} = _handler, _params) do
-    {200, %{status: "completed", result: "no steps"}}
+    {200, %{status: "completed", result: "no steps detected"}}
   end
 
+  # Initial invoke when stack list is empty
   def invoke(
         %{steps: steps} = _handler,
         %{event: event, params: %{"ctx" => %{"stack" => %{"stack" => []}}}} = _args
@@ -33,8 +34,13 @@ defmodule Inngest.Function.Handler do
 
   def invoke(
         %{steps: steps} = _handler,
-        %{event: event, params: %{"ctx" => %{"stack" => %{"stack" => stack}}, "steps" => data}} =
-          _args
+        %{
+          event: event,
+          params: %{
+            "ctx" => %{"stack" => %{"stack" => stack}},
+            "steps" => data
+          }
+        } = _args
       ) do
     total_steps = Enum.count(steps)
     executed_steps = Enum.count(stack)
@@ -46,10 +52,22 @@ defmodule Inngest.Function.Handler do
         steps
         |> Enum.map(fn step ->
           hash =
-            %UnhashedOp{name: step.name, op: Enums.opcode(:step_run)}
+            UnhashedOp.from_step(step)
             |> UnhashedOp.hash()
 
-          %{step | state: Map.get(data, hash)}
+          if Map.has_key?(data, hash) do
+            state_data = Map.get(data, hash)
+
+            # TODO: remove this ignore comment
+            # credo:disable-for-next-line
+            if step.step_type == :step_sleep && is_nil(state_data) do
+              %{step | state: %{}}
+            else
+              %{step | state: state_data}
+            end
+          else
+            step
+          end
         end)
 
       state_data =
@@ -60,26 +78,32 @@ defmodule Inngest.Function.Handler do
         end)
 
       next = Enum.find(steps, fn step -> is_nil(step.state) end)
-      fn_arg = %{event: event, data: state_data}
-      exec_step(next, fn_arg)
+
+      case next.step_type do
+        :step_run ->
+          fn_arg = %{event: event, data: state_data}
+          exec_step(next, fn_arg)
+
+        :step_sleep ->
+          exec_sleep(next)
+
+        _ ->
+          {200, "done"}
+      end
     end
   end
 
   defp exec_step(step, args) do
-    unhashed_op = %UnhashedOp{
-      name: step.name,
-      op: Enums.opcode(:step_run)
-    }
+    op = UnhashedOp.from_step(step)
 
     # Invoke the step function
     case apply(step.mod, step.id, [args]) do
       # TODO: Allow also simple :ok and use existing map data
       {:ok, result} ->
         opcode = %GeneratorOpCode{
-          id: UnhashedOp.hash(unhashed_op),
+          id: UnhashedOp.hash(op),
           name: step.name,
-          op: Enums.opcode(:step_run),
-          opts: %{},
+          op: op.op,
           data: result
         }
 
@@ -88,5 +112,17 @@ defmodule Inngest.Function.Handler do
       {:error, error} ->
         {400, error}
     end
+  end
+
+  defp exec_sleep(step) do
+    op = UnhashedOp.from_step(step)
+
+    opcode = %GeneratorOpCode{
+      id: UnhashedOp.hash(op),
+      name: step.name,
+      op: op.op
+    }
+
+    {206, [opcode]}
   end
 end
