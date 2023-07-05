@@ -6,6 +6,10 @@ deps:
 test:
 	mix test
 
+.PHONY: test-cover
+test-cover:
+	MIX_ENV=test mix coveralls
+
 .PHONY: fmt
 fmt:
 	mix fmt:check
