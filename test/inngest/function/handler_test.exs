@@ -20,9 +20,9 @@ defmodule Inngest.Function.HandlerTest do
     }
     @event %Event{name: "test event", data: %{"yo" => "lo"}}
 
-    @step1_hash "D7573B282133611D94397905FAE32EB6AE45FA05"
-    @step2_hash "8C04C8CD6DE995809D6AD0D04325358E88211027"
-    @step3_hash "E72FB021F48D701CE33B0DB74DCA48ECEED86D4E"
+    @step1_hash "BD01C51E32280A0F2A0C50EFDA6B47AB1A685ED9"
+    @step2_hash "AAB4F015B1D26D76C015B987F32E28E0869E7636"
+    @step3_hash "C3C14E4F5420C304AF2FDEE2683C4E31E15B3CC2"
     @op Enums.opcode(:step_run)
 
     setup do
