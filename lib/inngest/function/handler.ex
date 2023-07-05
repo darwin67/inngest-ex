@@ -3,7 +3,6 @@ defmodule Inngest.Function.Handler do
   A struct that keeps info about function, and
   handles the invoking of steps
   """
-  alias Inngest.Enums
   alias Inngest.Function.{Step, UnhashedOp, GeneratorOpCode, Handler}
 
   defstruct [:name, :file, :steps]
@@ -35,8 +34,13 @@ defmodule Inngest.Function.Handler do
 
   def invoke(
         %{steps: steps} = _handler,
-        %{event: event, params: %{"ctx" => %{"stack" => %{"stack" => stack}}, "steps" => data}} =
-          _args
+        %{
+          event: event,
+          params: %{
+            "ctx" => %{"stack" => %{"stack" => stack}},
+            "steps" => data
+          }
+        } = _args
       ) do
     total_steps = Enum.count(steps)
     executed_steps = Enum.count(stack)
@@ -47,10 +51,8 @@ defmodule Inngest.Function.Handler do
       steps =
         steps
         |> Enum.map(fn step ->
-          pos = Map.get(step.tags, :idx, 0)
-
           hash =
-            %UnhashedOp{name: step.name, op: Enums.opcode(step.step_type), pos: pos}
+            UnhashedOp.from_step(step)
             |> UnhashedOp.hash()
 
           if Map.has_key?(data, hash) do
@@ -92,20 +94,16 @@ defmodule Inngest.Function.Handler do
   end
 
   defp exec_step(step, args) do
-    unhashed_op = %UnhashedOp{
-      name: step.name,
-      op: Enums.opcode(:step_run),
-      pos: Map.get(step.tags, :idx, 0)
-    }
+    op = UnhashedOp.from_step(step)
 
     # Invoke the step function
     case apply(step.mod, step.id, [args]) do
       # TODO: Allow also simple :ok and use existing map data
       {:ok, result} ->
         opcode = %GeneratorOpCode{
-          id: UnhashedOp.hash(unhashed_op),
+          id: UnhashedOp.hash(op),
           name: step.name,
-          op: Enums.opcode(:step_run),
+          op: op.op,
           data: result
         }
 
@@ -117,17 +115,12 @@ defmodule Inngest.Function.Handler do
   end
 
   defp exec_sleep(step) do
-    # TODO: Need something to make the hash unique
-    unhashed_op = %UnhashedOp{
-      name: step.name,
-      op: Enums.opcode(:step_sleep),
-      pos: Map.get(step.tags, :idx, 0)
-    }
+    op = UnhashedOp.from_step(step)
 
     opcode = %GeneratorOpCode{
-      id: UnhashedOp.hash(unhashed_op),
+      id: UnhashedOp.hash(op),
       name: step.name,
-      op: Enums.opcode(:step_sleep)
+      op: op.op
     }
 
     {206, [opcode]}

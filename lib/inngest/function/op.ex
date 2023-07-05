@@ -3,6 +3,7 @@ defmodule Inngest.Function.UnhashedOp do
   A struct representing an unhashed op
   """
   alias Inngest.Enums
+  alias Inngest.Function.Step
 
   defstruct [:name, :op, pos: 0, opts: %{}]
 
@@ -12,6 +13,16 @@ defmodule Inngest.Function.UnhashedOp do
           pos: number(),
           opts: map()
         }
+
+  @spec from_step(Step.t(), map()) :: t()
+  def from_step(step, opts \\ %{}) do
+    %__MODULE__{
+      name: step.name,
+      op: Enums.opcode(step.step_type),
+      pos: Map.get(step.tags, :idx, 0),
+      opts: opts
+    }
+  end
 
   @spec hash(t()) :: binary()
   def hash(unhashedop) do
