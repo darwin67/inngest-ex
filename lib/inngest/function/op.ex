@@ -4,12 +4,13 @@ defmodule Inngest.Function.UnhashedOp do
   """
   alias Inngest.Enums
 
-  defstruct [:name, :op, pos: 0]
+  defstruct [:name, :op, pos: 0, opts: %{}]
 
   @type t() :: %__MODULE__{
           name: binary(),
           op: Enums.opcode(),
-          pos: number()
+          pos: number(),
+          opts: map()
         }
 
   @spec hash(t()) :: binary()
