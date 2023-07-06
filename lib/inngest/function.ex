@@ -99,6 +99,46 @@ defmodule Inngest.Function do
     registered?
   end
 
+  defmacro run(message, var \\ quote(do: _), contents) do
+    unless is_tuple(var) do
+      IO.warn(
+        "step context is always a map. The pattern " <>
+          "#{inspect(Macro.to_string(var))} will never match",
+        Macro.Env.stacktrace(__CALLER__)
+      )
+    end
+
+    contents =
+      case contents do
+        [do: block] ->
+          quote do
+            unquote(block)
+          end
+
+        _ ->
+          quote do
+            try(unquote(contents))
+          end
+      end
+
+    var = Macro.escape(var)
+    contents = Macro.escape(contents, unquote: true)
+
+    %{module: mod, file: file, line: line} = __CALLER__
+
+    quote bind_quoted: [
+            var: var,
+            contents: contents,
+            message: message,
+            mod: mod,
+            file: file,
+            line: line
+          ] do
+      slug = Inngest.Function.register_step(mod, file, line, :exec_run, message, [])
+      def unquote(slug)(unquote(var)), do: unquote(contents)
+    end
+  end
+
   defmacro step(message, var \\ quote(do: _), contents) do
     unless is_tuple(var) do
       IO.warn(
@@ -113,13 +153,11 @@ defmodule Inngest.Function do
         [do: block] ->
           quote do
             unquote(block)
-            # :ok
           end
 
         _ ->
           quote do
             try(unquote(contents))
-            # :ok
           end
       end
 
