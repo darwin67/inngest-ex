@@ -18,7 +18,7 @@ defmodule Inngest.Function.Step do
   @type t() :: %__MODULE__{
           id: atom(),
           name: binary(),
-          step_type: :step_run | :step_sleep,
+          step_type: atom(),
           tags: map(),
           mod: module(),
           runtime: RunTime,

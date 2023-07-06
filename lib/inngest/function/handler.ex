@@ -51,23 +51,7 @@ defmodule Inngest.Function.Handler do
       steps =
         steps
         |> Enum.map(fn step ->
-          hash =
-            UnhashedOp.from_step(step)
-            |> UnhashedOp.hash()
-
-          if Map.has_key?(data, hash) do
-            state_data = Map.get(data, hash)
-
-            # TODO: remove this ignore comment
-            # credo:disable-for-next-line
-            if step.step_type == :step_sleep && is_nil(state_data) do
-              %{step | state: %{}}
-            else
-              %{step | state: state_data}
-            end
-          else
-            step
-          end
+          memorize(step, data)
         end)
 
       state_data =
@@ -80,6 +64,30 @@ defmodule Inngest.Function.Handler do
       next = Enum.find(steps, fn step -> is_nil(step.state) end)
       fn_arg = %{event: event, data: state_data}
       exec(next, fn_arg)
+    end
+  end
+
+  defp memorize(%{step_type: :step_run} = step, data) do
+    hash =
+      UnhashedOp.from_step(step)
+      |> UnhashedOp.hash()
+
+    state_data = Map.get(data, hash)
+    %{step | state: state_data}
+  end
+
+  defp memorize(%{step_type: :step_sleep} = step, data) do
+    hash =
+      UnhashedOp.from_step(step)
+      |> UnhashedOp.hash()
+
+    state_data = Map.get(data, hash)
+
+    if Map.has_key?(data, hash) do
+      state_data = if is_nil(state_data), do: %{}, else: state_data
+      %{step | state: state_data}
+    else
+      step
     end
   end
 
