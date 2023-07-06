@@ -29,7 +29,7 @@ defmodule Inngest.Function.Handler do
       ) do
     [step | _] = steps
     fn_arg = %{event: event, data: %{}}
-    exec_step(step, fn_arg)
+    exec(step, fn_arg)
   end
 
   def invoke(
@@ -78,22 +78,12 @@ defmodule Inngest.Function.Handler do
         end)
 
       next = Enum.find(steps, fn step -> is_nil(step.state) end)
-
-      case next.step_type do
-        :step_run ->
-          fn_arg = %{event: event, data: state_data}
-          exec_step(next, fn_arg)
-
-        :step_sleep ->
-          exec_sleep(next)
-
-        _ ->
-          {200, "done"}
-      end
+      fn_arg = %{event: event, data: state_data}
+      exec(next, fn_arg)
     end
   end
 
-  defp exec_step(step, args) do
+  defp exec(%{step_type: :step_run} = step, args) do
     op = UnhashedOp.from_step(step)
 
     # Invoke the step function
@@ -114,7 +104,7 @@ defmodule Inngest.Function.Handler do
     end
   end
 
-  defp exec_sleep(step) do
+  defp exec(%{step_type: :step_sleep} = step, _args) do
     op = UnhashedOp.from_step(step)
 
     opcode = %GeneratorOpCode{
@@ -125,4 +115,7 @@ defmodule Inngest.Function.Handler do
 
     {206, [opcode]}
   end
+
+  # This shouldn't be executed
+  defp exec(_, _), do: {200, "done"}
 end
