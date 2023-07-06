@@ -48,6 +48,14 @@ defmodule Inngest.Function.Handler do
     if executed_steps == total_steps do
       {200, %{status: "completed"}}
     else
+      %{steps: steps} =
+        steps
+        |> Enum.reduce(%{steps: [], state_data: %{}, next: nil}, fn step, acc ->
+          %{steps: steps, state_data: state_data} = acc
+
+          acc
+        end)
+
       steps =
         steps
         |> Enum.map(fn step ->
@@ -122,6 +130,13 @@ defmodule Inngest.Function.Handler do
     }
 
     {206, [opcode]}
+  end
+
+  defp exec(%{step_type: :exec_run} = step, args) do
+    case apply(step.mod, step.id, [args]) do
+      {:ok, result} -> result
+      {:error, error} -> error
+    end
   end
 
   # This shouldn't be executed
