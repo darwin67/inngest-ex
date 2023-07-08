@@ -19,71 +19,67 @@ defmodule Inngest.Function.Handler do
   @spec invoke(Handler.t(), map()) :: {200 | 206 | 400 | 500, map()}
   # No steps detected
   def invoke(%{steps: []} = _handler, _params) do
-    {200, %{status: "completed", result: "no steps detected"}}
-  end
-
-  # Initial invoke when stack list is empty
-  def invoke(
-        %{steps: steps} = _handler,
-        %{event: event, params: %{"ctx" => %{"stack" => %{"stack" => []}}}} = _args
-      ) do
-    [step | _] = steps
-    fn_arg = %{event: event, data: %{}}
-    exec(step, fn_arg)
+    {200, %{message: "no steps detected"}}
   end
 
   def invoke(
         %{steps: steps} = _handler,
         %{
           event: event,
-          params: %{
-            "ctx" => %{"stack" => %{"stack" => stack}},
-            "steps" => data
-          }
+          params: %{"steps" => data}
         } = _args
       ) do
-    total_steps = Enum.count(steps)
-    executed_steps = Enum.count(stack)
+    %{state_data: state_data, next: next} =
+      steps
+      |> Enum.reduce(%{state_data: %{}, next: nil}, fn step, acc ->
+        %{state_data: state_data, next: next} = acc
 
-    if executed_steps == total_steps do
-      {200, %{status: "completed"}}
-    else
-      %{state_data: state_data, next: next} =
-        steps
-        |> Enum.reduce(%{state_data: %{}, next: nil}, fn step, acc ->
-          %{state_data: state_data, next: next} = acc
+        if is_nil(next) do
+          case step.step_type do
+            :exec_run ->
+              case exec(step, %{event: event, data: state_data}) do
+                {:ok, result} ->
+                  acc
+                  |> Map.put(:state_data, Map.merge(state_data, result))
 
-          if is_nil(next) do
-            hash =
-              UnhashedOp.from_step(step)
-              |> UnhashedOp.hash()
-
-            state = Map.get(data, hash)
-
-            state =
-              if Map.has_key?(data, hash) do
-                if step.step_type == :step_sleep && is_nil(state), do: %{}, else: state
-              else
-                state
+                {:error, _error} ->
+                  acc
               end
 
-            next = if is_nil(state), do: step, else: nil
-            state = if is_nil(state), do: state_data, else: state_data |> Map.merge(state)
+            _ ->
+              hash =
+                UnhashedOp.from_step(step)
+                |> UnhashedOp.hash()
 
-            acc
-            |> Map.put(:state_data, state)
-            |> Map.put(:next, next)
-          else
-            acc
+              state = Map.get(data, hash)
+
+              state =
+                if Map.has_key?(data, hash) do
+                  if step.step_type == :step_sleep && is_nil(state), do: %{}, else: state
+                else
+                  state
+                end
+
+              next = if is_nil(state), do: step, else: nil
+              state = if is_nil(state), do: state_data, else: state_data |> Map.merge(state)
+
+              acc
+              |> Map.put(:state_data, state)
+              |> Map.put(:next, next)
           end
-        end)
+        else
+          acc
+        end
+      end)
 
-      fn_arg = %{event: event, data: state_data}
-      exec(next, fn_arg)
-    end
+    fn_arg = %{event: event, data: state_data}
+    exec(next, fn_arg)
   end
 
-  defp exec(%{step_type: :step_run} = step, args) do
+  # Nothing left to run, return as completed
+  defp exec(nil, %{data: data}), do: {200, data}
+
+  defp exec(%{step_type: :step_run} = step, %{data: state} = args) do
     op = UnhashedOp.from_step(step)
 
     # Invoke the step function
@@ -94,7 +90,7 @@ defmodule Inngest.Function.Handler do
           id: UnhashedOp.hash(op),
           name: step.name,
           op: op.op,
-          data: result
+          data: Map.merge(state, result)
         }
 
         {206, [opcode]}
@@ -118,8 +114,8 @@ defmodule Inngest.Function.Handler do
 
   defp exec(%{step_type: :exec_run} = step, args) do
     case apply(step.mod, step.id, [args]) do
-      {:ok, result} -> result
-      {:error, error} -> error
+      {:ok, result} -> {:ok, result}
+      {:error, error} -> {:error, error}
     end
   end
 

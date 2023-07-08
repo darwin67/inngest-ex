@@ -44,6 +44,7 @@ defmodule Inngest.Function.HandlerTest do
                  id: @step1_hash,
                  name: "step1",
                  data: %{
+                   run: "something",
                    step: "hello world",
                    fn_count: 1,
                    step1_count: 1,
@@ -197,10 +198,55 @@ defmodule Inngest.Function.HandlerTest do
                    step: "final",
                    fn_count: 3,
                    step1_count: 1,
-                   step2_count: 1
+                   step2_count: 1,
+                   run: "again"
                  }
                }
              ] = result
+    end
+
+    test "6th invoke returns result of remaining run", %{handler: handler, args: args} do
+      # return data from step 1
+      current_state = %{
+        @step1_hash => %{
+          step: "hello world",
+          fn_count: 1,
+          step1_count: 1,
+          step2_count: 0
+        },
+        @step2_hash => %{
+          step: "yolo",
+          fn_count: 2,
+          step1_count: 1,
+          step2_count: 1
+        },
+        @step3_hash => %{
+          step: "final",
+          fn_count: 3,
+          step1_count: 1,
+          step2_count: 1,
+          run: "again"
+        },
+        @sleep1_hash => nil,
+        @sleep2_hash => nil
+      }
+
+      args =
+        args
+        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
+        |> put_in([:params, "steps"], current_state)
+
+      # Invoke
+      assert {200, result} = Handler.invoke(handler, args)
+
+      assert %{
+               step: "final",
+               fn_count: 4,
+               step1_count: 1,
+               step2_count: 1,
+               run: "again",
+               yo: "lo"
+             } = result
     end
   end
 end

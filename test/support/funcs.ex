@@ -11,6 +11,10 @@ defmodule Inngest.TestEventFn do
     step2_count: 0
   }
 
+  run "exec1" do
+    {:ok, %{run: "something"}}
+  end
+
   step "step1" do
     {:ok,
      Map.merge(
@@ -37,6 +41,10 @@ defmodule Inngest.TestEventFn do
 
   sleep "2s"
 
+  run "exec2" do
+    {:ok, %{run: "again"}}
+  end
+
   step "step3", %{data: %{fn_count: fn_count, step1_count: step1_count, step2_count: step2_count}} do
     {:ok,
      %{
@@ -44,6 +52,14 @@ defmodule Inngest.TestEventFn do
        fn_count: fn_count + 1,
        step1_count: step1_count,
        step2_count: step2_count
+     }}
+  end
+
+  run "final", %{data: %{fn_count: fn_count}} do
+    {:ok,
+     %{
+       fn_count: fn_count + 1,
+       yo: "lo"
      }}
   end
 end
