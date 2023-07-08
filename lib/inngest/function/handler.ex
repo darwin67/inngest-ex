@@ -5,10 +5,10 @@ defmodule Inngest.Function.Handler do
   """
   alias Inngest.Function.{Step, UnhashedOp, GeneratorOpCode, Handler}
 
-  defstruct [:name, :file, :steps]
+  defstruct [:mod, :file, :steps]
 
   @type t() :: %__MODULE__{
-          name: module(),
+          mod: module(),
           file: binary(),
           steps: [Step.t()]
         }
@@ -19,81 +19,72 @@ defmodule Inngest.Function.Handler do
   @spec invoke(Handler.t(), map()) :: {200 | 206 | 400 | 500, map()}
   # No steps detected
   def invoke(%{steps: []} = _handler, _params) do
-    {200, %{status: "completed", result: "no steps detected"}}
+    {200, %{message: "no steps detected"}}
   end
 
-  # Initial invoke when stack list is empty
-  def invoke(
-        %{steps: steps} = _handler,
-        %{event: event, params: %{"ctx" => %{"stack" => %{"stack" => []}}}} = _args
-      ) do
-    [step | _] = steps
-    fn_arg = %{event: event, data: %{}}
-    exec_step(step, fn_arg)
-  end
-
+  # TODO: remove the linter ignore
+  # credo:disable-for-next-line
   def invoke(
         %{steps: steps} = _handler,
         %{
           event: event,
-          params: %{
-            "ctx" => %{"stack" => %{"stack" => stack}},
-            "steps" => data
-          }
+          params: %{"steps" => data}
         } = _args
       ) do
-    total_steps = Enum.count(steps)
-    executed_steps = Enum.count(stack)
+    %{state_data: state_data, next: next} =
+      steps
+      |> Enum.reduce(%{state_data: %{}, next: nil}, fn step, acc ->
+        %{state_data: state_data, next: next} = acc
 
-    if executed_steps == total_steps do
-      {200, %{status: "completed"}}
-    else
-      steps =
-        steps
-        |> Enum.map(fn step ->
-          hash =
-            UnhashedOp.from_step(step)
-            |> UnhashedOp.hash()
+        case next do
+          nil ->
+            case step.step_type do
+              :exec_run ->
+                case exec(step, %{event: event, data: state_data}) do
+                  {:ok, result} ->
+                    acc
+                    |> Map.put(:state_data, Map.merge(state_data, result))
 
-          if Map.has_key?(data, hash) do
-            state_data = Map.get(data, hash)
+                  {:error, _error} ->
+                    acc
+                end
 
-            # TODO: remove this ignore comment
-            # credo:disable-for-next-line
-            if step.step_type == :step_sleep && is_nil(state_data) do
-              %{step | state: %{}}
-            else
-              %{step | state: state_data}
+              _ ->
+                hash =
+                  UnhashedOp.from_step(step)
+                  |> UnhashedOp.hash()
+
+                state = Map.get(data, hash)
+
+                state =
+                  if Map.has_key?(data, hash) do
+                    # credo:disable-for-next-line
+                    if step.step_type == :step_sleep && is_nil(state), do: %{}, else: state
+                  else
+                    state
+                  end
+
+                next = if is_nil(state), do: step, else: nil
+                state = if is_nil(state), do: state_data, else: state_data |> Map.merge(state)
+
+                acc
+                |> Map.put(:state_data, state)
+                |> Map.put(:next, next)
             end
-          else
-            step
-          end
-        end)
 
-      state_data =
-        Enum.reduce(steps, %{}, fn s, acc ->
-          # TODO: remove this ignore comment
-          # credo:disable-for-next-line
-          if is_nil(s.state), do: acc, else: Map.merge(acc, s.state)
-        end)
+          _ ->
+            acc
+        end
+      end)
 
-      next = Enum.find(steps, fn step -> is_nil(step.state) end)
-
-      case next.step_type do
-        :step_run ->
-          fn_arg = %{event: event, data: state_data}
-          exec_step(next, fn_arg)
-
-        :step_sleep ->
-          exec_sleep(next)
-
-        _ ->
-          {200, "done"}
-      end
-    end
+    fn_arg = %{event: event, data: state_data}
+    exec(next, fn_arg)
   end
 
-  defp exec_step(step, args) do
+  # Nothing left to run, return as completed
+  defp exec(nil, %{data: data}), do: {200, data}
+
+  defp exec(%{step_type: :step_run} = step, args) do
     op = UnhashedOp.from_step(step)
 
     # Invoke the step function
@@ -114,7 +105,7 @@ defmodule Inngest.Function.Handler do
     end
   end
 
-  defp exec_sleep(step) do
+  defp exec(%{step_type: :step_sleep} = step, _args) do
     op = UnhashedOp.from_step(step)
 
     opcode = %GeneratorOpCode{
@@ -125,4 +116,20 @@ defmodule Inngest.Function.Handler do
 
     {206, [opcode]}
   end
+
+  defp exec(%{step_type: :exec_run} = step, args) do
+    case apply(step.mod, step.id, [args]) do
+      {:ok, result} -> {:ok, result}
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  # This shouldn't be executed
+  defp exec(_, %{data: data}),
+    do:
+      {400,
+       %{
+         error: "unexpected execution occurred",
+         data: data
+       }}
 end

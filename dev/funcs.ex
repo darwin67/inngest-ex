@@ -3,6 +3,10 @@ defmodule Inngest.Dev.EventFn do
     name: "test func",
     event: "test/event"
 
+  run "test 1st run" do
+    {:ok, %{run: "do something"}}
+  end
+
   step "test 1st step" do
     {:ok, %{hello: "world"}}
   end
@@ -17,6 +21,10 @@ defmodule Inngest.Dev.EventFn do
 
   step "test 3rd - state accumulate" do
     {:ok, %{result: "ok"}}
+  end
+
+  run "result", %{data: data} do
+    {:ok, data}
   end
 end
 
