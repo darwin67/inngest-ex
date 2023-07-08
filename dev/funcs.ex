@@ -3,9 +3,9 @@ defmodule Inngest.Dev.EventFn do
     name: "test func",
     event: "test/event"
 
-  # run "test 1st run" do
-  #   {:ok, %{run: "do something"}}
-  # end
+  run "test 1st run" do
+    {:ok, %{run: "do something"}}
+  end
 
   step "test 1st step" do
     {:ok, %{hello: "world"}}
@@ -23,9 +23,9 @@ defmodule Inngest.Dev.EventFn do
     {:ok, %{result: "ok"}}
   end
 
-  # run "consolidate", params do
-  #   {:ok, params}
-  # end
+  run "result", %{data: data} do
+    {:ok, data}
+  end
 end
 
 defmodule Inngest.Dev.CronFn do

@@ -79,7 +79,7 @@ defmodule Inngest.Function.Handler do
   # Nothing left to run, return as completed
   defp exec(nil, %{data: data}), do: {200, data}
 
-  defp exec(%{step_type: :step_run} = step, %{data: state} = args) do
+  defp exec(%{step_type: :step_run} = step, args) do
     op = UnhashedOp.from_step(step)
 
     # Invoke the step function
@@ -90,7 +90,7 @@ defmodule Inngest.Function.Handler do
           id: UnhashedOp.hash(op),
           name: step.name,
           op: op.op,
-          data: Map.merge(state, result)
+          data: result
         }
 
         {206, [opcode]}
