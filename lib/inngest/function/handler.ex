@@ -125,5 +125,11 @@ defmodule Inngest.Function.Handler do
   end
 
   # This shouldn't be executed
-  defp exec(_, _), do: {200, "done"}
+  defp exec(_, %{data: data}),
+    do:
+      {400,
+       %{
+         error: "unexpected execution occurred",
+         data: data
+       }}
 end
