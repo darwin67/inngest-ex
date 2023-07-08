@@ -48,54 +48,38 @@ defmodule Inngest.Function.Handler do
     if executed_steps == total_steps do
       {200, %{status: "completed"}}
     else
-      %{steps: steps} =
+      %{state_data: state_data, next: next} =
         steps
-        |> Enum.reduce(%{steps: [], state_data: %{}, next: nil}, fn step, acc ->
-          %{steps: steps, state_data: state_data} = acc
+        |> Enum.reduce(%{state_data: %{}, next: nil}, fn step, acc ->
+          %{state_data: state_data, next: next} = acc
 
-          acc
+          if is_nil(next) do
+            hash =
+              UnhashedOp.from_step(step)
+              |> UnhashedOp.hash()
+
+            state = Map.get(data, hash)
+
+            state =
+              if Map.has_key?(data, hash) do
+                if step.step_type == :step_sleep && is_nil(state), do: %{}, else: state
+              else
+                state
+              end
+
+            next = if is_nil(state), do: step, else: nil
+            state = if is_nil(state), do: state_data, else: state_data |> Map.merge(state)
+
+            acc
+            |> Map.put(:state_data, state)
+            |> Map.put(:next, next)
+          else
+            acc
+          end
         end)
 
-      steps =
-        steps
-        |> Enum.map(fn step ->
-          memorize(step, data)
-        end)
-
-      state_data =
-        Enum.reduce(steps, %{}, fn s, acc ->
-          # TODO: remove this ignore comment
-          # credo:disable-for-next-line
-          if is_nil(s.state), do: acc, else: Map.merge(acc, s.state)
-        end)
-
-      next = Enum.find(steps, fn step -> is_nil(step.state) end)
       fn_arg = %{event: event, data: state_data}
       exec(next, fn_arg)
-    end
-  end
-
-  defp memorize(%{step_type: :step_run} = step, data) do
-    hash =
-      UnhashedOp.from_step(step)
-      |> UnhashedOp.hash()
-
-    state_data = Map.get(data, hash)
-    %{step | state: state_data}
-  end
-
-  defp memorize(%{step_type: :step_sleep} = step, data) do
-    hash =
-      UnhashedOp.from_step(step)
-      |> UnhashedOp.hash()
-
-    state_data = Map.get(data, hash)
-
-    if Map.has_key?(data, hash) do
-      state_data = if is_nil(state_data), do: %{}, else: state_data
-      %{step | state: state_data}
-    else
-      step
     end
   end
 
