@@ -60,4 +60,16 @@ defmodule Inngest.FunctionTest do
              } = TestCronFn.serve()
     end
   end
+
+  describe "__handler__/0" do
+    test "returns the handler for the module including compiled steps" do
+      assert %Inngest.Function.Handler{
+               mod: Inngest.TestEventFn,
+               file: _,
+               steps: steps
+             } = TestEventFn.__handler__()
+
+      assert Enum.count(steps) == 8
+    end
+  end
 end

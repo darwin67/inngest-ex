@@ -5,10 +5,10 @@ defmodule Inngest.Function.Handler do
   """
   alias Inngest.Function.{Step, UnhashedOp, GeneratorOpCode, Handler}
 
-  defstruct [:name, :file, :steps]
+  defstruct [:mod, :file, :steps]
 
   @type t() :: %__MODULE__{
-          name: module(),
+          mod: module(),
           file: binary(),
           steps: [Step.t()]
         }

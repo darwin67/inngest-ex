@@ -248,7 +248,7 @@ defmodule Inngest.Function do
       def __handler__ do
         %Inngest.Function.Handler{
           file: __ENV__.file,
-          name: __MODULE__,
+          mod: __MODULE__,
           steps: unquote(steps)
         }
       end
