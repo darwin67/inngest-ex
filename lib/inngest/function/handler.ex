@@ -22,6 +22,8 @@ defmodule Inngest.Function.Handler do
     {200, %{message: "no steps detected"}}
   end
 
+  # TODO: remove the linter ignore
+  # credo:disable-for-next-line
   def invoke(
         %{steps: steps} = _handler,
         %{
@@ -34,41 +36,44 @@ defmodule Inngest.Function.Handler do
       |> Enum.reduce(%{state_data: %{}, next: nil}, fn step, acc ->
         %{state_data: state_data, next: next} = acc
 
-        if is_nil(next) do
-          case step.step_type do
-            :exec_run ->
-              case exec(step, %{event: event, data: state_data}) do
-                {:ok, result} ->
-                  acc
-                  |> Map.put(:state_data, Map.merge(state_data, result))
+        case next do
+          nil ->
+            case step.step_type do
+              :exec_run ->
+                case exec(step, %{event: event, data: state_data}) do
+                  {:ok, result} ->
+                    acc
+                    |> Map.put(:state_data, Map.merge(state_data, result))
 
-                {:error, _error} ->
-                  acc
-              end
-
-            _ ->
-              hash =
-                UnhashedOp.from_step(step)
-                |> UnhashedOp.hash()
-
-              state = Map.get(data, hash)
-
-              state =
-                if Map.has_key?(data, hash) do
-                  if step.step_type == :step_sleep && is_nil(state), do: %{}, else: state
-                else
-                  state
+                  {:error, _error} ->
+                    acc
                 end
 
-              next = if is_nil(state), do: step, else: nil
-              state = if is_nil(state), do: state_data, else: state_data |> Map.merge(state)
+              _ ->
+                hash =
+                  UnhashedOp.from_step(step)
+                  |> UnhashedOp.hash()
 
-              acc
-              |> Map.put(:state_data, state)
-              |> Map.put(:next, next)
-          end
-        else
-          acc
+                state = Map.get(data, hash)
+
+                state =
+                  if Map.has_key?(data, hash) do
+                    # credo:disable-for-next-line
+                    if step.step_type == :step_sleep && is_nil(state), do: %{}, else: state
+                  else
+                    state
+                  end
+
+                next = if is_nil(state), do: step, else: nil
+                state = if is_nil(state), do: state_data, else: state_data |> Map.merge(state)
+
+                acc
+                |> Map.put(:state_data, state)
+                |> Map.put(:next, next)
+            end
+
+          _ ->
+            acc
         end
       end)
 
