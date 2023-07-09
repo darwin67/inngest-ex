@@ -67,6 +67,7 @@ defmodule Inngest.MixProject do
       {:plug, "~> 1.14"},
       {:plug_cowboy, "~> 2.0"},
       # {:bandit, "~> 0.6"},
+      {:timex, "~> 3.0"},
 
       # dev / test
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
