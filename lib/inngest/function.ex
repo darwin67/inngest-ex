@@ -193,6 +193,9 @@ defmodule Inngest.Function do
     end
   end
 
+  defmacro sleep_until(datetime) do
+  end
+
   def register_step(mod, file, line, step_type, name, tags) do
     unless Module.has_attribute?(mod, :inngest_fn_steps) do
       raise "cannot define #{step_type}. Please make sure you have invoked " <>
