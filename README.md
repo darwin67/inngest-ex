@@ -23,7 +23,7 @@ Elixir SDK for [Inngest][inngest].
 
 ### Non step execution
 
-- [ ] Non step run
+- [x] Non step run
 
 <!-- MDOC ! -->
 
