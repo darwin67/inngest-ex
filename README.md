@@ -8,6 +8,8 @@ Elixir SDK for [Inngest][inngest].
 
 ## Features
 
+Currently WIP, and not ready for any use.
+
 ### Triggers
 
 - [x] Event
