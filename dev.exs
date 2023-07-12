@@ -5,7 +5,7 @@ defmodule Inngest.Dev.Router do
   use Inngest.Router, :plug
   alias Inngest.Dev.{EventFn, CronFn}
 
-  inngest("/api/inngest", funcs: [EventFn])
+  inngest("/api/inngest", funcs: [EventFn, CronFn])
 
   get "/" do
     data = Jason.encode!(%{hello: "world"})

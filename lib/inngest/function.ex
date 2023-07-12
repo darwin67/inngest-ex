@@ -174,7 +174,7 @@ defmodule Inngest.Function do
             file: file,
             line: line
           ] do
-      slug = Inngest.Function.register_step(mod, file, line, :step_run, message, [])
+      slug = Inngest.Function.register_step(mod, file, line, :step_run, message)
 
       def unquote(slug)(unquote(var)), do: unquote(contents)
     end
@@ -193,7 +193,16 @@ defmodule Inngest.Function do
     end
   end
 
-  def register_step(mod, file, line, step_type, name, tags) do
+  defmacro sleep_until(datetime) do
+    datetime = Inngest.Function.validate_datetime(datetime)
+    %{module: mod, file: file, line: line} = __CALLER__
+
+    quote bind_quoted: [datetime: datetime, mod: mod, file: file, line: line] do
+      slug = Inngest.Function.register_step(mod, file, line, :step_sleep, datetime)
+    end
+  end
+
+  def register_step(mod, file, line, step_type, name, tags \\ []) do
     unless Module.has_attribute?(mod, :inngest_fn_steps) do
       raise "cannot define #{step_type}. Please make sure you have invoked " <>
               "\"use Inngest.Function\" in the current module"
@@ -255,6 +264,39 @@ defmodule Inngest.Function do
     end
   end
 
+  def validate_datetime(datetime) when is_binary(datetime) do
+    with {:error, _} <- Timex.parse(datetime, "{RFC3339}"),
+         {:error, _} <- Timex.parse(datetime, "{YYYY}-{MM}-{DD}T{h24}:{mm}:{ss}"),
+         {:error, _} <- Timex.parse(datetime, "{RFC1123}"),
+         {:error, _} <- Timex.parse(datetime, "{RFC822}"),
+         {:error, _} <- Timex.parse(datetime, "{RFC822z}"),
+         # "Monday, 02-Jan-06 15:04:05 MST"
+         {:error, _} <- Timex.parse(datetime, "{WDfull}, {D}-{Mshort}-{YY} {ISOtime} {Zname}"),
+         # "Mon Jan 02 15:04:05 -0700 2006"
+         {:error, _} <- Timex.parse(datetime, "{WDshort} {Mshort} {DD} {ISOtime} {Z} {YYYY}"),
+         {:error, _} <- Timex.parse(datetime, "{UNIX}"),
+         {:error, _} <- Timex.parse(datetime, "{ANSIC}"),
+         # "Jan _2 15:04:05"
+         # "Jan _2 15:04:05.000"
+         {:error, _} <- Timex.parse(datetime, "{Mshort} {_D} {ISOtime}"),
+         # {:error, _} <- Timex.parse(datetime, "{Mshort} {_D} {ISOtime}"),
+         {:error, _} <- Timex.parse(datetime, "{ISOdate}") do
+      raise SystemLimitError, "Unknown format for DateTime"
+    else
+      {:ok, _val} ->
+        datetime
+
+      _ ->
+        raise RuntimeError, "Unknown result"
+    end
+  end
+
+  # TODO: Allow parsing DateTime, Date
+  # def validate_datetime(%DateTime{} = datetime) do
+  # end
+
+  def validate_datetime(_), do: raise(SystemLimitError, "Expect valid DateTime formatted input")
+
   defp normalize_tags(tags) do
     tags
     |> Enum.reverse()
@@ -280,7 +322,8 @@ defmodule Inngest.Function do
   defp validate_step_name(name) do
     try do
       name
-      |> String.replace(~r/\s+/, "_")
+      |> String.replace(~r/(\s|\:)+/, "_")
+      |> String.downcase()
       |> String.to_atom()
     rescue
       SystemLimitError ->

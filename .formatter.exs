@@ -32,7 +32,8 @@ export_locals_without_parens = [
   live_session: 3,
   step: 1,
   step: 2,
-  sleep: 1
+  sleep: 1,
+  sleep_until: 1
 ]
 
 [
