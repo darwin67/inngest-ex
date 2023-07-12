@@ -289,6 +289,8 @@ defmodule Inngest.Function do
   # def validate_datetime(%DateTime{} = datetime) do
   # end
 
+  def validate_datetime(_), do: raise(SystemLimitError, "Expect valid DateTime formatted input")
+
   defp normalize_tags(tags) do
     tags
     |> Enum.reverse()

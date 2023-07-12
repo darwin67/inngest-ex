@@ -106,5 +106,11 @@ defmodule Inngest.FunctionTest do
         assert _ = Function.validate_datetime(datetime)
       end
     end
+
+    test "should raise with invalid input" do
+      assert_raise SystemLimitError, "Expect valid DateTime formatted input", fn ->
+        Function.validate_datetime(10)
+      end
+    end
   end
 end
