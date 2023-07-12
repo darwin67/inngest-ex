@@ -285,6 +285,7 @@ defmodule Inngest.Function do
     end
   end
 
+  # TODO: Allow parsing DateTime, Date
   # def validate_datetime(%DateTime{} = datetime) do
   # end
 
