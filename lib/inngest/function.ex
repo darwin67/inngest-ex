@@ -265,7 +265,7 @@ defmodule Inngest.Function do
          {:error, _} <- Timex.parse(datetime, "{RFC822}"),
          {:error, _} <- Timex.parse(datetime, "{RFC822z}"),
          # "Monday, 02-Jan-06 15:04:05 MST"
-         {:error, _} <- Timex.parse(datetime, "{WDfull}, {DD}-{Mshort}-{YY} {ISOtime} {Zname}"),
+         {:error, _} <- Timex.parse(datetime, "{WDfull}, {D}-{Mshort}-{YY} {ISOtime} {Zname}"),
          # "Mon Jan 02 15:04:05 -0700 2006"
          {:error, _} <- Timex.parse(datetime, "{WDshort} {Mshort} {DD} {ISOtime} {Z} {YYYY}"),
          {:error, _} <- Timex.parse(datetime, "{UNIX}"),
@@ -274,10 +274,10 @@ defmodule Inngest.Function do
          # "Jan _2 15:04:05.000"
          {:error, _} <- Timex.parse(datetime, "{Mshort} {_D} {ISOtime}"),
          # {:error, _} <- Timex.parse(datetime, "{Mshort} {_D} {ISOtime}"),
-         {:error, _} <- Timex.parse(datetime, "{ISODate}") do
+         {:error, _} <- Timex.parse(datetime, "{ISOdate}") do
       raise SystemLimitError, "Unknown format for DateTime"
     else
-      {:ok, _} ->
+      {:ok, _val} ->
         datetime
 
       _ ->
@@ -285,8 +285,8 @@ defmodule Inngest.Function do
     end
   end
 
-  def validate_datetime(%DateTime{} = datetime) do
-  end
+  # def validate_datetime(%DateTime{} = datetime) do
+  # end
 
   defp normalize_tags(tags) do
     tags

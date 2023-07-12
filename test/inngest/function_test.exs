@@ -94,15 +94,16 @@ defmodule Inngest.FunctionTest do
       # ANSIC
       "Tue Mar 5 23:25:19 2013",
       # Timestamp, second & millisecond
-      "Jan _2 15:04:05",
-      "Jan _2 15:04:05.000",
+      "Jan 2 15:04:05",
+      "Jan 2 15:04:05.000",
       # ISOdate
       "2006-01-02"
     ]
 
     for fmt <- @formats do
       test "should be able to parse '#{fmt}'" do
-        assert _ = Function.validate_datetime(fmt)
+        datetime = unquote(fmt)
+        assert _ = Function.validate_datetime(datetime)
       end
     end
   end
