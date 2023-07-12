@@ -23,6 +23,8 @@ defmodule Inngest.Dev.EventFn do
     {:ok, %{result: "ok"}}
   end
 
+  sleep_until "2023-07-11T06:25:00Z"
+
   run "result", %{data: data} do
     {:ok, data}
   end

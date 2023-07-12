@@ -174,7 +174,7 @@ defmodule Inngest.Function do
             file: file,
             line: line
           ] do
-      slug = Inngest.Function.register_step(mod, file, line, :step_run, message, [])
+      slug = Inngest.Function.register_step(mod, file, line, :step_run, message)
 
       def unquote(slug)(unquote(var)), do: unquote(contents)
     end
@@ -194,9 +194,16 @@ defmodule Inngest.Function do
   end
 
   defmacro sleep_until(datetime) do
+    %{module: mod, file: file, line: line} = __CALLER__
+
+    datetime = Inngest.Function.validate_datetime(datetime)
+
+    quote bind_quoted: [datetime: datetime, mod: mod, file: file, line: line] do
+      slug = Inngest.Function.register_step(mod, file, line, :step_sleep_until, datetime)
+    end
   end
 
-  def register_step(mod, file, line, step_type, name, tags) do
+  def register_step(mod, file, line, step_type, name, tags \\ []) do
     unless Module.has_attribute?(mod, :inngest_fn_steps) do
       raise "cannot define #{step_type}. Please make sure you have invoked " <>
               "\"use Inngest.Function\" in the current module"
@@ -316,7 +323,8 @@ defmodule Inngest.Function do
   defp validate_step_name(name) do
     try do
       name
-      |> String.replace(~r/\s+/, "_")
+      |> String.replace(~r/(\s|\:)+/, "_")
+      |> String.downcase()
       |> String.to_atom()
     rescue
       SystemLimitError ->
