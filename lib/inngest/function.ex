@@ -194,12 +194,11 @@ defmodule Inngest.Function do
   end
 
   defmacro sleep_until(datetime) do
+    datetime = Inngest.Function.validate_datetime(datetime)
     %{module: mod, file: file, line: line} = __CALLER__
 
-    datetime = Inngest.Function.validate_datetime(datetime)
-
     quote bind_quoted: [datetime: datetime, mod: mod, file: file, line: line] do
-      slug = Inngest.Function.register_step(mod, file, line, :step_sleep_until, datetime)
+      slug = Inngest.Function.register_step(mod, file, line, :step_sleep, datetime)
     end
   end
 
