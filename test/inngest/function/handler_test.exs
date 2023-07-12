@@ -26,6 +26,7 @@ defmodule Inngest.Function.HandlerTest do
 
     @sleep1_hash "145E2844A2497AB79D89CAFF7C8CCA0CC7F114AE"
     @sleep2_hash "8128323524ACBAE2631A0C09D663302A0D7E2FB9"
+    @sleep_until_hash "6785F2ACBD4FDAA831ED5BEE68BC38D57B0100D6"
 
     setup do
       %{
@@ -160,7 +161,7 @@ defmodule Inngest.Function.HandlerTest do
              ] = result
     end
 
-    test "5th invoke returns result of 3rd step", %{handler: handler, args: args} do
+    test "5th invoke returns sleep until", %{handler: handler, args: args} do
       # return data from step 1
       current_state = %{
         @step1_hash => %{
@@ -177,6 +178,46 @@ defmodule Inngest.Function.HandlerTest do
         },
         @sleep1_hash => nil,
         @sleep2_hash => nil
+      }
+
+      args =
+        args
+        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
+        |> put_in([:params, "steps"], current_state)
+
+      opcode = Enums.opcode(:step_sleep)
+
+      # Invoke
+      assert {206, result} = Handler.invoke(handler, args)
+
+      assert [
+               %GeneratorOpCode{
+                 op: ^opcode,
+                 id: @sleep_until_hash,
+                 name: "2023-07-12T06:35:00Z",
+                 data: nil
+               }
+             ] = result
+    end
+
+    test "6th invoke returns result of 3rd step", %{handler: handler, args: args} do
+      # return data from step 1
+      current_state = %{
+        @step1_hash => %{
+          step: "hello world",
+          fn_count: 1,
+          step1_count: 1,
+          step2_count: 0
+        },
+        @step2_hash => %{
+          step: "yolo",
+          fn_count: 2,
+          step1_count: 1,
+          step2_count: 1
+        },
+        @sleep1_hash => nil,
+        @sleep2_hash => nil,
+        @sleep_until_hash => nil
       }
 
       args =
@@ -205,7 +246,7 @@ defmodule Inngest.Function.HandlerTest do
              ] = result
     end
 
-    test "6th invoke returns result of remaining run", %{handler: handler, args: args} do
+    test "7th invoke returns result of remaining run", %{handler: handler, args: args} do
       # return data from step 1
       current_state = %{
         @step1_hash => %{
@@ -228,7 +269,8 @@ defmodule Inngest.Function.HandlerTest do
           run: "again"
         },
         @sleep1_hash => nil,
-        @sleep2_hash => nil
+        @sleep2_hash => nil,
+        @sleep_until_hash => nil
       }
 
       args =
