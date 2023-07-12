@@ -90,7 +90,7 @@ defmodule Inngest.FunctionTest do
       "Monday, 02-Jan-06 15:04:05 MST",
       "Mon Jan 02 15:04:05 -0700 2006",
       # UNIX
-      "Tue Mar 5 23:25:19 PST 2013",
+      "Mon Jan 2 15:04:05 MST 2006",
       # ANSIC
       "Tue Mar 5 23:25:19 2013",
       # Timestamp, second & millisecond
