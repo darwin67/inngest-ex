@@ -199,14 +199,66 @@ defmodule Inngest.Function do
 
     quote bind_quoted: [datetime: datetime, mod: mod, file: file, line: line] do
       slug = Inngest.Function.register_step(mod, file, line, :step_sleep, datetime)
+      def unquote(slug)(), do: nil
     end
   end
+
+  defmacro wait_for_event(event_name, opts, var \\ quote(do: _), contents)
+           when is_binary(event_name) do
+    unless is_tuple(var) do
+      IO.warn(
+        "step context is always a map. The pattern " <>
+          "#{inspect(Macro.to_string(var))} will never match",
+        Macro.Env.stacktrace(__CALLER__)
+      )
+    end
+
+    contents =
+      case contents do
+        [do: block] ->
+          quote do
+            unquote(block)
+          end
+
+        _ ->
+          quote do
+            try(unquote(contents))
+          end
+      end
+
+    var = Macro.escape(var)
+    contents = Macro.escape(contents, unquote: true)
+
+    %{module: mod, file: file, line: line} = __CALLER__
+
+    quote bind_quoted: [
+            event_name: event_name,
+            var: var,
+            contents: contents,
+            opts: opts,
+            mod: mod,
+            file: file,
+            line: line
+          ] do
+      slug =
+        Inngest.Function.register_step(mod, file, line, :step_wait_for_event, event_name, opts)
+
+      def unquote(slug)(unquote(var)), do: unquote(contents)
+    end
+  end
+
+  defmacro wait_for_event(_, _), do: raise(SystemLimitError, "event_name must be a string")
 
   def register_step(mod, file, line, step_type, name, tags \\ []) do
     unless Module.has_attribute?(mod, :inngest_fn_steps) do
       raise "cannot define #{step_type}. Please make sure you have invoked " <>
               "\"use Inngest.Function\" in the current module"
     end
+
+    opts =
+      if step_type == :step_wait_for_event,
+        do: tags |> normalize_tags(),
+        else: %{}
 
     slug =
       case Keyword.get(tags, :idx) do
@@ -233,6 +285,7 @@ defmodule Inngest.Function do
       id: slug,
       name: name,
       step_type: step_type,
+      opts: opts,
       tags: tags,
       mod: mod,
       runtime: %Step.RunTime{

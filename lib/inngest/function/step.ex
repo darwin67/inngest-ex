@@ -11,13 +11,15 @@ defmodule Inngest.Function.Step do
     :tags,
     :mod,
     :runtime,
-    :retries
+    :retries,
+    opts: %{}
   ]
 
   @type t() :: %__MODULE__{
           id: atom(),
           name: binary(),
           step_type: atom(),
+          opts: map(),
           tags: map(),
           mod: module(),
           runtime: RunTime,

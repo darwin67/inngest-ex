@@ -117,6 +117,19 @@ defmodule Inngest.Function.Handler do
     {206, [opcode]}
   end
 
+  defp exec(%{step_type: :step_wait_for_event} = step, _args) do
+    op = UnhashedOp.from_step(step)
+
+    opcode = %GeneratorOpCode{
+      id: UnhashedOp.hash(op),
+      name: step.name,
+      op: op.op,
+      opts: step.opts
+    }
+
+    {206, [opcode]}
+  end
+
   defp exec(%{step_type: :exec_run} = step, args) do
     case apply(step.mod, step.id, [args]) do
       {:ok, result} -> {:ok, result}
