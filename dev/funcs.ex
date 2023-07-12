@@ -24,9 +24,7 @@ defmodule Inngest.Dev.EventFn do
     {:ok, %{result: "ok"}}
   end
 
-  wait_for_event "test/wait", timeout: "1d" do
-    {:ok, %{wait: "event"}}
-  end
+  wait_for_event "test/wait", timeout: "1d"
 
   run "result", %{data: data} do
     {:ok, data}

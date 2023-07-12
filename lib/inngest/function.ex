@@ -203,38 +203,11 @@ defmodule Inngest.Function do
     end
   end
 
-  defmacro wait_for_event(event_name, opts, var \\ quote(do: _), contents)
-           when is_binary(event_name) do
-    unless is_tuple(var) do
-      IO.warn(
-        "step context is always a map. The pattern " <>
-          "#{inspect(Macro.to_string(var))} will never match",
-        Macro.Env.stacktrace(__CALLER__)
-      )
-    end
-
-    contents =
-      case contents do
-        [do: block] ->
-          quote do
-            unquote(block)
-          end
-
-        _ ->
-          quote do
-            try(unquote(contents))
-          end
-      end
-
-    var = Macro.escape(var)
-    contents = Macro.escape(contents, unquote: true)
-
+  defmacro wait_for_event(event_name, opts) when is_binary(event_name) do
     %{module: mod, file: file, line: line} = __CALLER__
 
     quote bind_quoted: [
             event_name: event_name,
-            var: var,
-            contents: contents,
             opts: opts,
             mod: mod,
             file: file,
@@ -243,7 +216,7 @@ defmodule Inngest.Function do
       slug =
         Inngest.Function.register_step(mod, file, line, :step_wait_for_event, event_name, opts)
 
-      def unquote(slug)(unquote(var)), do: unquote(contents)
+      def unquote(slug)(), do: nil
     end
   end
 
