@@ -33,7 +33,8 @@ export_locals_without_parens = [
   step: 1,
   step: 2,
   sleep: 1,
-  sleep_until: 1
+  sleep_until: 1,
+  wait_for_event: 2
 ]
 
 [
