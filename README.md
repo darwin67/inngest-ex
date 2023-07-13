@@ -19,8 +19,13 @@ Currently WIP, and not ready for any use.
 
 - [x] Step runs
 - [x] Sleep
+
 - [x] Sleep until
-- [ ] Wait for event
+Input is currently not dynamic
+
+- [x] Wait for event
+Partially working but `if` expressions are not dynamic inputs
+
 - [ ] Fan out
 
 ### Non step execution
