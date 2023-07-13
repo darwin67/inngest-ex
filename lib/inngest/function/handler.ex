@@ -60,10 +60,14 @@ defmodule Inngest.Function.Handler do
                   if Map.has_key?(data, hash) do
                     # credo:disable-for-next-line
                     case step.step_type do
+                      # credo:disable-for-next-line
                       :step_sleep ->
+                        # credo:disable-for-next-line
                         if is_nil(state), do: %{}, else: state
 
+                      # credo:disable-for-next-line
                       :step_wait_for_event ->
+                        # credo:disable-for-next-line
                         %{step.name => state}
 
                       _ ->
