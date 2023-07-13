@@ -14,13 +14,13 @@ defmodule Inngest.Function.UnhashedOp do
           opts: map()
         }
 
-  @spec from_step(Step.t(), map()) :: t()
-  def from_step(step, opts \\ %{}) do
+  @spec from_step(Step.t()) :: t()
+  def from_step(step) do
     %__MODULE__{
       name: step.name,
       op: Enums.opcode(step.step_type),
       pos: Map.get(step.tags, :idx, 0),
-      opts: opts
+      opts: step.opts
     }
   end
 

@@ -193,20 +193,61 @@ defmodule Inngest.Function do
     end
   end
 
+  # TODO: allow input to be more dynamic
   defmacro sleep_until(datetime) do
     datetime = Inngest.Function.validate_datetime(datetime)
     %{module: mod, file: file, line: line} = __CALLER__
 
     quote bind_quoted: [datetime: datetime, mod: mod, file: file, line: line] do
       slug = Inngest.Function.register_step(mod, file, line, :step_sleep, datetime)
+      def unquote(slug)(), do: nil
     end
   end
+
+  # TODO: allow `if` to be more dynamic
+  defmacro wait_for_event(event_name, opts) when is_binary(event_name) do
+    %{module: mod, file: file, line: line} = __CALLER__
+
+    match_opts =
+      cond do
+        Keyword.get(opts, :match) ->
+          match = Keyword.get(opts, :match)
+          timeout = Keyword.get(opts, :timeout)
+          [timeout: timeout, if: "event.#{match} == async.#{match}"]
+
+        Keyword.get(opts, :if) ->
+          Keyword.take(opts, [:timeout, :if])
+
+        true ->
+          Keyword.take(opts, [:timeout])
+      end
+
+    quote bind_quoted: [
+            event_name: event_name,
+            opts: match_opts,
+            mod: mod,
+            file: file,
+            line: line
+          ] do
+      slug =
+        Inngest.Function.register_step(mod, file, line, :step_wait_for_event, event_name, opts)
+
+      def unquote(slug)(), do: nil
+    end
+  end
+
+  defmacro wait_for_event(_, _), do: raise(SystemLimitError, "event_name must be a string")
 
   def register_step(mod, file, line, step_type, name, tags \\ []) do
     unless Module.has_attribute?(mod, :inngest_fn_steps) do
       raise "cannot define #{step_type}. Please make sure you have invoked " <>
               "\"use Inngest.Function\" in the current module"
     end
+
+    opts =
+      if step_type == :step_wait_for_event,
+        do: tags |> normalize_tags(),
+        else: %{}
 
     slug =
       case Keyword.get(tags, :idx) do
@@ -233,6 +274,7 @@ defmodule Inngest.Function do
       id: slug,
       name: name,
       step_type: step_type,
+      opts: opts,
       tags: tags,
       mod: mod,
       runtime: %Step.RunTime{

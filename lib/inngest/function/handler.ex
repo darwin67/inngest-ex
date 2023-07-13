@@ -59,7 +59,20 @@ defmodule Inngest.Function.Handler do
                 state =
                   if Map.has_key?(data, hash) do
                     # credo:disable-for-next-line
-                    if step.step_type == :step_sleep && is_nil(state), do: %{}, else: state
+                    case step.step_type do
+                      # credo:disable-for-next-line
+                      :step_sleep ->
+                        # credo:disable-for-next-line
+                        if is_nil(state), do: %{}, else: state
+
+                      # credo:disable-for-next-line
+                      :step_wait_for_event ->
+                        # credo:disable-for-next-line
+                        %{step.name => state}
+
+                      _ ->
+                        state
+                    end
                   else
                     state
                   end
@@ -112,6 +125,19 @@ defmodule Inngest.Function.Handler do
       id: UnhashedOp.hash(op),
       name: step.name,
       op: op.op
+    }
+
+    {206, [opcode]}
+  end
+
+  defp exec(%{step_type: :step_wait_for_event} = step, _args) do
+    op = UnhashedOp.from_step(step)
+
+    opcode = %GeneratorOpCode{
+      id: UnhashedOp.hash(op),
+      name: step.name,
+      op: op.op,
+      opts: step.opts
     }
 
     {206, [opcode]}
