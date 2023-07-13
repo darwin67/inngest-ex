@@ -193,6 +193,7 @@ defmodule Inngest.Function do
     end
   end
 
+  # TODO: allow input to be more dynamic
   defmacro sleep_until(datetime) do
     datetime = Inngest.Function.validate_datetime(datetime)
     %{module: mod, file: file, line: line} = __CALLER__
@@ -203,12 +204,27 @@ defmodule Inngest.Function do
     end
   end
 
+  # TODO: allow `if` to be more dynamic
   defmacro wait_for_event(event_name, opts) when is_binary(event_name) do
     %{module: mod, file: file, line: line} = __CALLER__
 
+    match_opts =
+      cond do
+        Keyword.get(opts, :match) ->
+          match = Keyword.get(opts, :match)
+          timeout = Keyword.get(opts, :timeout)
+          [timeout: timeout, if: "event.#{match} == async.#{match}"]
+
+        Keyword.get(opts, :if) ->
+          Keyword.take(opts, [:timeout, :if])
+
+        true ->
+          Keyword.take(opts, [:timeout])
+      end
+
     quote bind_quoted: [
             event_name: event_name,
-            opts: opts,
+            opts: match_opts,
             mod: mod,
             file: file,
             line: line
