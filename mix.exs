@@ -65,11 +65,11 @@ defmodule Inngest.MixProject do
       {:hackney, "~> 1.10"},
       {:jason, "~> 1.4"},
       {:plug, "~> 1.14"},
-      {:plug_cowboy, "~> 2.0"},
-      # {:bandit, "~> 0.6"},
       {:timex, "~> 3.7"},
 
       # dev / test
+      {:plug_cowboy, "~> 2.0", only: :dev},
+      # {:bandit, "~> 0.6", only: :dev},
       {:tz, "~> 0.26", only: :dev},
       {:tz_extra, "~> 0.26", only: :dev},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},

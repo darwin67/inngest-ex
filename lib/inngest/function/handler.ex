@@ -118,6 +118,25 @@ defmodule Inngest.Function.Handler do
     end
   end
 
+  defp exec(%{step_type: :step_sleep, tags: %{execute: true}} = step, args) do
+    op = UnhashedOp.from_step(step)
+
+    # Invoke the content to get the value for sleep
+    case apply(step.mod, step.id, [args]) |> Inngest.Function.validate_datetime() do
+      {:ok, datetime} ->
+        opcode = %GeneratorOpCode{
+          id: UnhashedOp.hash(op),
+          name: datetime,
+          op: op.op
+        }
+
+        {206, [opcode]}
+
+      {:error, error} ->
+        {400, error}
+    end
+  end
+
   defp exec(%{step_type: :step_sleep} = step, _args) do
     op = UnhashedOp.from_step(step)
 

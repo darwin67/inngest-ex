@@ -107,10 +107,12 @@ defmodule Inngest.FunctionTest do
       end
     end
 
-    test "should raise with invalid input" do
-      assert_raise SystemLimitError, "Expect valid DateTime formatted input", fn ->
-        Function.validate_datetime(10)
-      end
+    test "should return error for invalid string format" do
+      assert {:error, "Unknown format for DateTime"} = Function.validate_datetime("yolo")
+    end
+
+    test "should return error with invalid input type" do
+      assert {:error, "Expect valid DateTime formatted input"} = Function.validate_datetime(10)
     end
   end
 end
