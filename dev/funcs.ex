@@ -17,8 +17,10 @@ defmodule Inngest.Dev.EventFn do
     {:ok, %{yo: "lo"}}
   end
 
-  sleep "2s"
-  # sleep_until "2023-07-12T07:19:00Z"
+  # sleep "2s"
+  sleep "until 1m later" do
+    "2023-07-12T06:55:00Z"
+  end
 
   step "test 3rd - state accumulate" do
     {:ok, %{result: "ok"}}

@@ -186,6 +186,47 @@ defmodule Inngest.Function do
     end
   end
 
+  defmacro sleep(message, var \\ quote(do: _), contents) do
+    unless is_tuple(var) do
+      IO.warn(
+        "step context is always a map. The pattern " <>
+          "#{inspect(Macro.to_string(var))} will never match",
+        Macro.Env.stacktrace(__CALLER__)
+      )
+    end
+
+    contents =
+      case contents do
+        [do: block] ->
+          quote do
+            unquote(block)
+          end
+
+        _ ->
+          quote do
+            try(unquote(contents))
+          end
+      end
+
+    var = Macro.escape(var)
+    contents = Macro.escape(contents, unquote: true)
+
+    %{module: mod, file: file, line: line} = __CALLER__
+
+    quote bind_quoted: [
+            var: var,
+            contents: contents,
+            message: message,
+            mod: mod,
+            file: file,
+            line: line
+          ] do
+      slug = Inngest.Function.register_step(mod, file, line, :step_sleep, message, execute: true)
+
+      def unquote(slug)(unquote(var)), do: unquote(contents)
+    end
+  end
+
   defmacro sleep(duration) do
     %{module: mod, file: file, line: line} = __CALLER__
 
@@ -195,17 +236,6 @@ defmodule Inngest.Function do
 
     quote bind_quoted: [duration: duration, mod: mod, file: file, line: line, idx: idx] do
       slug = Inngest.Function.register_step(mod, file, line, :step_sleep, duration, idx: idx)
-      def unquote(slug)(), do: nil
-    end
-  end
-
-  # TODO: allow input to be more dynamic
-  defmacro sleep_until(datetime) do
-    datetime = Inngest.Function.validate_datetime(datetime)
-    %{module: mod, file: file, line: line} = __CALLER__
-
-    quote bind_quoted: [datetime: datetime, mod: mod, file: file, line: line] do
-      slug = Inngest.Function.register_step(mod, file, line, :step_sleep, datetime)
       def unquote(slug)(), do: nil
     end
   end
@@ -329,7 +359,7 @@ defmodule Inngest.Function do
          {:error, _} <- Timex.parse(datetime, "{Mshort} {_D} {ISOtime}"),
          # {:error, _} <- Timex.parse(datetime, "{Mshort} {_D} {ISOtime}"),
          {:error, _} <- Timex.parse(datetime, "{ISOdate}") do
-      raise SystemLimitError, "Unknown format for DateTime"
+      {:error, "Unknown format for DateTime"}
     else
       {:ok, _val} ->
         datetime
