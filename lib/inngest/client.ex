@@ -10,9 +10,9 @@ defmodule Inngest.Client do
   @spec send(Event.t() | [Event.t()], Keyword.t()) :: :ok | {:error, binary()}
   def send(payload, opts \\ []) do
     event_key = Config.event_key()
-    httpclient = httpclient(:event, opts)
+    client = httpclient(:event, opts)
 
-    case Tesla.post(httpclient, "/e/#{event_key}", payload) do
+    case Tesla.post(client, "/e/#{event_key}", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
         :ok
 
@@ -57,9 +57,9 @@ defmodule Inngest.Client do
   end
 
   def dev_info() do
-    httpclient = httpclient(:app)
+    client = httpclient(:app)
 
-    case Tesla.get(httpclient, "/dev") do
+    case Tesla.get(client, "/dev") do
       {:ok, %Tesla.Env{status: 200, body: body} = _resp} ->
         {:ok, body}
 
@@ -69,7 +69,9 @@ defmodule Inngest.Client do
   end
 
   @spec httpclient(:event | :app, Keyword.t()) :: Tesla.Client.t()
-  defp httpclient(:event, opts \\ []) do
+  defp httpclient(type, opts \\ [])
+
+  defp httpclient(:event, opts) do
     middleware = [
       {Tesla.Middleware.BaseUrl, Config.event_url()},
       Tesla.Middleware.JSON
@@ -86,7 +88,7 @@ defmodule Inngest.Client do
     Tesla.client(middleware)
   end
 
-  defp httpclient(:app, opts \\ []) do
+  defp httpclient(:app, opts) do
     middleware = [
       {Tesla.Middleware.BaseUrl, Config.app_url()},
       Tesla.Middleware.JSON
