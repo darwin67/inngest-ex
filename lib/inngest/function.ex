@@ -365,7 +365,7 @@ defmodule Inngest.Function do
         {:ok, datetime}
 
       _ ->
-        raise RuntimeError, "Unknown result"
+        {:error, "Unknown result"}
     end
   end
 
@@ -373,7 +373,7 @@ defmodule Inngest.Function do
   # def validate_datetime(%DateTime{} = datetime) do
   # end
 
-  def validate_datetime(_), do: raise(SystemLimitError, "Expect valid DateTime formatted input")
+  def validate_datetime(_), do: {:error, "Expect valid DateTime formatted input"}
 
   defp normalize_tags(tags) do
     tags
