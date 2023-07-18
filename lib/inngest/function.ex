@@ -362,7 +362,7 @@ defmodule Inngest.Function do
       {:error, "Unknown format for DateTime"}
     else
       {:ok, _val} ->
-        datetime
+        {:ok, datetime}
 
       _ ->
         raise RuntimeError, "Unknown result"

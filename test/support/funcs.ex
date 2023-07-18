@@ -42,11 +42,13 @@ defmodule Inngest.TestEventFn do
 
   sleep "2s"
 
-  run "exec2" do
+  run "exec2", do:
     {:ok, %{run: "again"}}
   end
 
-  sleep_until "2023-07-12T06:35:00Z"
+  sleep "until some date" do
+    "2023-07-12T06:35:00Z"
+  end
 
   step "step3", %{
     data: %{fn_count: fn_count, step1_count: step1_count, step2_count: step2_count, run: run}
