@@ -28,6 +28,7 @@ defmodule Inngest.Function do
         # placeholder
       end
 
+      alias Inngest.Client
       alias Inngest.Function.{Trigger, Step}
       # import Inngest.Function, only: [step: 2, step: 3]
       import Inngest.Function
@@ -78,6 +79,11 @@ defmodule Inngest.Function do
           steps: step(),
           mod: __MODULE__
         }
+      end
+
+      def send(events) do
+        # NOTE: keep this for now so we can add things like tracing in the future
+        Client.send(events, [])
       end
     end
   end
