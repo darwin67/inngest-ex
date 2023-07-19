@@ -149,14 +149,35 @@ defmodule Inngest.Function.Handler do
     {206, [opcode]}
   end
 
-  defp exec(%{step_type: :step_wait_for_event} = step, _args) do
+  defp exec(%{step_type: :step_wait_for_event} = step, args) do
     op = UnhashedOp.from_step(step)
+
+    opts =
+      apply(step.mod, step.id, [args])
+      |> Enum.reduce(%{}, fn
+        {key, value}, acc -> Map.put(acc, key, value)
+        keyword, acc when is_list(keyword) -> Enum.into(keyword, acc)
+      end)
+
+    opts =
+      cond do
+        Map.get(opts, :match) ->
+          match = Map.get(opts, :match)
+          timeout = Map.get(opts, :timeout)
+          %{timeout: timeout, if: "event.#{match} == async.#{match}"}
+
+        Map.get(opts, :if) ->
+          Map.take(opts, [:timeout, :if])
+
+        true ->
+          Map.take(opts, [:timeout])
+      end
 
     opcode = %GeneratorOpCode{
       id: UnhashedOp.hash(op),
       name: step.name,
       op: op.op,
-      opts: step.opts
+      opts: opts
     }
 
     {206, [opcode]}

@@ -240,39 +240,46 @@ defmodule Inngest.Function do
     end
   end
 
-  # TODO: allow `if` to be more dynamic
-  defmacro wait_for_event(event_name, opts) when is_binary(event_name) do
-    %{module: mod, file: file, line: line} = __CALLER__
+  defmacro wait_for_event(event_name, var \\ quote(do: _), contents) do
+    unless is_tuple(var) do
+      IO.warn(
+        "step context is always a map. The pattern " <>
+          "#{inspect(Macro.to_string(var))} will never match",
+        Macro.Env.stacktrace(__CALLER__)
+      )
+    end
 
-    match_opts =
-      cond do
-        Keyword.get(opts, :match) ->
-          match = Keyword.get(opts, :match)
-          timeout = Keyword.get(opts, :timeout)
-          [timeout: timeout, if: "event.#{match} == async.#{match}"]
+    contents =
+      case contents do
+        [do: block] ->
+          quote do
+            unquote(block)
+          end
 
-        Keyword.get(opts, :if) ->
-          Keyword.take(opts, [:timeout, :if])
-
-        true ->
-          Keyword.take(opts, [:timeout])
+        _ ->
+          quote do
+            try(unquote(contents))
+          end
       end
 
+    var = Macro.escape(var)
+    contents = Macro.escape(contents, unquote: true)
+
+    %{module: mod, file: file, line: line} = __CALLER__
+
     quote bind_quoted: [
+            var: var,
+            contents: contents,
             event_name: event_name,
-            opts: match_opts,
             mod: mod,
             file: file,
             line: line
           ] do
-      slug =
-        Inngest.Function.register_step(mod, file, line, :step_wait_for_event, event_name, opts)
+      slug = Inngest.Function.register_step(mod, file, line, :step_wait_for_event, event_name)
 
-      def unquote(slug)(), do: nil
+      def unquote(slug)(unquote(var)), do: unquote(contents)
     end
   end
-
-  defmacro wait_for_event(_, _), do: raise(SystemLimitError, "event_name must be a string")
 
   def register_step(mod, file, line, step_type, name, tags \\ []) do
     unless Module.has_attribute?(mod, :inngest_fn_steps) do
