@@ -38,7 +38,7 @@ defmodule Inngest.Router.Plug do
              |> Map.get(:funcs, %{})
              |> Enum.reduce(%{}, fn func, x ->
                slug = func.slug()
-               Map.put(x, slug, func.serve())
+               Map.put(x, slug, func.serve(unquote(path)))
              end)
 
       post unquote(path) do
@@ -53,7 +53,10 @@ defmodule Inngest.Router.Plug do
       # register path
       put unquote(path) do
         conn = var!(conn)
-        params = params(conn)
+
+        params =
+          params(conn)
+          |> Map.put(:path, unquote(path))
 
         conn
         |> Inngest.Router.Endpoint.register(params)

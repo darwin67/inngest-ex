@@ -4,9 +4,9 @@ defmodule Inngest.Router.Endpoint do
 
   @content_type "application/json"
 
-  def register(conn, %{funcs: funcs} = _params) do
+  def register(conn, %{path: path, funcs: funcs} = _params) do
     {status, resp} =
-      case Inngest.Client.register(funcs) do
+      case Inngest.Client.register(path, funcs) do
         :ok ->
           {200, %{}}
 

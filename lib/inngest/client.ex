@@ -30,15 +30,15 @@ defmodule Inngest.Client do
     end
   end
 
-  def register(functions) do
+  def register(path, functions) do
     payload = %{
-      url: "#{Config.app_host()}/api/inngest",
+      url: Config.app_host() <> path,
       v: "1",
       deployType: "ping",
       sdk: Config.sdk_version(),
       framework: "plug",
       appName: "test app",
-      functions: functions |> Enum.map(& &1.serve/0)
+      functions: functions |> Enum.map(fn f -> f.serve(path) end)
     }
 
     case Tesla.post(httpclient(:inngest), "/fn/register", payload) do
