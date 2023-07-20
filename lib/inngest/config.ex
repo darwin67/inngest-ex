@@ -11,6 +11,15 @@ defmodule Inngest.Config do
   @inngest_url "https://app.inngest.com"
   @dev_server_url "http://127.0.0.1:8288"
 
+  def app_name() do
+    with nil <- System.get_env("INNGEST_APP_NAME"),
+         nil <- Application.get_env(:inngest, :app_name) do
+      "InngestApp"
+    else
+      app_name -> app_name
+    end
+  end
+
   @spec event_url() :: binary()
   def event_url() do
     with nil <- System.get_env("INNGEST_EVENT_URL"),

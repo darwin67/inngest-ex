@@ -37,11 +37,19 @@ defmodule Inngest.Client do
       deployType: "ping",
       sdk: Config.sdk_version(),
       framework: "plug",
-      appName: "test app",
+      appName: Config.app_name(),
       functions: functions |> Enum.map(fn f -> f.serve(path) end)
     }
 
-    case Tesla.post(httpclient(:register), "/fn/register", payload) do
+    key = Inngest.Signature.hashed_signing_key(Config.signing_key())
+    headers = unless is_nil(key), do: [authorization: "Bearer " <> key], else: []
+
+    headers =
+      unless is_nil(Config.inngest_env()),
+        do: Keyword.put(headers, :"x-inngest-env", Config.inngest_env()),
+        else: headers
+
+    case Tesla.post(httpclient(:register, headers: headers), "/fn/register", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
         :ok
 
