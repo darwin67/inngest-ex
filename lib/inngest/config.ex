@@ -37,6 +37,16 @@ defmodule Inngest.Config do
     end
   end
 
+  @spec app_host() :: binary()
+  def app_host() do
+    with nil <- System.get_env("APP_HOST"),
+         nil <- Application.get_env(:inngest, :app_host) do
+      "http://127.0.0.1:4000"
+    else
+      host -> host
+    end
+  end
+
   @spec event_key() :: binary()
   def event_key() do
     with nil <- System.get_env("INNGEST_EVENT_KEY"),

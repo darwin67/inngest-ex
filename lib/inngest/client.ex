@@ -32,7 +32,7 @@ defmodule Inngest.Client do
 
   def register(functions) do
     payload = %{
-      url: "http://127.0.0.1:4000/api/inngest",
+      url: "#{Config.app_host()}/api/inngest",
       v: "1",
       deployType: "ping",
       sdk: Config.sdk_version(),
