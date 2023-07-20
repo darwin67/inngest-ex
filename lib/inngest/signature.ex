@@ -2,7 +2,6 @@ defmodule Inngest.Signature do
   @moduledoc """
   Handles signature related operations
   """
-
   @spec hashed_signing_key(binary()) :: binary() | nil
   def hashed_signing_key(signing_key) do
     with %{"prefix" => prefix} <- Regex.named_captures(~r/^(?<prefix>signkey-.+-)/, signing_key),
@@ -15,4 +14,11 @@ defmodule Inngest.Signature do
       _ -> nil
     end
   end
+
+  @spec siging_key_valid?(binary() | nil) :: boolean()
+  def siging_key_valid?(sig) when is_binary(sig) do
+    true
+  end
+
+  def signing_key_valid?(_), do: false
 end
