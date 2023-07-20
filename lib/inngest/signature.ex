@@ -1,4 +1,8 @@
 defmodule Inngest.Signature do
+  @moduledoc """
+  Handles signature related operations
+  """
+
   def hashed_signing_key(signing_key) do
     with %{"prefix" => prefix} <- Regex.named_captures(~r/^(?<prefix>signkey-.+-)/, signing_key),
          key <- Regex.replace(~r/^(signkey-.+-)/, signing_key, ""),
