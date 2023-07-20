@@ -42,12 +42,12 @@ defmodule Inngest.Client do
     }
 
     key = Inngest.Signature.hashed_signing_key(Config.signing_key())
-    headers = unless is_nil(key), do: [authorization: "Bearer " <> key], else: []
+    headers = if is_nil(key), do: [], else: [authorization: "Bearer " <> key]
 
     headers =
-      unless is_nil(Config.inngest_env()),
-        do: Keyword.put(headers, :"x-inngest-env", Config.inngest_env()),
-        else: headers
+      if is_nil(Config.inngest_env()),
+        do: headers,
+        else: Keyword.put(headers, :"x-inngest-env", Config.inngest_env())
 
     case Tesla.post(httpclient(:register, headers: headers), "/fn/register", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
