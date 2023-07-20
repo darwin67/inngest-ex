@@ -11,6 +11,17 @@ defmodule Inngest.Config do
   @inngest_url "https://app.inngest.com"
   @dev_server_url "http://127.0.0.1:8288"
 
+  @spec app_host() :: binary()
+  def app_host() do
+    with nil <- System.get_env("APP_HOST"),
+         nil <- Application.get_env(:inngest, :app_host) do
+      "http://127.0.0.1:4000"
+    else
+      host -> host
+    end
+  end
+
+  @spec app_name() :: binary()
   def app_name() do
     with nil <- System.get_env("INNGEST_APP_NAME"),
          nil <- Application.get_env(:inngest, :app_name) do
@@ -20,11 +31,14 @@ defmodule Inngest.Config do
     end
   end
 
+  @spec env() :: atom()
+  def env(), do: Application.get_env(:inngest, :env, :prod)
+
   @spec event_url() :: binary()
   def event_url() do
     with nil <- System.get_env("INNGEST_EVENT_URL"),
          nil <- Application.get_env(:inngest, :event_url) do
-      case Application.get_env(:inngest, :env, :prod) do
+      case env() do
         :dev -> @dev_server_url
         _ -> @event_url
       end
@@ -37,7 +51,7 @@ defmodule Inngest.Config do
   def inngest_url() do
     with nil <- System.get_env("INNGEST_URL"),
          nil <- Application.get_env(:inngest, :inngest_url) do
-      case Application.get_env(:inngest, :env, :prod) do
+      case env() do
         :dev -> @dev_server_url
         _ -> @inngest_url
       end
@@ -56,16 +70,6 @@ defmodule Inngest.Config do
       end
     else
       url -> url
-    end
-  end
-
-  @spec app_host() :: binary()
-  def app_host() do
-    with nil <- System.get_env("APP_HOST"),
-         nil <- Application.get_env(:inngest, :app_host) do
-      "http://127.0.0.1:4000"
-    else
-      host -> host
     end
   end
 
