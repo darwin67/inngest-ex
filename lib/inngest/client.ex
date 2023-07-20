@@ -41,7 +41,7 @@ defmodule Inngest.Client do
       functions: functions |> Enum.map(fn f -> f.serve(path) end)
     }
 
-    case Tesla.post(httpclient(:inngest), "/fn/register", payload) do
+    case Tesla.post(httpclient(:register), "/fn/register", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
         :ok
 
@@ -68,7 +68,7 @@ defmodule Inngest.Client do
     end
   end
 
-  @spec httpclient(:event | :inngest, Keyword.t()) :: Tesla.Client.t()
+  @spec httpclient(:event | :inngest | :register, Keyword.t()) :: Tesla.Client.t()
   defp httpclient(type, opts \\ [])
 
   defp httpclient(:event, opts) do
@@ -91,6 +91,23 @@ defmodule Inngest.Client do
   defp httpclient(:inngest, opts) do
     middleware = [
       {Tesla.Middleware.BaseUrl, Config.inngest_url()},
+      Tesla.Middleware.JSON
+    ]
+
+    middleware =
+      if Keyword.get(opts, :headers) do
+        headers = Keyword.get(opts, :headers, [])
+        middleware ++ [{Tesla.Middleware.Headers, headers}]
+      else
+        middleware
+      end
+
+    Tesla.client(middleware)
+  end
+
+  defp httpclient(:register, opts) do
+    middleware = [
+      {Tesla.Middleware.BaseUrl, Config.register_url()},
       Tesla.Middleware.JSON
     ]
 

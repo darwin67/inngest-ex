@@ -37,6 +37,19 @@ defmodule Inngest.Config do
     end
   end
 
+  @spec register_url() :: binary()
+  def register_url() do
+    with nil <- System.get_env("INNGEST_REGISTER_URL"),
+         nil <- Application.get_env(:inngest, :register_url) do
+      case Application.get_env(:inngest, :env, :prod) do
+        :dev -> @dev_server_url
+        _ -> "https://api.inngest.com"
+      end
+    else
+      url -> url
+    end
+  end
+
   @spec app_host() :: binary()
   def app_host() do
     with nil <- System.get_env("APP_HOST"),
