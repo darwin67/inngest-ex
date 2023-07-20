@@ -80,6 +80,9 @@ defmodule Inngest.Config do
     end
   end
 
+  @spec inngest_env() :: binary() | nil
+  def inngest_env(), do: System.get_env("INNGEST_ENV")
+
   @spec version() :: binary()
   def version(), do: Application.spec(:inngest, :vsn)
 
