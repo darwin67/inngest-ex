@@ -41,10 +41,10 @@ defmodule Inngest.Router.Endpoint do
       ) do
     if Config.is_prod() do
       # valid signature
-      sig =
-        conn
-        |> Plug.Conn.get_req_header("x-inngest-signature")
-        |> List.first()
+      # sig =
+      #   conn
+      #   |> Plug.Conn.get_req_header("x-inngest-signature")
+      #   |> List.first()
     end
 
     func = Map.get(funcs, fn_slug)
