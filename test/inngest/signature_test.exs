@@ -3,17 +3,17 @@ defmodule Inngest.SignatureTest do
 
   alias Inngest.Signature
 
-  describe "hashed_signing_key/1" do
-    @signing_key "signkey-test-8ee2262a15e8d3c42d6a840db7af3de2aab08ef632b32a37a687f24b34dba3ff"
-    @hashed_signing_key "signkey-test-e4bf4a2e7f55c7eb954b6e72f8f69628fbc409fe7da6d0f6958770987dcf0e02"
+  @signing_key "signkey-test-8ee2262a15e8d3c42d6a840db7af3de2aab08ef632b32a37a687f24b34dba3ff"
+  @hashed_signing_key "signkey-test-e4bf4a2e7f55c7eb954b6e72f8f69628fbc409fe7da6d0f6958770987dcf0e02"
 
+  describe "hashed_signing_key/1" do
     test "should return the hash sum of the siging key" do
       assert @hashed_signing_key == Signature.hashed_signing_key(@signing_key)
     end
   end
 
-  describe "signing_key_valid?/1" do
-    @sig "t=4843511073&s=f8f65f1e7b948618882ca20b79792184e9b59429d18b45091e1eb2ef76128b45"
+  describe "signing_key_valid?/3" do
+    @sig "t=1689920619&s=31df77f5b1b029de4bfce3a77e0517aa4ce0f5e2195a6467fc126a489ca2330b"
     @event %{
       id: "",
       name: "inngest/scheduled.timer",
@@ -35,16 +35,20 @@ defmodule Inngest.SignatureTest do
     }
 
     test "should return true if signature is valid" do
-      assert Signature.signing_key_valid?(@sig, @body)
+      assert Signature.signing_key_valid?(@sig, @signing_key, @body, ignore_ts: true)
     end
 
-    @tag :skip
+    test "should return false for expired signatures" do
+      refute Signature.signing_key_valid?(@sig, @signing_key, @body)
+    end
+
     test "should return false if signature is invalid" do
-      refute Signature.signing_key_valid?(@sig, @body)
+      sig = @sig <> "hello"
+      refute Signature.signing_key_valid?(sig, @signing_key, @body, ignore_ts: true)
     end
 
     test "should return false for non binary input" do
-      refute Signature.signing_key_valid?(10, @body)
+      refute Signature.signing_key_valid?(10, @signing_key, @body)
     end
   end
 end

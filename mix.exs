@@ -64,6 +64,9 @@ defmodule Inngest.MixProject do
       {:tesla, "~> 1.4"},
       {:hackney, "~> 1.10"},
       {:jason, "~> 1.4"},
+      # JSON Canonicalization Scheme (JCS)
+      {:jcs,
+       git: "https://github.com/pzingg/jcs.git", ref: "24196d27ae7a9d1ab116e004d0aac07360ae4000"},
       {:plug, "~> 1.14"},
       {:timex, "~> 3.7"},
 
