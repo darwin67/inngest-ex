@@ -13,19 +13,38 @@ defmodule Inngest.SignatureTest do
   end
 
   describe "signing_key_valid?/1" do
-    @sig "hello"
+    @sig "t=4843511073&s=f8f65f1e7b948618882ca20b79792184e9b59429d18b45091e1eb2ef76128b45"
+    @event %{
+      id: "",
+      name: "inngest/scheduled.timer",
+      data: %{},
+      user: %{},
+      ts: 1_674_082_830_001,
+      v: "1"
+    }
+    @body %{
+      ctx: %{
+        fn_id: "local-testing-local-cron",
+        run_id: "01GQ3HTEZ01M7R8Z9PR1DMHDN1",
+        step_id: "step"
+      },
+      event: @event,
+      events: [@event],
+      steps: %{},
+      use_api: false
+    }
 
     test "should return true if signature is valid" do
-      assert Signature.signing_key_valid?(@sig)
+      assert Signature.signing_key_valid?(@sig, @body)
     end
 
     @tag :skip
     test "should return false if signature is invalid" do
-      refute Signature.signing_key_valid?(@sig)
+      refute Signature.signing_key_valid?(@sig, @body)
     end
 
     test "should return false for non binary input" do
-      refute Signature.signing_key_valid?(10)
+      refute Signature.signing_key_valid?(10, @body)
     end
   end
 end
