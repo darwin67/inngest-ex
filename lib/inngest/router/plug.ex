@@ -1,3 +1,11 @@
+# defmodule CacheBodyReader do
+#   def read_body(conn, opts) do
+#     {:ok, body, conn} = Plug.Conn.read_body(conn, opts)
+#     conn = update_in(conn.assigns[:raw_body], &[body | &1 || []])
+#     {:ok, body, conn}
+#   end
+# end
+
 defmodule Inngest.Router.Plug do
   @moduledoc """
   Router module expected to be used with a plain
@@ -14,6 +22,7 @@ defmodule Inngest.Router.Plug do
       plug Plug.Parsers,
         parsers: [:urlencoded, :json],
         pass: ["text/*"],
+        # body_reader: {CacheBodyReader, :read_body, []},
         json_decoder: Jason
 
       plug :match
