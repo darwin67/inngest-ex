@@ -15,7 +15,6 @@ defmodule Inngest.SignatureTest do
   describe "signing_key_valid?/1" do
     @sig "hello"
 
-    @tag :skip
     test "should return true if signature is valid" do
       assert Signature.signing_key_valid?(@sig)
     end

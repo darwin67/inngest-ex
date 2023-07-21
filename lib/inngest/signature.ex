@@ -15,8 +15,8 @@ defmodule Inngest.Signature do
     end
   end
 
-  @spec siging_key_valid?(binary() | nil) :: boolean()
-  def siging_key_valid?(sig) when is_binary(sig) do
+  @spec signing_key_valid?(binary()) :: boolean()
+  def signing_key_valid?(sig) when is_binary(sig) do
     true
   end
 

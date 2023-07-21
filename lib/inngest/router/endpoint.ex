@@ -1,5 +1,6 @@
 defmodule Inngest.Router.Endpoint do
   import Plug.Conn
+  alias Inngest.Config
   alias Inngest.Function.Handler
 
   @content_type "application/json"
