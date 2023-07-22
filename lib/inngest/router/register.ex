@@ -3,25 +3,18 @@ defmodule Inngest.Router.Register do
   The plug that handles registration request from Inngest
   """
   import Plug.Conn
+  import Inngest.Router.Helper
 
   @content_type "application/json"
 
-  def init(%{funcs: _} = opts), do: opts
   def init(opts), do: opts
-
   def call(conn, opts), do: exec(conn, opts)
 
-  @spec exec(Plug.Conn.t(), map()) :: Plug.Conn.t()
   defp exec(
          %{request_path: path} = conn,
          %{funcs: funcs} = _params
        ) do
-    funcs =
-      funcs
-      |> Enum.reduce(%{}, fn func, x ->
-        slug = func.slug()
-        Map.put(x, slug, func.serve(path))
-      end)
+    funcs = func_map(path, funcs)
 
     {status, resp} =
       case Inngest.Client.register(path, funcs) do
