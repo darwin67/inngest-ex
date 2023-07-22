@@ -72,6 +72,7 @@ defmodule Inngest.MixProject do
 
       # dev / test
       {:plug_cowboy, "~> 2.0", only: :dev},
+      {:phoenix, "~> 1.6", only: [:dev, :test]},
       # {:bandit, "~> 0.6", only: :dev},
       {:tz, "~> 0.26", only: :dev},
       {:tz_extra, "~> 0.26", only: :dev},

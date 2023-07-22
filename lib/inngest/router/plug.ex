@@ -1,24 +1,11 @@
 defmodule Inngest.Router.Plug do
   @moduledoc """
-  Router module expected to be used with a plain
-  router
+  Router module expected to be used with a plain router
   """
 
   defmacro __using__(_opts) do
     quote do
-      use Plug.Router
       import Inngest.Router.Plug
-
-      plug Plug.Logger
-
-      plug Plug.Parsers,
-        parsers: [:urlencoded, :json],
-        pass: ["text/*"],
-        body_reader: {Inngest.Plug.CacheBodyReader, :read_body, []},
-        json_decoder: Jason
-
-      plug :match
-      plug :dispatch
     end
   end
 
@@ -33,40 +20,20 @@ defmodule Inngest.Router.Plug do
       |> Macro.escape()
 
     quote location: :keep do
-      # create mapping of function slug to function map
-      # during compile time
-      @funcs unquote(opts)
-             |> Map.get(:funcs, %{})
-             |> Enum.reduce(%{}, fn func, x ->
-               slug = func.slug()
-               Map.put(x, slug, func.serve(unquote(path)))
-             end)
-
+      # invoke path
       post unquote(path) do
-        conn = var!(conn)
-        params = params(conn)
+        opts = Inngest.Router.Invoke.init(unquote(opts))
 
-        conn
-        |> assign(:funcs, @funcs)
-        |> Inngest.Router.Endpoint.invoke(params)
+        var!(conn)
+        |> Inngest.Router.Invoke.call(opts)
       end
 
       # register path
       put unquote(path) do
-        conn = var!(conn)
+        opts = Inngest.Router.Register.init(unquote(opts))
 
-        params =
-          params(conn)
-          |> Map.put(:path, unquote(path))
-
-        conn
-        |> Inngest.Router.Endpoint.register(params)
-      end
-
-      defp params(conn) do
-        conn
-        |> Map.get(:params, %{})
-        |> Map.merge(unquote(opts))
+        var!(conn)
+        |> Inngest.Router.Register.call(opts)
       end
     end
   end

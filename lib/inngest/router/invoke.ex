@@ -1,44 +1,22 @@
-defmodule Inngest.Router.Endpoint do
+defmodule Inngest.Router.Invoke do
+  @moduledoc """
+    The plug that handles function invokes from Inngest
+  """
   import Plug.Conn
+  import Inngest.Router.Helper
   alias Inngest.{Config, Signature}
   alias Inngest.Function.Handler
 
   @content_type "application/json"
 
-  def register(conn, %{path: path, funcs: funcs} = _params) do
-    {status, resp} =
-      case Inngest.Client.register(path, funcs) do
-        :ok ->
-          {200, %{}}
+  def init(opts), do: opts
+  def call(%{params: params} = conn, opts), do: exec(conn, Map.merge(opts, params))
 
-        {:error, error} ->
-          {400, error}
-      end
-
-    resp =
-      case Jason.encode(resp) do
-        {:ok, val} -> val
-        {:error, error} -> error
-      end
-
-    conn
-    |> put_resp_content_type(@content_type)
-    |> send_resp(status, resp)
-  end
-
-  # NOTES:
-  # *********  RESPONSE  ***********
-  # Each results has a specific meaning to it.
-  # status, data
-  # 206, generatorcode -> store result and continue execution
-  # 200, resp -> execution completed (including steps) of function
-  # 400, error -> non retriable error
-  # 500, error -> retriable error
-  @spec invoke(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def invoke(
-        %{assigns: %{funcs: funcs, raw_body: [body]}} = conn,
-        %{"event" => event, "ctx" => ctx, "fnId" => fn_slug} = params
-      ) do
+  defp exec(
+         %{request_path: path, private: %{raw_body: [body]}} = conn,
+         %{"event" => event, "ctx" => ctx, "fnId" => fn_slug, funcs: funcs} = params
+       ) do
+    funcs = func_map(path, funcs)
     args = %{ctx: ctx, event: event, fn_slug: fn_slug, funcs: funcs, params: params}
 
     {status, payload} =
@@ -58,8 +36,17 @@ defmodule Inngest.Router.Endpoint do
     conn
     |> put_resp_content_type(@content_type)
     |> send_resp(status, payload)
+    |> halt()
   end
 
+  # NOTES:
+  # *********  RESPONSE  ***********
+  # Each results has a specific meaning to it.
+  # status, data
+  # 206, generatorcode -> store result and continue execution
+  # 200, resp -> execution completed (including steps) of function
+  # 400, error -> non retriable error
+  # 500, error -> retriable error
   @spec invoke(map()) :: {200 | 206 | 400 | 500, binary()}
   defp invoke(%{ctx: ctx, event: event, fn_slug: fn_slug, funcs: funcs, params: params} = _) do
     func = Map.get(funcs, fn_slug)

@@ -38,7 +38,7 @@ defmodule Inngest.Client do
       sdk: Config.sdk_version(),
       framework: "plug",
       appName: Config.app_name(),
-      functions: functions |> Enum.map(fn f -> f.serve(path) end)
+      functions: functions |> Enum.map(fn {_, v} -> v.mod.serve(path) end)
     }
 
     key = Inngest.Signature.hashed_signing_key(Config.signing_key())
