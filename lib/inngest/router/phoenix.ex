@@ -19,19 +19,12 @@ defmodule Inngest.Router.Phoenix do
       |> Enum.into(%{})
       |> Macro.escape()
 
-    quote location: :keep do
-      # create mapping of function slug to function map
-      # during compile time
-      @funcs unquote(opts)
-             |> Map.get(:funcs, %{})
-             |> Enum.reduce(%{}, fn func, x ->
-               slug = func.slug()
-               Map.put(x, slug, func.serve(unquote(path)))
-             end)
+    router_opts = [as: false, alias: false]
 
-      scope unquote(path) do
-        post "/", Inngest.Router.Endpoint, :invoke
-        put "/", Inngest.Router.Endpoint, :register
+    quote location: :keep, bind_quoted: binding() do
+      scope path, alias: false, as: false do
+        post "/", Inngest.Router.Invoke, opts, router_opts
+        put "/", Inngest.Router.Register, opts, router_opts
       end
     end
   end
