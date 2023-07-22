@@ -45,9 +45,10 @@ defmodule Inngest.Router.Plug do
         conn = var!(conn)
         params = params(conn)
 
+        opts = Inngest.Router.Invoke.init(unquote(opts))
+
         conn
-        |> assign(:funcs, @funcs)
-        |> Inngest.Router.Endpoint.invoke(params)
+        |> Inngest.Router.Invoke.call(opts)
       end
 
       # register path
@@ -58,8 +59,10 @@ defmodule Inngest.Router.Plug do
           params(conn)
           |> Map.put(:path, unquote(path))
 
+        opts = Inngest.Router.Register.init(unquote(opts))
+
         conn
-        |> Inngest.Router.Endpoint.register(params)
+        |> Inngest.Router.Register.call(opts)
       end
 
       defp params(conn) do
