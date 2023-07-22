@@ -12,7 +12,7 @@ defmodule Inngest.SignatureTest do
     end
   end
 
-  describe "signing_key_valid?/3" do
+  describe "signing_key_valid?/4" do
     @sig "t=1689920619&s=31df77f5b1b029de4bfce3a77e0517aa4ce0f5e2195a6467fc126a489ca2330b"
     @event %{
       id: "",
@@ -34,21 +34,25 @@ defmodule Inngest.SignatureTest do
       use_api: false
     }
 
-    test "should return true if signature is valid" do
-      assert Signature.signing_key_valid?(@sig, @signing_key, @body, ignore_ts: true)
+    setup do
+      %{body: Jason.encode!(@body)}
     end
 
-    test "should return false for expired signatures" do
-      refute Signature.signing_key_valid?(@sig, @signing_key, @body)
+    test "should return true if signature is valid", %{body: body} do
+      assert Signature.signing_key_valid?(@sig, @signing_key, body, ignore_ts: true)
     end
 
-    test "should return false if signature is invalid" do
+    test "should return false for expired signatures", %{body: body} do
+      refute Signature.signing_key_valid?(@sig, @signing_key, body)
+    end
+
+    test "should return false if signature is invalid", %{body: body} do
       sig = @sig <> "hello"
-      refute Signature.signing_key_valid?(sig, @signing_key, @body, ignore_ts: true)
+      refute Signature.signing_key_valid?(sig, @signing_key, body, ignore_ts: true)
     end
 
-    test "should return false for non binary input" do
-      refute Signature.signing_key_valid?(10, @signing_key, @body)
+    test "should return false for non binary input", %{body: body} do
+      refute Signature.signing_key_valid?(10, @signing_key, body)
     end
   end
 end

@@ -15,11 +15,11 @@ defmodule Inngest.Signature do
     end
   end
 
-  @spec signing_key_valid?(binary(), binary(), map(), keyword()) :: boolean()
+  @spec signing_key_valid?(binary(), binary(), binary(), keyword()) :: boolean()
   def signing_key_valid?(sig, key, body, opts \\ [])
 
   def signing_key_valid?(sig, key, body, opts)
-      when is_binary(sig) and is_binary(key) and is_map(body) do
+      when is_binary(sig) and is_binary(key) and is_binary(body) do
     with %{"s" => _sig, "t" => timestamp} <- Plug.Conn.Query.decode(sig),
          {unix_ts, ""} <- Integer.parse(timestamp),
          within_timeframe <-
@@ -41,11 +41,9 @@ defmodule Inngest.Signature do
   def signing_key_valid?(_, _, _, _), do: false
 
   def sign(unix_ts, signing_key, body)
-      when is_binary(unix_ts) and is_binary(signing_key) and is_map(body) do
+      when is_binary(unix_ts) and is_binary(signing_key) and is_binary(body) do
     with key <- normalize_key(signing_key),
-         jcs <- Jcs.encode(body),
-         sig <-
-           :crypto.mac(:hmac, :sha256, key, jcs <> unix_ts) |> Base.encode16(case: :lower) do
+         sig <- :crypto.mac(:hmac, :sha256, key, body <> unix_ts) |> Base.encode16(case: :lower) do
       "t=#{unix_ts}&s=#{sig}"
     else
       _ -> ""
