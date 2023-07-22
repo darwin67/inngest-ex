@@ -22,10 +22,11 @@ defmodule Inngest.Signature do
       when is_binary(sig) and is_binary(key) and is_binary(body) do
     with %{"s" => _sig, "t" => timestamp} <- Plug.Conn.Query.decode(sig),
          {unix_ts, ""} <- Integer.parse(timestamp),
+         now <- Timex.now(),
          within_timeframe <-
-           Timex.from_unix(unix_ts, :millisecond) in Timex.Interval.new(
-             from: Timex.shift(Timex.now(), minutes: -5),
-             until: Timex.now()
+           Timex.from_unix(unix_ts) in Timex.Interval.new(
+             from: Timex.shift(now, minutes: -5),
+             until: now
            ),
          ignore_ts <- Keyword.get(opts, :ignore_ts, false) do
       if within_timeframe || ignore_ts do
