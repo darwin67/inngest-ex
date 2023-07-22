@@ -13,7 +13,7 @@ defmodule Inngest.Router.Plug do
       plug Plug.Parsers,
         parsers: [:urlencoded, :json],
         pass: ["text/*"],
-        body_reader: {Inngest.Plug.CacheBodyReader, :read_body, []},
+        body_reader: {Inngest.CacheBodyReader, :read_body, []},
         json_decoder: Jason
 
       plug :match

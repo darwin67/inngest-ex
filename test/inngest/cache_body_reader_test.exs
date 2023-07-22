@@ -1,8 +1,8 @@
-defmodule Inngest.Plug.CacheBodyReaderTest do
+defmodule Inngest.CacheBodyReaderTest do
   use ExUnit.Case, async: true
   use Plug.Test
 
-  alias Inngest.Plug.CacheBodyReader
+  alias Inngest.CacheBodyReader
 
   describe "read_body/2" do
     @body %{"hello" => "world"}
@@ -18,7 +18,7 @@ defmodule Inngest.Plug.CacheBodyReaderTest do
     test "should cache body in assigns", %{conn: conn} do
       assert {:ok, _body,
               %{
-                assigns: %{raw_body: [raw]}
+                private: %{raw_body: [raw]}
               }} = CacheBodyReader.read_body(conn, [])
 
       assert {:ok, body} = Jason.decode(raw)
