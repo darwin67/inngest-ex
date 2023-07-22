@@ -31,7 +31,7 @@ defmodule Inngest.Dev.EventFn do
   #   [timeout: "1d", if: "event.#{match} == async.#{match}"]
   # end
 
-  wait_for_event "test/wait", do: [timeout: "1d", match: "data.yo"]
+  # wait_for_event "test/wait", do: [timeout: "1d", match: "data.yo"]
 
   run "result", %{data: data} do
     {:ok, data}
