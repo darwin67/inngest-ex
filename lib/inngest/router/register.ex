@@ -14,7 +14,7 @@ defmodule Inngest.Router.Register do
          %{request_path: path} = conn,
          %{funcs: funcs} = _params
        ) do
-    funcs = func_map(path, funcs) |> IO.inspect()
+    funcs = func_map(path, funcs)
 
     {status, resp} =
       case Inngest.Client.register(path, funcs) do
