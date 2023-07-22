@@ -1,3 +1,7 @@
+.PHONY: dev
+dev:
+	mix dev
+
 .PHONY: deps
 deps:
 	mix deps.get

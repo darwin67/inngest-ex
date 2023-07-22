@@ -9,7 +9,7 @@ defmodule Inngest.Dev.Router do
   use Inngest.Router, :plug
   alias Inngest.Dev.{EventFn, CronFn}
 
-  plug Plug.Logger
+  plug Plug.Logger, log: :debug
 
   plug Plug.Parsers,
     parsers: [:urlencoded, :json],
