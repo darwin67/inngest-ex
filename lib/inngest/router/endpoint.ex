@@ -5,6 +5,8 @@ defmodule Inngest.Router.Endpoint do
 
   @content_type "application/json"
 
+  def init(conn, _opts), do: conn
+
   def register(conn, %{path: path, funcs: funcs} = _params) do
     {status, resp} =
       case Inngest.Client.register(path, funcs) do
