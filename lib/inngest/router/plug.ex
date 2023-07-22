@@ -20,43 +20,20 @@ defmodule Inngest.Router.Plug do
       |> Macro.escape()
 
     quote location: :keep do
-      # create mapping of function slug to function map
-      # during compile time
-      @funcs unquote(opts)
-             |> Map.get(:funcs, %{})
-             |> Enum.reduce(%{}, fn func, x ->
-               slug = func.slug()
-               Map.put(x, slug, func.serve(unquote(path)))
-             end)
-
+      # invoke path
       post unquote(path) do
-        conn = var!(conn)
-        params = params(conn)
-
         opts = Inngest.Router.Invoke.init(unquote(opts))
 
-        conn
+        var!(conn)
         |> Inngest.Router.Invoke.call(opts)
       end
 
       # register path
       put unquote(path) do
-        conn = var!(conn)
-
-        params =
-          params(conn)
-          |> Map.put(:path, unquote(path))
-
         opts = Inngest.Router.Register.init(unquote(opts))
 
-        conn
+        var!(conn)
         |> Inngest.Router.Register.call(opts)
-      end
-
-      defp params(conn) do
-        conn
-        |> Map.get(:params, %{})
-        |> Map.merge(unquote(opts))
       end
     end
   end
