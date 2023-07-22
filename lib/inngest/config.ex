@@ -34,8 +34,8 @@ defmodule Inngest.Config do
   @spec env() :: atom()
   def env(), do: Application.get_env(:inngest, :env, :prod)
 
-  @spec is_prod() :: boolean()
-  def is_prod(), do: env() == :prod
+  @spec is_dev() :: boolean()
+  def is_dev(), do: env() == :dev
 
   @spec event_url() :: binary()
   def event_url() do

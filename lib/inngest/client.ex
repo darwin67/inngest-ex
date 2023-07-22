@@ -56,6 +56,9 @@ defmodule Inngest.Client do
       {:ok, %Tesla.Env{status: 201}} ->
         :ok
 
+      {:ok, %Tesla.Env{status: 202}} ->
+        :ok
+
       {:ok, %Tesla.Env{status: _, body: error}} ->
         {:error, error}
 
