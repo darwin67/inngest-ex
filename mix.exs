@@ -76,6 +76,7 @@ defmodule Inngest.MixProject do
       {:tz, "~> 0.26", only: :dev},
       {:tz_extra, "~> 0.26", only: :dev},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
+      {:dotenv, "~> 3.0", only: [:dev]},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:excoveralls, "~> 0.10", only: :test}

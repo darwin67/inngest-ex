@@ -30,3 +30,8 @@ inngest-*.tar
 
 # direnv / nix-shell
 /.direnv/
+
+# dotenv
+.env
+.env.*
+!.env.sample

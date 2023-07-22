@@ -1,6 +1,9 @@
 require Logger
 Logger.configure(level: :debug)
 
+# Load env
+Dotenv.load()
+
 defmodule Inngest.Dev.Router do
   use Inngest.Router, :plug
   alias Inngest.Dev.{EventFn, CronFn}
