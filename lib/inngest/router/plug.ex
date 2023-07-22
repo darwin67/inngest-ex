@@ -5,19 +5,7 @@ defmodule Inngest.Router.Plug do
 
   defmacro __using__(_opts) do
     quote do
-      use Plug.Router
       import Inngest.Router.Plug
-
-      plug Plug.Logger
-
-      plug Plug.Parsers,
-        parsers: [:urlencoded, :json],
-        pass: ["text/*"],
-        body_reader: {Inngest.CacheBodyReader, :read_body, []},
-        json_decoder: Jason
-
-      plug :match
-      plug :dispatch
     end
   end
 

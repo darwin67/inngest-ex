@@ -5,10 +5,20 @@ Logger.configure(level: :debug)
 Dotenv.load()
 
 defmodule Inngest.Dev.Router do
+  use Plug.Router
   use Inngest.Router, :plug
   alias Inngest.Dev.{EventFn, CronFn}
 
-  inngest("/api/inngest", funcs: [EventFn, CronFn])
+  plug Plug.Logger
+
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :json],
+    pass: ["text/*"],
+    body_reader: {Inngest.CacheBodyReader, :read_body, []},
+    json_decoder: Jason
+
+  plug :match
+  plug :dispatch
 
   get "/" do
     data = Jason.encode!(%{hello: "world"})
@@ -17,6 +27,8 @@ defmodule Inngest.Dev.Router do
     |> Plug.Conn.put_resp_content_type("application/json")
     |> send_resp(200, data)
   end
+
+  inngest("/api/inngest", funcs: [EventFn, CronFn])
 
   match _ do
     send_resp(conn, 404, "oops\n")
