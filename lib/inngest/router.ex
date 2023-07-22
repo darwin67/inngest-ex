@@ -12,6 +12,12 @@ defmodule Inngest.Router do
     end
   end
 
+  def phoenix do
+    quote do
+      use Inngest.Router.Phoenix
+    end
+  end
+
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end

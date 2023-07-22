@@ -1,7 +1,6 @@
 defmodule Inngest.Router.Plug do
   @moduledoc """
-  Router module expected to be used with a plain
-  router
+  Router module expected to be used with a plain router
   """
 
   defmacro __using__(_opts) do
