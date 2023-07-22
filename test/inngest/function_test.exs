@@ -27,7 +27,7 @@ defmodule Inngest.FunctionTest do
     end
   end
 
-  describe "serve/0" do
+  describe "serve/1" do
     test "event function should return approprivate map" do
       assert %{
                id: "awesome-event-func",
@@ -48,7 +48,7 @@ defmodule Inngest.FunctionTest do
                    }
                  }
                }
-             } = TestEventFn.serve()
+             } = TestEventFn.serve("/api/inngest")
     end
 
     test "cron function should return appropriate map" do
@@ -58,7 +58,7 @@ defmodule Inngest.FunctionTest do
                triggers: [
                  %Trigger{cron: "TZ=America/Los_Angeles * * * * *"}
                ]
-             } = TestCronFn.serve()
+             } = TestCronFn.serve("/api/inngest")
     end
   end
 

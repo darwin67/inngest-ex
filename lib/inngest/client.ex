@@ -30,22 +30,33 @@ defmodule Inngest.Client do
     end
   end
 
-  def register(functions) do
+  def register(path, functions) do
     payload = %{
-      url: "http://127.0.0.1:4000/api/inngest",
+      url: Config.app_host() <> path,
       v: "1",
       deployType: "ping",
       sdk: Config.sdk_version(),
       framework: "plug",
-      appName: "test app",
-      functions: functions |> Enum.map(& &1.serve/0)
+      appName: Config.app_name(),
+      functions: functions |> Enum.map(fn f -> f.serve(path) end)
     }
 
-    case Tesla.post(httpclient(:app), "/fn/register", payload) do
+    key = Inngest.Signature.hashed_signing_key(Config.signing_key())
+    headers = if is_nil(key), do: [], else: [authorization: "Bearer " <> key]
+
+    headers =
+      if is_nil(Config.inngest_env()),
+        do: headers,
+        else: Keyword.put(headers, :"x-inngest-env", Config.inngest_env())
+
+    case Tesla.post(httpclient(:register, headers: headers), "/fn/register", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
         :ok
 
       {:ok, %Tesla.Env{status: 201}} ->
+        :ok
+
+      {:ok, %Tesla.Env{status: 202}} ->
         :ok
 
       {:ok, %Tesla.Env{status: _, body: error}} ->
@@ -57,7 +68,7 @@ defmodule Inngest.Client do
   end
 
   def dev_info() do
-    client = httpclient(:app)
+    client = httpclient(:inngest)
 
     case Tesla.get(client, "/dev") do
       {:ok, %Tesla.Env{status: 200, body: body} = _resp} ->
@@ -68,7 +79,7 @@ defmodule Inngest.Client do
     end
   end
 
-  @spec httpclient(:event | :app, Keyword.t()) :: Tesla.Client.t()
+  @spec httpclient(:event | :inngest | :register, Keyword.t()) :: Tesla.Client.t()
   defp httpclient(type, opts \\ [])
 
   defp httpclient(:event, opts) do
@@ -88,9 +99,26 @@ defmodule Inngest.Client do
     Tesla.client(middleware)
   end
 
-  defp httpclient(:app, opts) do
+  defp httpclient(:inngest, opts) do
     middleware = [
-      {Tesla.Middleware.BaseUrl, Config.app_url()},
+      {Tesla.Middleware.BaseUrl, Config.inngest_url()},
+      Tesla.Middleware.JSON
+    ]
+
+    middleware =
+      if Keyword.get(opts, :headers) do
+        headers = Keyword.get(opts, :headers, [])
+        middleware ++ [{Tesla.Middleware.Headers, headers}]
+      else
+        middleware
+      end
+
+    Tesla.client(middleware)
+  end
+
+  defp httpclient(:register, opts) do
+    middleware = [
+      {Tesla.Middleware.BaseUrl, Config.register_url()},
       Tesla.Middleware.JSON
     ]
 

@@ -3,6 +3,7 @@ defmodule Inngest.Function do
   Module to be used within user code to setup an Inngest function.
   Making it servable and invokable.
   """
+  alias Inngest.Config
   alias Inngest.Function.{Step, Trigger}
 
   @doc """
@@ -57,13 +58,13 @@ defmodule Inngest.Function do
       defp trigger(%{event: event} = _opts), do: %Trigger{event: event}
       defp trigger(%{cron: cron} = _opts), do: %Trigger{cron: cron}
 
-      def step(),
+      def step(path),
         do: %{
           step: %Step{
             id: :step,
             name: "step",
             runtime: %Step.RunTime{
-              url: "http://127.0.0.1:4000/api/inngest?fnId=#{slug()}&step=step"
+              url: "#{Config.app_host() <> path}?fnId=#{slug()}&step=step"
             },
             retries: %Step.Retry{}
           }
@@ -71,12 +72,12 @@ defmodule Inngest.Function do
 
       def steps(), do: __handler__().steps
 
-      def serve() do
+      def serve(path) do
         %{
           id: slug(),
           name: name(),
           triggers: [trigger()],
-          steps: step(),
+          steps: step(path),
           mod: __MODULE__
         }
       end
@@ -321,7 +322,7 @@ defmodule Inngest.Function do
       tags: tags,
       mod: mod,
       runtime: %Step.RunTime{
-        url: "http://127.0.0.1:4000/api/inngest/fnId=#{fn_slug}&step=#{slug}"
+        url: "#{Config.app_host()}/api/inngest?fnId=#{fn_slug}&step=#{slug}"
       },
       retries: %Step.Retry{}
     }

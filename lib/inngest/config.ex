@@ -8,15 +8,41 @@ defmodule Inngest.Config do
   3. Default values
   """
   @event_url "https://inn.gs"
-  @app_url "https://app.inngest.com"
-  @dev_url "http://127.0.0.1:8288"
+  @inngest_url "https://app.inngest.com"
+  @dev_server_url "http://127.0.0.1:8288"
+
+  @spec app_host() :: binary()
+  def app_host() do
+    with nil <- System.get_env("APP_HOST"),
+         nil <- Application.get_env(:inngest, :app_host) do
+      "http://127.0.0.1:4000"
+    else
+      host -> host
+    end
+  end
+
+  @spec app_name() :: binary()
+  def app_name() do
+    with nil <- System.get_env("INNGEST_APP_NAME"),
+         nil <- Application.get_env(:inngest, :app_name) do
+      "InngestApp"
+    else
+      app_name -> app_name
+    end
+  end
+
+  @spec env() :: atom()
+  def env(), do: Application.get_env(:inngest, :env, :prod)
+
+  @spec is_dev() :: boolean()
+  def is_dev(), do: env() == :dev
 
   @spec event_url() :: binary()
   def event_url() do
     with nil <- System.get_env("INNGEST_EVENT_URL"),
          nil <- Application.get_env(:inngest, :event_url) do
-      case Application.get_env(:inngest, :env, :prod) do
-        :dev -> @dev_url
+      case env() do
+        :dev -> @dev_server_url
         _ -> @event_url
       end
     else
@@ -24,12 +50,26 @@ defmodule Inngest.Config do
     end
   end
 
-  def app_url() do
+  @spec inngest_url() :: binary()
+  def inngest_url() do
+    with nil <- System.get_env("INNGEST_URL"),
+         nil <- Application.get_env(:inngest, :inngest_url) do
+      case env() do
+        :dev -> @dev_server_url
+        _ -> @inngest_url
+      end
+    else
+      url -> url
+    end
+  end
+
+  @spec register_url() :: binary()
+  def register_url() do
     with nil <- System.get_env("INNGEST_REGISTER_URL"),
-         nil <- Application.get_env(:inngest, :app_url) do
+         nil <- Application.get_env(:inngest, :register_url) do
       case Application.get_env(:inngest, :env, :prod) do
-        :dev -> @dev_url
-        _ -> @app_url
+        :dev -> @dev_server_url
+        _ -> "https://api.inngest.com"
       end
     else
       url -> url
@@ -45,6 +85,19 @@ defmodule Inngest.Config do
       key -> key
     end
   end
+
+  @spec signing_key() :: binary()
+  def signing_key() do
+    with nil <- System.get_env("INNGEST_SIGNING_KEY"),
+         nil <- Application.get_env(:inngest, :signing_key) do
+      ""
+    else
+      key -> key
+    end
+  end
+
+  @spec inngest_env() :: binary() | nil
+  def inngest_env(), do: System.get_env("INNGEST_ENV")
 
   @spec version() :: binary()
   def version(), do: Application.spec(:inngest, :vsn)

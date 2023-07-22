@@ -1,12 +1,13 @@
 defmodule Inngest.Router.Endpoint do
   import Plug.Conn
+  alias Inngest.{Config, Signature}
   alias Inngest.Function.Handler
 
   @content_type "application/json"
 
-  def register(conn, %{funcs: funcs} = _params) do
+  def register(conn, %{path: path, funcs: funcs} = _params) do
     {status, resp} =
-      case Inngest.Client.register(funcs) do
+      case Inngest.Client.register(path, funcs) do
         :ok ->
           {200, %{}}
 
@@ -35,9 +36,32 @@ defmodule Inngest.Router.Endpoint do
   # 500, error -> retriable error
   @spec invoke(Plug.Conn.t(), map) :: Plug.Conn.t()
   def invoke(
-        %{assigns: %{funcs: funcs}} = conn,
+        %{assigns: %{funcs: funcs, raw_body: [body]}} = conn,
         %{"event" => event, "ctx" => ctx, "fnId" => fn_slug} = params
       ) do
+    args = %{ctx: ctx, event: event, fn_slug: fn_slug, funcs: funcs, params: params}
+
+    {status, payload} =
+      case Config.is_dev() do
+        true ->
+          invoke(args)
+
+        false ->
+          with sig <- conn |> Plug.Conn.get_req_header("x-inngest-signature") |> List.first(),
+               true <- Signature.signing_key_valid?(sig, Config.signing_key(), body) do
+            invoke(args)
+          else
+            _ -> {400, Jason.encode!(%{error: "unable to verify signature"})}
+          end
+      end
+
+    conn
+    |> put_resp_content_type(@content_type)
+    |> send_resp(status, payload)
+  end
+
+  @spec invoke(map()) :: {200 | 206 | 400 | 500, binary()}
+  defp invoke(%{ctx: ctx, event: event, fn_slug: fn_slug, funcs: funcs, params: params} = _) do
     func = Map.get(funcs, fn_slug)
 
     args = %{
@@ -56,8 +80,6 @@ defmodule Inngest.Router.Endpoint do
         {:error, err} -> Jason.encode!(err.message)
       end
 
-    conn
-    |> put_resp_content_type(@content_type)
-    |> send_resp(status, payload)
+    {status, payload}
   end
 end
