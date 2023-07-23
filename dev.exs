@@ -28,7 +28,7 @@ defmodule Inngest.Dev.Router do
     |> send_resp(200, data)
   end
 
-  inngest("/api/inngest", funcs: [EventFn, CronFn])
+  inngest("/api/inngest", path: "dev/**")
 
   match _ do
     send_resp(conn, 404, "oops\n")
