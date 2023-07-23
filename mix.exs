@@ -25,9 +25,25 @@ defmodule Inngest.MixProject do
 
       # Docs
       name: "Inngest",
-      docs: docs(),
+      source_url: "https://github.com/darwin67/ex_inngest",
       description: "Elixir SDK for Inngest",
-      homepage_url: "https://inngest.com"
+      homepage_url: "https://inngest.com",
+      docs: [
+        main: "Inngest",
+        assets: "docs/assets",
+        extras: ["README.md", "LICENSE", "CHANGELOG.md"],
+        authors: ["Darwin Wu"]
+        # source_ref: "v#{@version}",
+      ]
+    ]
+  end
+
+  defp package do
+    [
+      maintainers: ["Darwin Wu"],
+      licenses: ["GPL-3.0-or-later"],
+      links: %{github: "https://github.com/darwin67/ex_inngest"},
+      files: ~w(lib mix.exs README.md LICENSE CHANGELOG.md)
     ]
   end
 
@@ -39,22 +55,6 @@ defmodule Inngest.MixProject do
   def application do
     [
       extra_applications: [:logger]
-    ]
-  end
-
-  defp package do
-    [
-      maintainers: ["Darwin Wu"],
-      licenses: ["GPL-3.0-or-later"],
-      links: %{github: "https://github.com/darwin67/ex-inngest"},
-      files: ~w(lib mix.exs README.md LICENSE CHANGELOG.md)
-    ]
-  end
-
-  defp docs do
-    [
-      source_ref: "v#{@version}",
-      source_url: "https://github.com/darwin67/ex-inngest"
     ]
   end
 

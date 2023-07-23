@@ -29,3 +29,7 @@ dialyzer:
 .PHONY: clean
 clean:
 	mix deps.clean --unlock --unused
+
+.PHONY: docs
+docs:
+	mix docs --open
