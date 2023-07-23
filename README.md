@@ -127,7 +127,7 @@ See the guides for more details regarding use cases and how each macros can be u
 
 ### Dev server
 
-![Dev server screenshot](/docs/assets/dev-server.jpg)
+![Dev server screenshot](https://github.com/darwin67/ex_inngest/assets/5746693/d8b80b54-5238-4c4b-bf76-6e15bee590a7)
 
 Inngest provides a dev server you can run locally to aid with local development. Start
 the Dev server with:
