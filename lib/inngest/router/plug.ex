@@ -2,6 +2,7 @@ defmodule Inngest.Router.Plug do
   @moduledoc """
   Router module expected to be used with a plain router
   """
+  @framework "plug"
 
   defmacro __using__(_opts) do
     quote do
@@ -17,6 +18,7 @@ defmodule Inngest.Router.Plug do
         opts
       end
       |> Enum.into(%{})
+      |> Map.put(:framework, @framework)
       |> Macro.escape()
 
     quote location: :keep do

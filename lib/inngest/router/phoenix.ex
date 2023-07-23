@@ -2,6 +2,7 @@ defmodule Inngest.Router.Phoenix do
   @moduledoc """
   Router module expected to be used with a phoenix router
   """
+  @framework "phoenix"
 
   defmacro __using__(_opts) do
     quote do
@@ -17,6 +18,7 @@ defmodule Inngest.Router.Phoenix do
         opts
       end
       |> Enum.into(%{})
+      |> Map.put(:framework, @framework)
       |> Macro.escape()
 
     router_opts = [as: false, alias: false]

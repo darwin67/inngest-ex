@@ -30,43 +30,6 @@ defmodule Inngest.Client do
     end
   end
 
-  def register(path, functions) do
-    payload = %{
-      url: Config.app_host() <> path,
-      v: "1",
-      deployType: "ping",
-      sdk: Config.sdk_version(),
-      framework: "plug",
-      appName: Config.app_name(),
-      functions: functions |> Enum.map(fn {_, v} -> v.mod.serve(path) end)
-    }
-
-    key = Inngest.Signature.hashed_signing_key(Config.signing_key())
-    headers = if is_nil(key), do: [], else: [authorization: "Bearer " <> key]
-
-    headers =
-      if is_nil(Config.inngest_env()),
-        do: headers,
-        else: Keyword.put(headers, :"x-inngest-env", Config.inngest_env())
-
-    case Tesla.post(httpclient(:register, headers: headers), "/fn/register", payload) do
-      {:ok, %Tesla.Env{status: 200}} ->
-        :ok
-
-      {:ok, %Tesla.Env{status: 201}} ->
-        :ok
-
-      {:ok, %Tesla.Env{status: 202}} ->
-        :ok
-
-      {:ok, %Tesla.Env{status: _, body: error}} ->
-        {:error, error}
-
-      {:error, error} ->
-        {:error, error}
-    end
-  end
-
   def dev_info() do
     client = httpclient(:inngest)
 
@@ -80,9 +43,9 @@ defmodule Inngest.Client do
   end
 
   @spec httpclient(:event | :inngest | :register, Keyword.t()) :: Tesla.Client.t()
-  defp httpclient(type, opts \\ [])
+  def httpclient(type, opts \\ [])
 
-  defp httpclient(:event, opts) do
+  def httpclient(:event, opts) do
     middleware = [
       {Tesla.Middleware.BaseUrl, Config.event_url()},
       Tesla.Middleware.JSON
@@ -99,7 +62,7 @@ defmodule Inngest.Client do
     Tesla.client(middleware)
   end
 
-  defp httpclient(:inngest, opts) do
+  def httpclient(:inngest, opts) do
     middleware = [
       {Tesla.Middleware.BaseUrl, Config.inngest_url()},
       Tesla.Middleware.JSON
@@ -116,7 +79,7 @@ defmodule Inngest.Client do
     Tesla.client(middleware)
   end
 
-  defp httpclient(:register, opts) do
+  def httpclient(:register, opts) do
     middleware = [
       {Tesla.Middleware.BaseUrl, Config.register_url()},
       Tesla.Middleware.JSON
