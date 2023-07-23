@@ -18,6 +18,7 @@ defmodule Inngest.Router.Plug do
         opts
       end
       |> Enum.into(%{})
+      |> Inngest.Router.Helper.load_functions_from_path()
       |> Map.put(:framework, @framework)
       |> Macro.escape()
 

@@ -42,7 +42,7 @@ defmodule Inngest.Router.Register do
     |> send_resp(status, resp)
   end
 
-  defp register(path, functions, opts \\ []) do
+  defp register(path, functions, opts) do
     framework = Keyword.get(opts, :framework)
 
     payload = %{
