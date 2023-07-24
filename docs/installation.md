@@ -14,9 +14,9 @@ end
 
 Then run `mix deps.get` to download the package.
 
-### NOTE
+## Note
 
-**HTTP client**
+### HTTP client
 
 The Elixir SDK currently uses `Tesla` for handling HTTP requests. While this might
 not be ideal for some folks, it's the only option that can swap out the underlying HTTP
@@ -26,7 +26,7 @@ Until there's either a standard `Protocol` defined for handling HTTP calls or HT
 actually being standardized, or a better way of abstracting the HTTP interfaces away, `Tesla`
 will likely be here to stay.
 
-#### Tesla adapters
+### Tesla adapters
 
 If you currently have a preferred adapter you want to use, please take a look at their
 [Adapters][tesla-adapters] page.
