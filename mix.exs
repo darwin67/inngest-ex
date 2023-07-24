@@ -30,11 +30,18 @@ defmodule Inngest.MixProject do
       homepage_url: "https://inngest.com",
       docs: [
         main: "Inngest",
-        extras: ["README.md", "LICENSE", "CHANGELOG.md"],
         authors: ["Darwin Wu"],
         # source_ref: "v#{@version}",
+        extras:
+          ["CHANGELOG.md", "docs/**/*.md"]
+          |> Enum.map(&Path.wildcard/1)
+          |> List.flatten(),
         groups_for_extras: [
-          Usage: Path.wildcard("docs/usage/*.md")
+          Guides: Path.wildcard("docs/guides/*.md"),
+          "Use cases": Path.wildcard("docs/cases/*.md"),
+          References: Path.wildcard("docs/references/*.md"),
+          Cloud: Path.wildcard("docs/platform/*.md"),
+          Changes: ["CHANGELOG.md"]
         ],
         groups_for_modules: [
           Function: [
