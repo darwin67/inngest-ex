@@ -1,7 +1,7 @@
 defmodule Inngest.MixProject do
   use Mix.Project
 
-  @version "0.0.1"
+  @version File.read!("VERSION") |> String.trim()
 
   def project do
     [
@@ -30,7 +30,6 @@ defmodule Inngest.MixProject do
       homepage_url: "https://inngest.com",
       docs: [
         main: "Inngest",
-        assets: "docs/assets",
         extras: ["README.md", "LICENSE", "CHANGELOG.md"],
         authors: ["Darwin Wu"]
         # source_ref: "v#{@version}",
