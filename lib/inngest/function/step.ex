@@ -27,9 +27,8 @@ defmodule Inngest.Function.Step do
         }
 
   defmodule RunTime do
-    @moduledoc """
-    A struct representing step runtime, currently only supports HTTP
-    """
+    @moduledoc false
+
     @derive Jason.Encoder
     defstruct [
       :url,
@@ -43,9 +42,8 @@ defmodule Inngest.Function.Step do
   end
 
   defmodule Retry do
-    @moduledoc """
-    A struct representing step retries
-    """
+    @moduledoc false
+
     @derive Jason.Encoder
     defstruct attempts: 3
 

@@ -31,8 +31,31 @@ defmodule Inngest.MixProject do
       docs: [
         main: "Inngest",
         extras: ["README.md", "LICENSE", "CHANGELOG.md"],
-        authors: ["Darwin Wu"]
+        authors: ["Darwin Wu"],
         # source_ref: "v#{@version}",
+        groups_for_extras: [
+          Usage: Path.wildcard("docs/usage/*.md")
+        ],
+        groups_for_modules: [
+          Function: [
+            Inngest.Event,
+            Inngest.Function,
+            Inngest.Function.Step,
+            Inngest.Function.Handler
+          ],
+          Router: [
+            Inngest.Router,
+            Inngest.Router.Phoenix,
+            Inngest.Router.Plug,
+            Inngest.Signature
+          ],
+          Config: [
+            Inngest.Config
+          ],
+          Helper: [
+            Inngest.CacheBodyReader
+          ]
+        ]
       ]
     ]
   end

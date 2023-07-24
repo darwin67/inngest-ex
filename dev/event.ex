@@ -1,4 +1,6 @@
 defmodule Inngest.Dev.EventFn do
+  @moduledoc false
+
   use Inngest.Function,
     name: "test func",
     event: "test/event"
