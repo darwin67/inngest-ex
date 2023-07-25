@@ -1,5 +1,8 @@
 defmodule Inngest.Function.Trigger do
-  @moduledoc false
+  @moduledoc """
+  Struct representing a function trigger.
+  Can either be an event or a cron.
+  """
 
   defstruct [
     :event,

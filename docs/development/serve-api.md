@@ -6,7 +6,7 @@ in your project.
 
 ## Setting up
 
-The Elixir SDK provides a `inngest` macro, that will setup the required API endpints
+The Elixir SDK provides an `inngest` macro, that will setup the required API endpints
 to your router. The recommended path is `/api/inngest` since it makes it obvious where
 the endpoints are, but you can change it to whatever you see fit.
 
