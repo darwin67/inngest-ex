@@ -51,5 +51,7 @@ A version identifier for a particular event payload. e.g. `2023-04-14.1`
 Use `Inngest.Client.send/1` or you can send it via `curl`:
 
 ``` sh
-curl -X POST 'http://127.0.0.1:8288/e/test' -d '{ "name": "test/event", "data": { "hello": "world" } }'
+curl -X \
+  POST 'http://127.0.0.1:8288/e/test' \
+  -d '{ "name": "test/event", "data": { "hello": "world" } }'
 ```
