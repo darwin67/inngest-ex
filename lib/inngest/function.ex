@@ -253,6 +253,25 @@ defmodule Inngest.Function do
     end
   end
 
+  @doc """
+  Pauses the function execution until the specified DateTime.
+
+  Expected valid datetime string formats are:
+  - `RFC3389`
+  - `RFC1123`
+  - `RFC882`
+  - `UNIX`
+  - `ANSIC`
+  - `ISOdate`
+
+  ## Examples
+      sleep "sleep until 2023-10-25", %{event: event, data: data} do
+        # do something to caculate time
+
+        # return the specified time that it should sleep until
+        "2023-07-18T07:31:00Z"
+      end
+  """
   defmacro sleep(message, var \\ quote(do: _), contents) do
     unless is_tuple(var) do
       IO.warn(
@@ -294,6 +313,21 @@ defmodule Inngest.Function do
     end
   end
 
+  @doc """
+  Set a duration to pause the execution of your function.
+
+  Valid durations are combination of
+  - `s` - second
+  - `m` - minute
+  - `h` - hour
+  - `d` - day
+
+  ## Examples
+      sleep "2s"
+      sleep "1d"
+      sleep "5m"
+      sleep "1h30m"
+  """
   defmacro sleep(duration) do
     %{module: mod, file: file, line: line} = __CALLER__
 
