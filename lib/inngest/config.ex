@@ -1,8 +1,7 @@
 defmodule Inngest.Config do
   @moduledoc """
-  Configuration settings for Inngest
+  Configuration settings for Inngest. Order of configuration to be read:
 
-  Order of configuration to be read
   1. Environment variables
   2. Application configs
   3. Default values
