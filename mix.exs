@@ -1,7 +1,7 @@
 defmodule Inngest.MixProject do
   use Mix.Project
 
-  @version "0.0.1"
+  @version File.read!("VERSION") |> String.trim()
 
   def project do
     [
@@ -30,10 +30,42 @@ defmodule Inngest.MixProject do
       homepage_url: "https://inngest.com",
       docs: [
         main: "Inngest",
-        assets: "docs/assets",
-        extras: ["README.md", "LICENSE", "CHANGELOG.md"],
-        authors: ["Darwin Wu"]
+        authors: ["Darwin Wu"],
         # source_ref: "v#{@version}",
+        assets: "docs/assets",
+        logo: "docs/assets/logo.png",
+        extras:
+          ["CHANGELOG.md", "docs/**/*.md"]
+          |> Enum.map(&Path.wildcard/1)
+          |> List.flatten(),
+        groups_for_extras: [
+          # Guides: Path.wildcard("docs/guides/*.md"),
+          References: Path.wildcard("docs/references/*.md"),
+          Development: Path.wildcard("docs/development/*.md"),
+          Cloud: Path.wildcard("docs/platform/*.md"),
+          Changes: ["CHANGELOG.md"]
+        ],
+        groups_for_modules: [
+          Function: [
+            Inngest.Event,
+            Inngest.Function,
+            Inngest.Function.Trigger,
+            Inngest.Function.Step,
+            Inngest.Function.Handler
+          ],
+          Router: [
+            Inngest.Router,
+            Inngest.Router.Phoenix,
+            Inngest.Router.Plug,
+            Inngest.Signature
+          ],
+          Config: [
+            Inngest.Config
+          ],
+          Helper: [
+            Inngest.CacheBodyReader
+          ]
+        ]
       ]
     ]
   end

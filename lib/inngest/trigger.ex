@@ -1,5 +1,17 @@
 defmodule Inngest.Function.Trigger do
-  @moduledoc false
+  @moduledoc """
+  Struct representing a function trigger.
+
+  Can either be an `event` or a `cron`, and they're mutually exclusive.
+
+  ## Examples
+
+      # defining an event trigger
+      %Inngest.Function.Trigger{event: "auth/signup.email"}
+
+      # defining a cron trigger, and can accept a timezone
+      %Inngest.Function.Trigger{cron: "TZ=America/Los_Angeles * * * * *"}
+  """
 
   defstruct [
     :event,

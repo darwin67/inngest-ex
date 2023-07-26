@@ -106,6 +106,40 @@ defmodule Inngest.Function do
     registered?
   end
 
+  @doc """
+  Defines a normal execution block with a `message` that is non-deterministic.
+
+  Meaning whenever Inngest asks the SDK to execute, the code block wrapped
+  within `run` will always run, no pun intended.
+
+  Hence making it non deterministic, since each execution can yield a different
+  result.
+
+  This is best for things that do not need idempotency. The result here will be
+  passed on to the next execution unit.
+
+  #### Arguments
+
+  It accepts an optional `map` that includes
+
+  - `event`
+  - `data`
+
+  #### Expected output types
+      @spec :ok | {:ok, map()} | {:error, map()}
+
+  where the data is a `map` accumulated with outputs from previous executions.
+
+  ## Examples
+
+      run "non deterministic code block", %{event: event, data: data} do
+        # do
+        # something
+        # here
+
+        {:ok, %{result: result}}
+      end
+  """
   defmacro run(message, var \\ quote(do: _), contents) do
     unless is_tuple(var) do
       IO.warn(
@@ -146,6 +180,38 @@ defmodule Inngest.Function do
     end
   end
 
+  @doc """
+  Defines a deterministic execution block with a `message`.
+
+  This is exactly the same as `Inngest.Function.run/3`, except the code within
+  the `step` blocks are always guaranteed to be executed once.
+
+  Subsequent calls to the SDK will not execute and uses the previously executed
+  result.
+
+  If the code block returns an error or raised an exception, it will be retried.
+
+  #### Arguments
+
+  It accepts an optional `map` that includes
+
+  - `event`
+  - `data`
+
+  #### Expected output types
+      @spec :ok | {:ok, map()} | {:error, map()}
+
+  where the data is a `map` accumulated with outputs from previous executions.
+
+  ## Examples
+      step "idempotent code block", %{event: event, data: data} do
+        # do
+        # something
+        # here
+
+        {:ok, %{result: result}}
+      end
+  """
   defmacro step(message, var \\ quote(do: _), contents) do
     unless is_tuple(var) do
       IO.warn(
@@ -187,6 +253,25 @@ defmodule Inngest.Function do
     end
   end
 
+  @doc """
+  Pauses the function execution until the specified DateTime.
+
+  Expected valid datetime string formats are:
+  - `RFC3389`
+  - `RFC1123`
+  - `RFC882`
+  - `UNIX`
+  - `ANSIC`
+  - `ISOdate`
+
+  ## Examples
+      sleep "sleep until 2023-10-25", %{event: event, data: data} do
+        # do something to caculate time
+
+        # return the specified time that it should sleep until
+        "2023-07-18T07:31:00Z"
+      end
+  """
   defmacro sleep(message, var \\ quote(do: _), contents) do
     unless is_tuple(var) do
       IO.warn(
@@ -228,6 +313,21 @@ defmodule Inngest.Function do
     end
   end
 
+  @doc """
+  Set a duration to pause the execution of your function.
+
+  Valid durations are combination of
+  - `s` - second
+  - `m` - minute
+  - `h` - hour
+  - `d` - day
+
+  ## Examples
+      sleep "2s"
+      sleep "1d"
+      sleep "5m"
+      sleep "1h30m"
+  """
   defmacro sleep(duration) do
     %{module: mod, file: file, line: line} = __CALLER__
 
@@ -241,6 +341,25 @@ defmodule Inngest.Function do
     end
   end
 
+  @doc """
+  Pause function execution until a particular event is received before continuing.
+
+  It returns the accepted event object or `nil` if the event is not received within
+  the timeout.
+
+  The event name will be used as the key for storing the returned event for subsequent
+  execution units.
+
+  ## Examples
+
+      wait_for_event "auth/signup.email.confirmed", %{event: event, data: data} do
+        match = "user.id"
+        [timeout: "1d", if: "event.\#{match} == async.\#{match}"]
+      end
+
+      # or in a shorter version
+      wait_for_event "auth/signup.email.confirmed", do: [timeout: "1d", match: "user.id"]
+  """
   defmacro wait_for_event(event_name, var \\ quote(do: _), contents) do
     unless is_tuple(var) do
       IO.warn(

@@ -1,6 +1,9 @@
 defmodule Inngest.Router.Plug do
   @moduledoc """
-  Router module expected to be used with a plain router
+  Router module expected to be used with a `Plug.Router`.
+
+  ## Examples
+      use Inngest.Router, :plug
   """
   @framework "plug"
 

@@ -1,4 +1,6 @@
 defmodule Inngest.Dev.CronFn do
+  @moduledoc false
+
   use Inngest.Function,
     name: "test cron",
     cron: "TZ=America/Los_Angeles * * * * *"

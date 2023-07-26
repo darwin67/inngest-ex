@@ -1,6 +1,9 @@
 defmodule Inngest.Router.Phoenix do
   @moduledoc """
-  Router module expected to be used with a phoenix router
+  Router module expected to be used with a `Phoenix` router.
+
+  ## Examples
+      use Inngest.Router, :phoenix
   """
   @framework "phoenix"
 

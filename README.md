@@ -35,7 +35,8 @@ And, everything is locally testable via our Dev server.
 
 ## Installation
 
-The Elixir SDK can be downloaded from Hex. Add it to your list of dependencies in `mix.exs`
+The Elixir SDK can be downloaded from [Hex](https://hex.pm/packages/inngest). Add it
+to your list of dependencies in `mix.exs`
 
 ``` elixir
 # mix.exs
@@ -124,107 +125,8 @@ defmodule MyApp.AwesomeFunction do
 end
 ```
 
-See the guides for more details regarding use cases and how each macros can be used.
-
-### Dev server
-
-![Dev server screenshot](https://github.com/darwin67/ex_inngest/assets/5746693/d8b80b54-5238-4c4b-bf76-6e15bee590a7)
-
-Inngest provides a dev server you can run locally to aid with local development. Start
-the Dev server with:
-
-```sh
-npx inngest-cli@latest dev
-```
-
-This will download the latest version available and you should be able to access it
-via `http://localhost:8288`.
-
-If you prefer to download the CLI locally:
-
-```sh
-npm i -g inngest-cli
-# or
-npm i -g inngest-cli@<version>
-```
-
-then:
-
-``` sh
-inngest-cli dev
-```
-
-#### Auto discovery
-
-The Dev server will try to auto discover apps and functions via `http://localhost:3000/api/inngest`
-by default. However, apps like Phoenix typically runs on port `4000`. You can provide the auto
-discovery URL when starting the Dev server:
-
-``` sh
-npx inngest-cli@latest dev -u http://127.0.0.1:4000/api/inngest
-```
-
-This will tell the Dev server to look at `http://127.0.0.1:4000/api/inngest` to discover and
-register apps/functions.
-
-### Events
-
-As you might guess, `Events` are the fundamentals of an event driven system. Inngest starts and
-ends with events. An event is the trigger for functions to start, resume and can also hold the
-data for functions to operate on.
-
-An Inngest `Event` looks like this:
-
-``` json
-{
-  "id": "",
-  "name": "event/awesome",
-  "data": { "hello": "world" },
-  "user" { "external_id": 10000 },
-  "ts": 1690156151,
-  "v": "2023.04.14.1"
-}
-```
-
-##### id - string (optional)
-
-The `id` field in an event payload is used for deduplication. Setting this field will make
-sure that only one of the events (the first one) with a similar `id` is processed.
-
-##### name - string (required)
-
-The name of the event. We recommend using lowercase dot notation for names, prepending
-`<prefixes>/` with a slash for organization.
-
-##### data - map (required)
-
-Any data to associate with the event. Will be serialized as JSON.
-
-##### user - map (optional)
-
-Any relevant user identifying data or attributes associated with the event. **This data is
-encrypted at rest**. Use the `external_id` as the identifier. A common example is the `user_id`
-in your system.
-
-##### ts - integer (optional)
-
-A timestamp integer representing the unix time (in milliseconds) at which the event occurred.
-Defaults to the time the Inngest receives the event if not provided.
-
-##### v - string (optional)
-
-A version identifier for a particular event payload. e.g. `2023-04-14.1`
-
-#### Sending events
-
-Use `Inngest.Client.send/1` or you can send it via `curl`:
-
-``` sh
-curl -X POST 'http://127.0.0.1:8288/e/test' -d '{ "name": "test/event", "data": { "hello": "world" } }'
-```
+See the **[guides](https://hexdocs.pm/inngest)** for more details regarding use cases and how each macros can be used.
 
 <!-- MDOC ! -->
 
 [inngest]: https://www.inngest.com
-[hex]: https://hex.pm/packages/inngest
-[hexdocs]: https://hexdocs.pm/inngest
