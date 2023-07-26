@@ -7,5 +7,17 @@ wrapped within `run` will always run.
 Hence making it non deterministic, since each execution can yield a different
 result.
 
-See [`How it works?`](how-it-works.html) to get a better idea of how Inngest
-works.
+``` elixir
+run "non deterministic logic", arg do
+  # do
+  # something
+  # here
+
+  {:ok, %{result: result}}
+end
+```
+
+This is best for things that do not need idempotency. The result here will be
+passed on to the next execution unit.
+
+See `Inngest.Function.run/3` for more details.
