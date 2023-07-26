@@ -4,7 +4,7 @@ As you might guess, `Events` are the fundamentals of an event driven system. Inn
 ends with events. An event is the trigger for functions to start, resume and can also hold the
 data for functions to operate on.
 
-An Inngest `Event` looks like this:
+An `Inngest.Event` looks like this:
 
 ```
 %{
