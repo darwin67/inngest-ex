@@ -1,6 +1,6 @@
 defmodule Inngest.CacheBodyReader do
   @moduledoc """
-  Plug for caching request body
+  A custom Plug parser for caching raw request body
   """
   @spec read_body(Plug.Conn.t(), keyword()) :: {:ok, list(binary()), map()}
   def read_body(conn, opts) do
