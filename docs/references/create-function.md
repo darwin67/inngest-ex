@@ -76,7 +76,7 @@ Essentially providing a DSL that wraps your logic, making them deterministic.
 All handlers can be repeated, and they will be executed in the order they're
 declared:
 
-- [`run`](run.html) - Run code non-deterministically, executing every time the function is triggered
+- `Inngest.Function.run/3` - Run code non-deterministically, executing every time the function is triggered
 - [`step`](step.html) - Run code deterministically, and individually retryable.
 - [`sleep`](sleep.html) - Sleep for a given amount of time or until a given time.
 - [`wait_for_event`](wait-for-event.html) - Pause a function's execution until another event is received.

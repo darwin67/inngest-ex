@@ -106,6 +106,39 @@ defmodule Inngest.Function do
     registered?
   end
 
+  @doc """
+  Defines a normal execution block with a `message` that is non-deterministic.
+  Meaning whenever Inngest asks the SDK to execute, the code block wrapped
+  within `run` will always run, no pun intended.
+
+  Hence making it non deterministic, since each execution can yield a different
+  result.
+
+  This is best for things that do not need idempotency. The result here will be
+  passed on to the next execution unit.
+
+  #### Arguments
+
+  It accepts an optional `map` that includes
+
+  - `event`
+  - `data`
+
+  #### Expected output types
+      @spec :ok | {:ok, map()} | {:error, map()}
+
+  where the data is a `map` accumulated with outputs from previous executions.
+
+  ## Examples
+
+      run "non deterministic code block", %{event: event, data: data} do
+        # do
+        # something
+        # here
+
+        {:ok, %{result: result}}
+      end
+  """
   defmacro run(message, var \\ quote(do: _), contents) do
     unless is_tuple(var) do
       IO.warn(
