@@ -341,6 +341,25 @@ defmodule Inngest.Function do
     end
   end
 
+  @doc """
+  Pause function execution until a particular event is received before continuing.
+
+  It returns the accepted event object or `nil` if the event is not received within
+  the timeout.
+
+  The event name will be used as the key for storing the returned event for subsequent
+  execution units.
+
+  ## Examples
+
+      wait_for_event "auth/signup.email.confirmed", %{event: event, data: data} do
+        match = "user.id"
+        [timeout: "1d", if: "event.\#{match} == async.\#{match}"]
+      end
+
+      # or in a shorter version
+      wait_for_event "auth/signup.email.confirmed", do: [timeout: "1d", match: "user.id"]
+  """
   defmacro wait_for_event(event_name, var \\ quote(do: _), contents) do
     unless is_tuple(var) do
       IO.warn(

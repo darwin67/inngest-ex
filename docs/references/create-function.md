@@ -79,4 +79,4 @@ declared:
 - `Inngest.Function.run/3` - Run code non-deterministically, executing every time the function is triggered
 - `Inngest.Function.step/3` - Run code deterministically, and individually retryable.
 - `Inngest.Function.sleep/1` or `Inngest.Function.sleep/3` - Sleep for a given amount of time or until a given time.
-- [`wait_for_event`](wait-for-event.html) - Pause a function's execution until another event is received.
+- `Inngest.Function.wait_for_event/3` - Pause a function's execution until another event is received.
