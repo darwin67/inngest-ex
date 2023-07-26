@@ -39,7 +39,7 @@ defmodule Inngest.MixProject do
           |> Enum.map(&Path.wildcard/1)
           |> List.flatten(),
         groups_for_extras: [
-          Guides: Path.wildcard("docs/guides/*.md"),
+          # Guides: Path.wildcard("docs/guides/*.md"),
           References: Path.wildcard("docs/references/*.md"),
           Development: Path.wildcard("docs/development/*.md"),
           Cloud: Path.wildcard("docs/platform/*.md"),
