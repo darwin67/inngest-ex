@@ -1,37 +1,10 @@
-<p align="center">
-  <a href="https://www.inngest.com">
-    <img alt="Inngest logo" src="https://user-images.githubusercontent.com/306177/191580717-1f563f4c-31e3-4aa0-848c-5ddc97808a9a.png" width="350" />
-  </a>
-</p>
-
-<p align="center">
-  Effortless queues, background jobs, and workflows. <br />
-  Easily develop workflows in your current codebase, without any new infrastructure.
-</p>
+[![CI](https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml/badge.svg)](https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml)
 
 <!-- MDOC ! -->
 
-<p align="center">
-  <a href="https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml">
-    <img src="https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml/badge.svg" />
-  </a>
-  <a href="https://discord.gg/EuesV2ZSnX">
-    <img src="https://img.shields.io/discord/842170679536517141?label=discord" />
-  </a>
-  <a href="https://twitter.com/inngest">
-    <img src="https://img.shields.io/twitter/follow/inngest?style=social" />
-  </a>
-</p>
+### Experimental - non official, use at your own risk
 
-
-Inngest is an event driven platform that helps you build reliable background jobs and
-workflows effortlessly.
-
-Using our SDK, easily add retries, queues, sleeps, cron schedules, fan-out jobs, and
-reliable steps functions into your existing projects. It's deployable to any platform,
-without any infrastructure. We do the hard stuff so you can focus on building what you
-want.
-And, everything is locally testable via our Dev server.
+Elixir SDK for **[Inngest](https://www.inngest.com)**
 
 ## Installation
 
@@ -42,7 +15,7 @@ to your list of dependencies in `mix.exs`
 # mix.exs
 def deps do
   [
-    {:inngest, "~> 0.1"}
+    {:inngest, "~> 0.0"}
   ]
 end
 ```
