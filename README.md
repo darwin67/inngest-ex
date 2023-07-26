@@ -35,7 +35,8 @@ And, everything is locally testable via our Dev server.
 
 ## Installation
 
-The Elixir SDK can be downloaded from Hex. Add it to your list of dependencies in `mix.exs`
+The Elixir SDK can be downloaded from [Hex](https://hex.pm/packages/inngest). Add it
+to your list of dependencies in `mix.exs`
 
 ``` elixir
 # mix.exs
@@ -124,10 +125,8 @@ defmodule MyApp.AwesomeFunction do
 end
 ```
 
-See the [guides][hexdocs] for more details regarding use cases and how each macros can be used.
+See the **[guides](https://hexdocs.pm/inngest)** for more details regarding use cases and how each macros can be used.
 
 <!-- MDOC ! -->
 
 [inngest]: https://www.inngest.com
-[hex]: https://hex.pm/packages/inngest
-[hexdocs]: https://hexdocs.pm/inngest
