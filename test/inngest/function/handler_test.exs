@@ -25,7 +25,7 @@ defmodule Inngest.Function.HandlerTest do
     @step3_hash "C3C14E4F5420C304AF2FDEE2683C4E31E15B3CC2"
 
     @sleep1_hash "145E2844A2497AB79D89CAFF7C8CCA0CC7F114AE"
-    @sleep2_hash "8128323524ACBAE2631A0C09D663302A0D7E2FB9"
+    @sleep2_hash "D924BC0E9DE36100A8DB3B932934FFE9357BBC46"
     @sleep_until_hash "8FD581C437A99A584B0186168DB25F8D8AF7D6B5"
 
     setup do
@@ -125,7 +125,7 @@ defmodule Inngest.Function.HandlerTest do
              ] = result
     end
 
-    test "4th invoke returns another 2s sleep", %{handler: handler, args: args} do
+    test "4th invoke returns another 3s sleep", %{handler: handler, args: args} do
       # return data from step 1
       current_state = %{
         @step1_hash => %{
@@ -158,7 +158,7 @@ defmodule Inngest.Function.HandlerTest do
                %GeneratorOpCode{
                  op: ^opcode,
                  id: @sleep2_hash,
-                 name: "2s",
+                 name: "3s",
                  data: nil
                }
              ] = result
@@ -313,6 +313,48 @@ defmodule Inngest.Function.HandlerTest do
                run: "again",
                yo: "lo"
              } = result
+    end
+
+    test "ignore step2 hash and execute sleep 2s due to stack out of order", %{
+      handler: handler,
+      args: args
+    } do
+      # return data from step 1
+      current_state = %{
+        @step1_hash => %{
+          step: "hello world",
+          fn_count: 1,
+          step1_count: 1,
+          step2_count: 0
+        },
+        @step2_hash => %{
+          step: "yolo",
+          fn_count: 2,
+          step1_count: 1,
+          step2_count: 1
+        },
+        @sleep1_hash => nil
+      }
+
+      args =
+        args
+        |> put_in([:params, "ctx", "stack", "current"], 3)
+        |> put_in([:params, "ctx", "stack", "stack"], [@step1_hash, @step2_hash, @sleep1_hash])
+        |> put_in([:params, "steps"], current_state)
+
+      opcode = Enums.opcode(:step_sleep)
+
+      # Invoke
+      assert {206, result} = Handler.invoke(handler, args)
+
+      assert [
+               %GeneratorOpCode{
+                 op: ^opcode,
+                 id: @sleep2_hash,
+                 name: "2s",
+                 data: nil
+               }
+             ] = result
     end
   end
 end
