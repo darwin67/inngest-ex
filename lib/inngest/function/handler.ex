@@ -28,13 +28,21 @@ defmodule Inngest.Function.Handler do
         %{steps: steps} = _handler,
         %{
           event: event,
-          params: %{"steps" => data}
+          params: %{
+            "ctx" => %{
+              "stack" => %{
+                "current" => _current,
+                "stack" => stack
+              }
+            },
+            "steps" => data
+          }
         } = _args
       ) do
     %{state_data: state_data, next: next} =
       steps
-      |> Enum.reduce(%{state_data: %{}, next: nil}, fn step, acc ->
-        %{state_data: state_data, next: next} = acc
+      |> Enum.reduce(%{state_data: %{}, next: nil, idx: 0}, fn step, acc ->
+        %{state_data: state_data, next: next, idx: idx} = acc
 
         case next do
           nil ->
@@ -57,7 +65,7 @@ defmodule Inngest.Function.Handler do
                 state = Map.get(data, hash)
 
                 state =
-                  if Map.has_key?(data, hash) do
+                  if hash == Enum.at(stack, idx) do
                     # credo:disable-for-next-line
                     case step.step_type do
                       # credo:disable-for-next-line
@@ -83,6 +91,7 @@ defmodule Inngest.Function.Handler do
                 acc
                 |> Map.put(:state_data, state)
                 |> Map.put(:next, next)
+                |> Map.put(:idx, idx + 1)
             end
 
           _ ->
