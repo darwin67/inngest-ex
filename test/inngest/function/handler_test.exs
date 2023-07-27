@@ -68,7 +68,8 @@ defmodule Inngest.Function.HandlerTest do
 
       args =
         args
-        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
+        |> put_in([:params, "ctx", "stack", "current"], 1)
+        |> put_in([:params, "ctx", "stack", "stack"], [@step1_hash])
         |> put_in([:params, "steps"], current_state)
 
       opcode = Enums.opcode(:step_sleep)
@@ -100,7 +101,8 @@ defmodule Inngest.Function.HandlerTest do
 
       args =
         args
-        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
+        |> put_in([:params, "ctx", "stack", "current"], 2)
+        |> put_in([:params, "ctx", "stack", "stack"], [@step1_hash, @sleep1_hash])
         |> put_in([:params, "steps"], current_state)
 
       opcode = Enums.opcode(:step_run)
@@ -143,7 +145,8 @@ defmodule Inngest.Function.HandlerTest do
 
       args =
         args
-        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
+        |> put_in([:params, "ctx", "stack", "current"], 3)
+        |> put_in([:params, "ctx", "stack", "stack"], [@step1_hash, @sleep1_hash, @step2_hash])
         |> put_in([:params, "steps"], current_state)
 
       opcode = Enums.opcode(:step_sleep)
@@ -182,7 +185,13 @@ defmodule Inngest.Function.HandlerTest do
 
       args =
         args
-        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
+        |> put_in([:params, "ctx", "stack", "current"], 4)
+        |> put_in([:params, "ctx", "stack", "stack"], [
+          @step1_hash,
+          @sleep1_hash,
+          @step2_hash,
+          @sleep2_hash
+        ])
         |> put_in([:params, "steps"], current_state)
 
       opcode = Enums.opcode(:step_sleep)
@@ -222,7 +231,14 @@ defmodule Inngest.Function.HandlerTest do
 
       args =
         args
-        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
+        |> put_in([:params, "ctx", "stack", "current"], 5)
+        |> put_in([:params, "ctx", "stack", "stack"], [
+          @step1_hash,
+          @sleep1_hash,
+          @step2_hash,
+          @sleep2_hash,
+          @sleep_until_hash
+        ])
         |> put_in([:params, "steps"], current_state)
 
       opcode = Enums.opcode(:step_run)
@@ -275,7 +291,15 @@ defmodule Inngest.Function.HandlerTest do
 
       args =
         args
-        |> put_in([:params, "ctx", "stack", "stack"], Map.keys(current_state))
+        |> put_in([:params, "ctx", "stack", "current"], 6)
+        |> put_in([:params, "ctx", "stack", "stack"], [
+          @step1_hash,
+          @sleep1_hash,
+          @step2_hash,
+          @sleep2_hash,
+          @sleep_until_hash,
+          @step3_hash
+        ])
         |> put_in([:params, "steps"], current_state)
 
       # Invoke
