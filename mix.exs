@@ -1,7 +1,7 @@
 defmodule Inngest.MixProject do
   use Mix.Project
 
-  @version File.read!("VERSION") |> String.trim()
+  @version "0.1.2"
 
   def project do
     [
