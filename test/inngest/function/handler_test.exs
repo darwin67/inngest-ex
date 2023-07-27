@@ -350,7 +350,7 @@ defmodule Inngest.Function.HandlerTest do
       assert [
                %GeneratorOpCode{
                  op: ^opcode,
-                 id: @sleep2_hash,
+                 id: @sleep1_hash,
                  name: "2s",
                  data: nil
                }
