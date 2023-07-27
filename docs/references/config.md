@@ -41,7 +41,7 @@ config :inngest, app_host: "https://myapp.com"
 
 ### Env
 
-Default value: `:prod`
+Default value: `nil`
 
 This value determines the environment the app is on, and decides if your app
 should connect to the Dev server or Inngest Cloud.
