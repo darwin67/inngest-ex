@@ -41,7 +41,7 @@ defmodule Inngest.Router.Helper do
     files
     |> Enum.flat_map(fn file ->
       with {:ok, content} <- File.read(file),
-           {:ok, ast} = Code.string_to_quoted(content) do
+           {:ok, ast} <- Code.string_to_quoted(content) do
         module_names(ast)
       else
         _ -> []
