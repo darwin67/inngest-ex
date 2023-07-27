@@ -23,6 +23,10 @@ defmodule Inngest.Event do
           datetime: DateTime.t()
         }
 
+  @doc """
+  Construct an Event struct from a map.
+  """
+  @spec from(map()) :: t()
   def from(data) do
     newmap =
       for {key, val} <- data, into: %{} do

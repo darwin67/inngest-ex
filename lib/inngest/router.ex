@@ -3,7 +3,13 @@ defmodule Inngest.Router do
   Router module for Inngest to be integrated with apps that
   have a router.
 
-  Currently assuming Phonenix as the main option
+  Currently available options are
+  - `Phoenix`
+  - `Plug.Router`
+
+  ## Examples
+      use Inngest.Router, :phoenix
+      use Inngest.Router, :plug
   """
 
   def plug do

@@ -1,7 +1,7 @@
 defmodule Inngest.MixProject do
   use Mix.Project
 
-  @version "0.0.1"
+  @version File.read!("VERSION") |> String.trim()
 
   def project do
     [
@@ -25,9 +25,57 @@ defmodule Inngest.MixProject do
 
       # Docs
       name: "Inngest",
-      docs: docs(),
+      source_url: "https://github.com/darwin67/ex_inngest",
       description: "Elixir SDK for Inngest",
-      homepage_url: "https://inngest.com"
+      homepage_url: "https://inngest.com",
+      docs: [
+        main: "Inngest",
+        authors: ["Darwin Wu"],
+        # source_ref: "v#{@version}",
+        assets: "docs/assets",
+        logo: "docs/assets/logo.png",
+        extras:
+          ["CHANGELOG.md", "docs/**/*.md"]
+          |> Enum.map(&Path.wildcard/1)
+          |> List.flatten(),
+        groups_for_extras: [
+          # Guides: Path.wildcard("docs/guides/*.md"),
+          References: Path.wildcard("docs/references/*.md"),
+          Development: Path.wildcard("docs/development/*.md"),
+          Cloud: Path.wildcard("docs/platform/*.md"),
+          Changes: ["CHANGELOG.md"]
+        ],
+        groups_for_modules: [
+          Function: [
+            Inngest.Event,
+            Inngest.Function,
+            Inngest.Function.Trigger,
+            Inngest.Function.Step,
+            Inngest.Function.Handler
+          ],
+          Router: [
+            Inngest.Router,
+            Inngest.Router.Phoenix,
+            Inngest.Router.Plug,
+            Inngest.Signature
+          ],
+          Config: [
+            Inngest.Config
+          ],
+          Helper: [
+            Inngest.CacheBodyReader
+          ]
+        ]
+      ]
+    ]
+  end
+
+  defp package do
+    [
+      maintainers: ["Darwin Wu"],
+      licenses: ["GPL-3.0-or-later"],
+      links: %{github: "https://github.com/darwin67/ex_inngest"},
+      files: ~w(lib mix.exs README.md LICENSE CHANGELOG.md)
     ]
   end
 
@@ -42,31 +90,13 @@ defmodule Inngest.MixProject do
     ]
   end
 
-  defp package do
-    [
-      maintainers: ["Darwin Wu"],
-      licenses: ["GPL-3.0-or-later"],
-      links: %{github: "https://github.com/darwin67/ex-inngest"},
-      files: ~w(lib mix.exs README.md LICENSE CHANGELOG.md)
-    ]
-  end
-
-  defp docs do
-    [
-      source_ref: "v#{@version}",
-      source_url: "https://github.com/darwin67/ex-inngest"
-    ]
-  end
-
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:tesla, "~> 1.4"},
-      {:hackney, "~> 1.10"},
       {:jason, "~> 1.4"},
       # JSON Canonicalization Scheme (JCS)
-      {:jcs,
-       git: "https://github.com/pzingg/jcs.git", ref: "24196d27ae7a9d1ab116e004d0aac07360ae4000"},
+      # {:jcs, git: "https://github.com/pzingg/jcs.git", ref: "24196d27ae7a9d1ab116e004d0aac07360ae4000"},
       {:plug, "~> 1.14"},
       {:timex, "~> 3.7"},
 

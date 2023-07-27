@@ -1,7 +1,6 @@
 defmodule Inngest.Function.UnhashedOp do
-  @moduledoc """
-  A struct representing an unhashed op
-  """
+  @moduledoc false
+
   alias Inngest.Enums
   alias Inngest.Function.Step
 
@@ -32,9 +31,8 @@ defmodule Inngest.Function.UnhashedOp do
 end
 
 defmodule Inngest.Function.GeneratorOpCode do
-  @moduledoc """
-  Generator response for incoming executor request
-  """
+  @moduledoc false
+
   alias Inngest.Enums
 
   @derive Jason.Encoder

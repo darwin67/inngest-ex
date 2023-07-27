@@ -1,7 +1,6 @@
 defmodule Inngest.Router.Helper do
-  @moduledoc """
-  Helper module for router and plugs
-  """
+  @moduledoc false
+
   @conflict_opt :ignore_module_conflict
 
   @spec func_map(binary(), list()) :: map()

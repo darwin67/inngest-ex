@@ -1,7 +1,6 @@
 defmodule Inngest.Router.Invoke do
-  @moduledoc """
-    The plug that handles function invokes from Inngest
-  """
+  @moduledoc false
+
   import Plug.Conn
   import Inngest.Router.Helper
   alias Inngest.{Config, Signature}

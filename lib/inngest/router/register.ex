@@ -1,7 +1,6 @@
 defmodule Inngest.Router.Register do
-  @moduledoc """
-  The plug that handles registration request from Inngest
-  """
+  @moduledoc false
+
   import Plug.Conn
   import Inngest.Router.Helper
   alias Inngest.Config

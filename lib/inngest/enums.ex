@@ -1,7 +1,5 @@
 defmodule Inngest.Enums do
-  @moduledoc """
-  A Module to consolidate and mimic enum usage
-  """
+  @moduledoc false
 
   @type opcode() :: binary()
 
