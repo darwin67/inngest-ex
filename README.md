@@ -15,7 +15,7 @@ to your list of dependencies in `mix.exs`
 # mix.exs
 def deps do
   [
-    {:inngest, "~> 0.0"}
+    {:inngest, "~> 0.1"}
   ]
 end
 ```
