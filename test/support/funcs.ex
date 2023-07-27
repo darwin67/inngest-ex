@@ -40,7 +40,7 @@ defmodule Inngest.TestEventFn do
      }}
   end
 
-  sleep "2s"
+  sleep "3s"
 
   run "exec2" do
     {:ok, %{run: "again"}}
