@@ -9,8 +9,8 @@ defmodule Inngest.Router.HelperTest do
       funcs = [Inngest.TestEventFn]
 
       assert %{
-               "awesome-event-func" => %{
-                 id: "awesome-event-func",
+               "app-email-awesome-event-func" => %{
+                 id: "app-email-awesome-event-func",
                  mod: Inngest.TestEventFn,
                  steps: %{
                    step: %Inngest.Function.Step{

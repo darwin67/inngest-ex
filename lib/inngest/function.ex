@@ -39,13 +39,11 @@ defmodule Inngest.Function do
 
       @opts unquote(opts)
 
-      # TOOD: Use app name as prefix
       @fn_slug if Keyword.get(@opts, :id),
                  do: Keyword.get(@opts, :id),
                  else:
                    Keyword.get(@opts, :name)
-                   |> String.replace(~r/[\.\/\s]+/, "-")
-                   |> String.downcase()
+                   |> Slug.slugify()
 
       @impl true
       def slug(), do: @fn_slug

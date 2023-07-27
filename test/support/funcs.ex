@@ -2,7 +2,7 @@ defmodule Inngest.TestEventFn do
   @moduledoc false
 
   use Inngest.Function,
-    name: "Awesome Event Func",
+    name: "App / Email: Awesome Event Func",
     event: "my/awesome.event"
 
   @counts %{
