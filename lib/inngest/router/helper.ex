@@ -31,8 +31,7 @@ defmodule Inngest.Router.Helper do
       |> Enum.uniq()
       |> extract_modules()
 
-    funcs = Map.get(kv, :funcs, [])
-    Map.put(kv, :funcs, Enum.uniq(funcs ++ modules))
+    Map.put(kv, :funcs, modules)
   end
 
   def load_functions_from_path(%{path: path} = kv) when is_binary(path) do
@@ -42,8 +41,7 @@ defmodule Inngest.Router.Helper do
       |> Enum.filter(&(!File.dir?(&1)))
       |> extract_modules()
 
-    funcs = Map.get(kv, :funcs, [])
-    Map.put(kv, :funcs, Enum.uniq(funcs ++ modules))
+    Map.put(kv, :funcs, modules)
   end
 
   def load_functions_from_path(kv), do: kv
