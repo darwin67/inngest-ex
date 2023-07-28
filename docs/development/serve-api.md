@@ -18,6 +18,18 @@ defmodule MyApp.Router do
 end
 ```
 
+Accepted arguments for the `inngest` macros are
+
+- `path`
+- `opts`
+
+#### opts
+
+- `func` - the list of modules. e.g. `[MyApp.EventFn, MyApp.CronFn]`
+- `path` - the path or paths to the inngest function modules. e.g. `path: "inngest/**/*.ex"`
+
+Among the options, `path` takes precedence.
+
 There are 2 routers available based on what you're using for exposing HTTP endpoints for
 your apps:
 
