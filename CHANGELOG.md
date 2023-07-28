@@ -4,22 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
-### Bug Fixes
-
-- Fix: make sure function names are slugified
-
-### Documentation
-
-- Docs: add config docs
-
-### Miscellaneous Tasks
-
-- Chore: generate git cliff config
-
-### Refactor
-
-- Refactor: consolidate inngest env
-
 ## [0.1.3] - 2023-07-27
 
 ### Bug Fixes
