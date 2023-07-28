@@ -6,4 +6,5 @@ config :elixir, :time_zone_database, Tz.TimeZoneDatabase
 config :tesla, adapter: {Tesla.Adapter.Hackney, [recv_timeout: 10_000]}
 
 config :inngest,
-  env: :dev
+  env: :dev,
+  path_runtime_eval: true

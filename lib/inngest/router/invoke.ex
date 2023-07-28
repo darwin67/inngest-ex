@@ -13,9 +13,13 @@ defmodule Inngest.Router.Invoke do
 
   defp exec(
          %{request_path: path, private: %{raw_body: [body]}} = conn,
-         %{"event" => event, "ctx" => ctx, "fnId" => fn_slug, funcs: funcs} = params
+         %{"event" => event, "ctx" => ctx, "fnId" => fn_slug} = params
        ) do
-    funcs = func_map(path, funcs)
+    funcs =
+      params
+      |> load_functions()
+      |> func_map(path)
+
     args = %{ctx: ctx, event: event, fn_slug: fn_slug, funcs: funcs, params: params}
 
     {status, payload} =

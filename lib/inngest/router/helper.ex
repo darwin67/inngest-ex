@@ -1,13 +1,24 @@
 defmodule Inngest.Router.Helper do
   @moduledoc false
 
-  @spec func_map(binary(), list()) :: map()
-  def func_map(path, funcs) do
+  alias Inngest.Config
+
+  @spec func_map(list(), binary()) :: map()
+  def func_map(funcs, path) do
     funcs
     |> Enum.reduce(%{}, fn func, x ->
       slug = func.slug()
       Map.put(x, slug, func.serve(path))
     end)
+  end
+
+  def load_functions(params) do
+    if Config.path_runtime_eval() do
+      %{funcs: funcs} = load_functions_from_path(params)
+      funcs
+    else
+      Map.get(params, :funcs, [])
+    end
   end
 
   @spec load_functions_from_path(map()) :: map()
@@ -21,7 +32,7 @@ defmodule Inngest.Router.Helper do
       |> extract_modules()
 
     funcs = Map.get(kv, :funcs, [])
-    Map.put(kv, :funcs, funcs ++ modules)
+    Map.put(kv, :funcs, Enum.uniq(funcs ++ modules))
   end
 
   def load_functions_from_path(%{path: path} = kv) when is_binary(path) do
@@ -32,7 +43,7 @@ defmodule Inngest.Router.Helper do
       |> extract_modules()
 
     funcs = Map.get(kv, :funcs, [])
-    Map.put(kv, :funcs, funcs ++ modules)
+    Map.put(kv, :funcs, Enum.uniq(funcs ++ modules))
   end
 
   def load_functions_from_path(kv), do: kv

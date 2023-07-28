@@ -26,7 +26,7 @@ defmodule Inngest.Router.HelperTest do
                    }
                  ]
                }
-             } = Helper.func_map(path, funcs)
+             } = Helper.func_map(funcs, path)
     end
   end
 
