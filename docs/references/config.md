@@ -97,3 +97,17 @@ It's not required for the Dev Server but required for Inngest Cloud.
 ``` elixir
 config :inngest, signing_key: "key"
 ```
+
+### Path runtime evaluation
+
+Default value: `false`
+
+When [passing a `path` to `inngest`](serve-api.html) macro in your router, this enables the functions
+to be evaluated during runtime instead of compile time, which is the default.
+
+This exists for the sore purpose of easing development feedback, and should not be
+used for non development workloads.
+
+``` elixir
+config :inngest, path_runtime_eval: true
+```
