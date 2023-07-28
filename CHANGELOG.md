@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### Bug Fixes
+
+- Fix: path takes precedence when passed to `inngest` macro
+
+### Documentation
+
+- Docs: update `inngest` macro docs
+
 ## [0.1.5] - 2023-07-28
 
 ## [0.1.4] - 2023-07-28
