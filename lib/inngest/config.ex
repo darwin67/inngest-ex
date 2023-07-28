@@ -41,9 +41,6 @@ defmodule Inngest.Config do
     end
   end
 
-  @spec is_dev() :: boolean()
-  def is_dev(), do: env() == :dev
-
   @spec event_url() :: binary()
   def event_url() do
     with nil <- System.get_env("INNGEST_EVENT_URL"),
@@ -102,6 +99,12 @@ defmodule Inngest.Config do
       key -> key
     end
   end
+
+  @spec is_dev() :: boolean()
+  def is_dev(), do: env() == :dev
+
+  @spec path_runtime_eval() :: boolean()
+  def path_runtime_eval(), do: Application.get_env(:inngest, :path_runtime_eval, false)
 
   @spec version() :: binary()
   def version(), do: Application.spec(:inngest, :vsn)

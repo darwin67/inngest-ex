@@ -17,9 +17,12 @@ defmodule Inngest.Router.Register do
 
   defp exec(
          %{request_path: path} = conn,
-         %{funcs: funcs, framework: framework} = _params
+         %{framework: framework} = params
        ) do
-    funcs = func_map(path, funcs)
+    funcs =
+      params
+      |> load_functions()
+      |> func_map(path)
 
     {status, resp} =
       case register(path, funcs, framework: framework) do
