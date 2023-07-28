@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
-- Chore: Fix release workflow with proper escapes
+- Chore: Fix release workflow with proper escapes (#49)
 
 ## [0.1.3] - 2023-07-27
 
