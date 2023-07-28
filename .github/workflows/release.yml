@@ -43,6 +43,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: CHANGES.md
           tag: ${{ github.ref }}
           body: |
             ${{ steps.read_release.outputs.RELEASE_BODY }}
