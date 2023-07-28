@@ -29,6 +29,14 @@ jobs:
         env:
           OUTPUT: CHANGES.md
 
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v2
+        id: git-cliff
+        with:
+          config: cliff.toml
+        env:
+          OUTPUT: CHANGELOG.md
+
       - name: Read release
         id: read_release
         shell: bash
@@ -38,6 +46,11 @@ jobs:
           r="${r//$'\n'/'%0A'}"   # Multiline escape sequences for '\n'
           r="${r//$'\r'/'%0D'}"   # Multiline escape sequences for '\r'
           echo "RELEASE_BODY=$r" >> $GITHUB_OUTPUT
+
+      - name: Publish to Hex.pm
+        uses: erlangpack/github-action@v3
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
 
       - name: Create release
         uses: svenstaro/upload-release-action@v2
