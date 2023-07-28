@@ -2,15 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
-
-### Documentation
-
-- Docs: add `path_runtime_eval` reference for config
-
-### Features
-
-- Feat: allow runtime path evaluation
+## [0.1.5] - 2023-07-28
 
 ## [0.1.4] - 2023-07-28
 
