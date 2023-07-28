@@ -12,7 +12,7 @@ defmodule Inngest.Config do
 
   @spec app_host() :: binary()
   def app_host() do
-    with nil <- System.get_env("APP_HOST"),
+    with nil <- System.get_env("INNGEST_APP_HOST"),
          nil <- Application.get_env(:inngest, :app_host) do
       "http://127.0.0.1:4000"
     else
@@ -31,7 +31,15 @@ defmodule Inngest.Config do
   end
 
   @spec env() :: atom()
-  def env(), do: Application.get_env(:inngest, :env, :prod)
+  def env() do
+    case System.get_env("INNGEST_ENV") do
+      nil ->
+        Application.get_env(:inngest, :env)
+
+      env ->
+        env
+    end
+  end
 
   @spec is_dev() :: boolean()
   def is_dev(), do: env() == :dev
@@ -94,9 +102,6 @@ defmodule Inngest.Config do
       key -> key
     end
   end
-
-  @spec inngest_env() :: binary() | nil
-  def inngest_env(), do: System.get_env("INNGEST_ENV")
 
   @spec version() :: binary()
   def version(), do: Application.spec(:inngest, :vsn)

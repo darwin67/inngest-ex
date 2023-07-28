@@ -7,13 +7,13 @@ defmodule Inngest.FunctionTest do
 
   describe "slug/0" do
     test "return name of function as slug" do
-      assert "awesome-event-func" == TestEventFn.slug()
+      assert "app-email-awesome-event-func" == TestEventFn.slug()
     end
   end
 
   describe "name/0" do
     test "return name of function" do
-      assert "Awesome Event Func" == TestEventFn.name()
+      assert "App / Email: Awesome Event Func" == TestEventFn.name()
     end
   end
 
@@ -30,8 +30,8 @@ defmodule Inngest.FunctionTest do
   describe "serve/1" do
     test "event function should return approprivate map" do
       assert %{
-               id: "awesome-event-func",
-               name: "Awesome Event Func",
+               id: "app-email-awesome-event-func",
+               name: "App / Email: Awesome Event Func",
                triggers: [
                  %Trigger{event: "my/awesome.event"}
                ],

@@ -99,6 +99,7 @@ defmodule Inngest.MixProject do
       # {:jcs, git: "https://github.com/pzingg/jcs.git", ref: "24196d27ae7a9d1ab116e004d0aac07360ae4000"},
       {:plug, "~> 1.14"},
       {:timex, "~> 3.7"},
+      {:slugify, "~> 1.3"},
 
       # dev / test
       {:plug_cowboy, "~> 2.0", only: :dev},

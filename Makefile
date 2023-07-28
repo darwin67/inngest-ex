@@ -33,3 +33,7 @@ clean:
 .PHONY: docs
 docs:
 	mix docs --open
+
+.PHONY: changelog
+changelog:
+	git cliff -o CHANGELOG.md

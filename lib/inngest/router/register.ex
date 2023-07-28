@@ -58,9 +58,9 @@ defmodule Inngest.Router.Register do
     headers = if is_nil(key), do: [], else: [authorization: "Bearer " <> key]
 
     headers =
-      if is_nil(Config.inngest_env()),
+      if is_nil(Config.env()),
         do: headers,
-        else: Keyword.put(headers, :"x-inngest-env", Config.inngest_env())
+        else: Keyword.put(headers, :"x-inngest-env", Config.env())
 
     case Tesla.post(httpclient(:register, headers: headers), "/fn/register", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
