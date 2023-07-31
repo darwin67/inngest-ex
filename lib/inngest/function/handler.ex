@@ -85,6 +85,14 @@ defmodule Inngest.Function.Handler do
                     state
                   end
 
+                # use step name as key if cached state is not a map value
+                state =
+                  if !is_nil(state) && !is_map(state) do
+                    %{step.name => state}
+                  else
+                    state
+                  end
+
                 next = if is_nil(state), do: step, else: nil
                 state = if is_nil(state), do: state_data, else: state_data |> Map.merge(state)
 
@@ -193,10 +201,7 @@ defmodule Inngest.Function.Handler do
   end
 
   defp exec(%{step_type: :exec_run} = step, args) do
-    case apply(step.mod, step.id, [args]) do
-      {:ok, result} -> {:ok, result}
-      {:error, error} -> {:error, error}
-    end
+    apply(step.mod, step.id, [args])
   end
 
   # This shouldn't be executed
