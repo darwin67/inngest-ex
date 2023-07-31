@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### Bug Fixes
+
+- Fix: make certain fields in Event as optional types
+
 ## [0.1.7] - 2023-07-31
 
 ### Features
