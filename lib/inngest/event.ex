@@ -14,13 +14,13 @@ defmodule Inngest.Event do
   ]
 
   @type t() :: %__MODULE__{
-          id: binary(),
+          id: binary() | nil,
           name: binary(),
           data: any(),
-          user: map(),
-          v: binary(),
-          ts: number(),
-          datetime: DateTime.t()
+          user: map() | nil,
+          v: binary() | nil,
+          ts: number() | nil,
+          datetime: DateTime.t() | nil
         }
 
   @doc """
