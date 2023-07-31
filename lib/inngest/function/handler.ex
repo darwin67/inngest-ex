@@ -83,6 +83,7 @@ defmodule Inngest.Function.Handler do
 
                       # credo:disable-for-next-line
                       :step_run ->
+                        # credo:disable-for-next-line
                         if is_nil(state), do: %{step.name => state}, else: state
 
                       _ ->
