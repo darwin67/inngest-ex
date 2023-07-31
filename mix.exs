@@ -1,7 +1,7 @@
 defmodule Inngest.MixProject do
   use Mix.Project
 
-  @version "0.1.6"
+  @version File.read!("VERSION") |> String.trim()
 
   def project do
     [
@@ -75,7 +75,7 @@ defmodule Inngest.MixProject do
       maintainers: ["Darwin Wu"],
       licenses: ["GPL-3.0-or-later"],
       links: %{github: "https://github.com/darwin67/ex_inngest"},
-      files: ~w(lib mix.exs README.md LICENSE CHANGELOG.md)
+      files: ~w(lib mix.exs README.md LICENSE VERSION CHANGELOG.md)
     ]
   end
 
