@@ -49,6 +49,9 @@ defmodule Inngest.Function.Handler do
             case step.step_type do
               :exec_run ->
                 case exec(step, %{event: event, data: state_data}) do
+                  :ok ->
+                    acc
+
                   {:ok, result} ->
                     acc
                     |> Map.put(:state_data, Map.merge(state_data, result))
@@ -77,6 +80,10 @@ defmodule Inngest.Function.Handler do
                       :step_wait_for_event ->
                         # credo:disable-for-next-line
                         %{step.name => state}
+
+                      # credo:disable-for-next-line
+                      :step_run ->
+                        if is_nil(state), do: %{step.name => state}, else: state
 
                       _ ->
                         state
@@ -119,7 +126,16 @@ defmodule Inngest.Function.Handler do
 
     # Invoke the step function
     case apply(step.mod, step.id, [args]) do
-      # TODO: Allow also simple :ok and use existing map data
+      :ok ->
+        opcode = %GeneratorOpCode{
+          id: UnhashedOp.hash(op),
+          name: step.name,
+          op: op.op,
+          data: nil
+        }
+
+        {206, [opcode]}
+
       {:ok, result} ->
         opcode = %GeneratorOpCode{
           id: UnhashedOp.hash(op),
