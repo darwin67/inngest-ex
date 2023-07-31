@@ -67,6 +67,10 @@ defmodule Inngest.TestEventFn do
     {:ok, "foobar"}
   end
 
+  step "step5" do
+    :ok
+  end
+
   run "final", %{data: %{fn_count: fn_count}} do
     {:ok,
      %{
