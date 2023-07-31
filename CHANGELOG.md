@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### Features
+
+- Feat: Allow non map return values
+- Feat: Allow no return value with just :ok for step runs
+
+### Miscellaneous Tasks
+
+- Chore: Change type to list of Events
+
+## [0.1.6] - 2023-07-28
+
 ### Bug Fixes
 
 - Fix: path takes precedence when passed to `inngest` macro
