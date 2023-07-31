@@ -70,7 +70,7 @@ defmodule Inngest.FunctionTest do
                steps: steps
              } = TestEventFn.__handler__()
 
-      assert Enum.count(steps) == 9
+      assert Enum.count(steps) == 10
     end
   end
 

@@ -23,6 +23,7 @@ defmodule Inngest.Function.HandlerTest do
     @step1_hash "BD01C51E32280A0F2A0C50EFDA6B47AB1A685ED9"
     @step2_hash "AAB4F015B1D26D76C015B987F32E28E0869E7636"
     @step3_hash "C3C14E4F5420C304AF2FDEE2683C4E31E15B3CC2"
+    @step4_hash "EC9FE031264AB8889294A32EC361BB9412ACDBD1"
 
     @sleep1_hash "145E2844A2497AB79D89CAFF7C8CCA0CC7F114AE"
     @sleep2_hash "D924BC0E9DE36100A8DB3B932934FFE9357BBC46"
@@ -262,7 +263,7 @@ defmodule Inngest.Function.HandlerTest do
              ] = result
     end
 
-    test "7th invoke returns result of remaining run", %{handler: handler, args: args} do
+    test "7th invoke returns result of step 4", %{handler: handler, args: args} do
       # return data from step 1
       current_state = %{
         @step1_hash => %{
@@ -302,10 +303,68 @@ defmodule Inngest.Function.HandlerTest do
         ])
         |> put_in([:params, "steps"], current_state)
 
+      opcode = Enums.opcode(:step_run)
+
+      # Invoke
+      assert {206, result} = Handler.invoke(handler, args)
+
+      assert [
+               %GeneratorOpCode{
+                 op: ^opcode,
+                 id: @step4_hash,
+                 name: "step4",
+                 data: "foobar"
+               }
+             ] = result
+    end
+
+    test "9th invoke returns result of remaining run", %{handler: handler, args: args} do
+      # return data from step 1
+      current_state = %{
+        @step1_hash => %{
+          step: "hello world",
+          fn_count: 1,
+          step1_count: 1,
+          step2_count: 0
+        },
+        @step2_hash => %{
+          step: "yolo",
+          fn_count: 2,
+          step1_count: 1,
+          step2_count: 1
+        },
+        @step3_hash => %{
+          step: "final",
+          fn_count: 3,
+          step1_count: 1,
+          step2_count: 1,
+          run: "again"
+        },
+        @step4_hash => "foobar",
+        @sleep1_hash => nil,
+        @sleep2_hash => nil,
+        @sleep_until_hash => nil
+      }
+
+      args =
+        args
+        |> put_in([:params, "ctx", "stack", "current"], 7)
+        |> put_in([:params, "ctx", "stack", "stack"], [
+          @step1_hash,
+          @sleep1_hash,
+          @step2_hash,
+          @sleep2_hash,
+          @sleep_until_hash,
+          @step3_hash,
+          @step4_hash
+        ])
+        |> put_in([:params, "steps"], current_state)
+
       # Invoke
       assert {200, result} = Handler.invoke(handler, args)
 
       assert %{
+               "step4" => "foobar",
                step: "final",
                fn_count: 4,
                step1_count: 1,
