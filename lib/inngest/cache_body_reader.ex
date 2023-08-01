@@ -2,11 +2,10 @@ defmodule Inngest.CacheBodyReader do
   @moduledoc """
   A custom Plug parser for caching raw request body
   """
-  @spec read_body(Plug.Conn.t(), keyword()) :: {:ok, list(binary()), map()}
+  @spec read_body(Plug.Conn.t(), keyword()) :: {:ok, binary(), Plug.Conn.t()}
   def read_body(conn, opts) do
     {:ok, body, conn} = Plug.Conn.read_body(conn, opts)
-    body = [body | conn.private[:raw_body] || []]
-    conn = Plug.Conn.put_private(conn, :raw_body, body)
+    conn = update_in(conn.private[:raw_body], &[body | &1 || []])
     {:ok, body, conn}
   end
 
