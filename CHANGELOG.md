@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### Bug Fixes
+
+- Fix: make sure parsing works correctly for cache body reader
+
 ## [0.1.8] - 2023-07-31
 
 ### Bug Fixes
