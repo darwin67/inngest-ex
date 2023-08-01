@@ -2,11 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.1.9] - 2023-08-01
 
 ### Bug Fixes
 
-- Fix: make sure parsing works correctly for cache body reader
+- Fix: make sure to read existing queries (#55)
 
 ## [0.1.8] - 2023-07-31
 
