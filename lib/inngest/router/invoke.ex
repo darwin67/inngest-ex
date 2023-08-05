@@ -11,7 +11,10 @@ defmodule Inngest.Router.Invoke do
   def init(opts), do: opts
 
   @spec call(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def call(%{params: params} = conn, opts) do
+  def call(
+        %{params: %{"use_api" => use_api, "ctx" => %{"run_id" => run_id}} = params} = conn,
+        opts
+      ) do
     IO.inspect(conn)
     exec(conn, Map.merge(opts, params))
   end
