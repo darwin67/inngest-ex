@@ -9,7 +9,12 @@ defmodule Inngest.Router.Invoke do
   @content_type "application/json"
 
   def init(opts), do: opts
-  def call(%{params: params} = conn, opts), do: exec(conn, Map.merge(opts, params))
+
+  @spec call(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def call(%{params: params} = conn, opts) do
+    IO.inspect(conn)
+    exec(conn, Map.merge(opts, params))
+  end
 
   defp exec(
          %{request_path: path, private: %{raw_body: [body]}} = conn,

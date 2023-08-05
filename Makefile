@@ -37,3 +37,7 @@ docs:
 .PHONY: changelog
 changelog:
 	git cliff -o CHANGELOG.md
+
+.PHONY: inngest-dev
+inngest-dev:
+	inngest-cli dev -u http://127.0.0.1:4000/api/inngest
