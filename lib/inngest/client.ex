@@ -48,46 +48,16 @@ defmodule Inngest.Client do
   @doc """
   Returns an HTTP client for making requests against Inngest.
   """
-  @spec httpclient(:event | :inngest | :register, Keyword.t()) :: Tesla.Client.t()
+  @spec httpclient(atom(), Keyword.t()) :: Tesla.Client.t()
   def httpclient(type, opts \\ [])
 
-  def httpclient(:event, opts) do
+  def httpclient(:event, opts), do: client(Config.event_url(), opts)
+  def httpclient(:register, opts), do: client(Config.register_url(), opts)
+  def httpclient(_, opts), do: client(Config.inngest_url(), opts)
+
+  defp client(base_url, opts) do
     middleware = [
-      {Tesla.Middleware.BaseUrl, Config.event_url()},
-      Tesla.Middleware.JSON
-    ]
-
-    middleware =
-      if Keyword.get(opts, :headers) do
-        headers = Keyword.get(opts, :headers, [])
-        middleware ++ [{Tesla.Middleware.Headers, headers}]
-      else
-        middleware
-      end
-
-    Tesla.client(middleware)
-  end
-
-  def httpclient(:inngest, opts) do
-    middleware = [
-      {Tesla.Middleware.BaseUrl, Config.inngest_url()},
-      Tesla.Middleware.JSON
-    ]
-
-    middleware =
-      if Keyword.get(opts, :headers) do
-        headers = Keyword.get(opts, :headers, [])
-        middleware ++ [{Tesla.Middleware.Headers, headers}]
-      else
-        middleware
-      end
-
-    Tesla.client(middleware)
-  end
-
-  def httpclient(:register, opts) do
-    middleware = [
-      {Tesla.Middleware.BaseUrl, Config.register_url()},
+      {Tesla.Middleware.BaseUrl, base_url},
       Tesla.Middleware.JSON
     ]
 
