@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### Features
+
+- Feat: add event batching
+
 ## [0.1.9] - 2023-08-01
 
 ### Bug Fixes
