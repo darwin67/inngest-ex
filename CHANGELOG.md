@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
-- Feat: add event batching
+- Feat: add event batching to function configuration
 
 ## [0.1.9] - 2023-08-01
 
