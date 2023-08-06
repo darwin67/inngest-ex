@@ -8,6 +8,7 @@ defmodule Inngest.Config do
   """
   @event_url "https://inn.gs"
   @inngest_url "https://app.inngest.com"
+  @api_url "https://api.inngest.com"
   @dev_server_url "http://127.0.0.1:8288"
 
   @spec app_host() :: binary()
@@ -64,6 +65,14 @@ defmodule Inngest.Config do
       end
     else
       url -> url
+    end
+  end
+
+  @spec api_url() :: binary()
+  def api_url() do
+    case env() do
+      :dev -> @dev_server_url
+      _ -> @api_url
     end
   end
 

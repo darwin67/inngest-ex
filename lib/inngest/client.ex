@@ -53,6 +53,7 @@ defmodule Inngest.Client do
 
   def httpclient(:event, opts), do: client(Config.event_url(), opts)
   def httpclient(:register, opts), do: client(Config.register_url(), opts)
+  def httpclient(:api, opts), do: client(Config.api_url(), opts)
   def httpclient(_, opts), do: client(Config.inngest_url(), opts)
 
   defp client(base_url, opts) do

@@ -5,6 +5,8 @@ defmodule Inngest.Dev.EventFn do
     name: "test func",
     event: "test/event"
 
+  # batch_events: %{max_size: 3, timeout: "10s"}
+
   run "test 1st run" do
     {:ok, %{run: "do something"}}
   end

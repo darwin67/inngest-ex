@@ -75,9 +75,22 @@ defmodule Inngest.Function do
           id: slug(),
           name: name(),
           triggers: [trigger()],
+          batchEvents: batch_events(@opts),
           steps: step(path),
           mod: __MODULE__
         }
+      end
+
+      defp batch_events(opts) do
+        with %{max_size: max_size, timeout: timeout} <- Keyword.get(opts, :batch_events, nil),
+             true <- is_integer(max_size),
+             true <- String.match?(timeout, ~r/[0-9]+s/),
+             {num, ""} <- String.replace(timeout, ~r/[^\d]/, "") |> Integer.parse(),
+             true <- num > 0 && num <= 60 do
+          %{maxSize: max_size, timeout: timeout}
+        else
+          _ -> nil
+        end
       end
 
       def send(events) do

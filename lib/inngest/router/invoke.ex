@@ -8,6 +8,8 @@ defmodule Inngest.Router.Invoke do
 
   @content_type "application/json"
 
+  defdelegate httpclient(type, opts), to: Inngest.Client
+
   def init(opts), do: opts
 
   @spec call(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -15,20 +17,40 @@ defmodule Inngest.Router.Invoke do
         %{params: %{"use_api" => use_api, "ctx" => %{"run_id" => run_id}} = params} = conn,
         opts
       ) do
-    IO.inspect(conn)
-    exec(conn, Map.merge(opts, params))
+    with true <- use_api,
+         retrieve_steps <- Task.async(fn -> fn_run_steps(run_id) end),
+         retrieve_batch <- Task.async(fn -> fn_run_batch(run_id) end),
+         {:ok, step_data} <- Task.await(retrieve_steps),
+         {:ok, batch_data} <- Task.await(retrieve_batch) do
+      params =
+        Map.merge(params, %{
+          "step" => step_data,
+          "events" => batch_data
+        })
+
+      exec(conn, Map.merge(opts, params))
+    else
+      _ -> exec(conn, Map.merge(opts, params))
+    end
   end
 
   defp exec(
          %{request_path: path, private: %{raw_body: [body]}} = conn,
-         %{"event" => event, "ctx" => ctx, "fnId" => fn_slug} = params
+         %{"event" => event, "events" => events, "ctx" => ctx, "fnId" => fn_slug} = params
        ) do
     funcs =
       params
       |> load_functions()
       |> func_map(path)
 
-    args = %{ctx: ctx, event: event, fn_slug: fn_slug, funcs: funcs, params: params}
+    args = %{
+      ctx: ctx,
+      event: event,
+      events: events,
+      fn_slug: fn_slug,
+      funcs: funcs,
+      params: params
+    }
 
     {status, payload} =
       case Config.is_dev() do
@@ -59,11 +81,15 @@ defmodule Inngest.Router.Invoke do
   # 400, error -> non retriable error
   # 500, error -> retriable error
   @spec invoke(map()) :: {200 | 206 | 400 | 500, binary()}
-  defp invoke(%{ctx: ctx, event: event, fn_slug: fn_slug, funcs: funcs, params: params} = _) do
+  defp invoke(
+         %{ctx: ctx, event: event, events: events, fn_slug: fn_slug, funcs: funcs, params: params} =
+           _
+       ) do
     func = Map.get(funcs, fn_slug)
 
     args = %{
       event: Inngest.Event.from(event),
+      events: Enum.map(events, &Inngest.Event.from/1),
       run_id: Map.get(ctx, "run_id"),
       params: params
     }
@@ -79,5 +105,36 @@ defmodule Inngest.Router.Invoke do
       end
 
     {status, payload}
+  end
+
+  defp fn_run_steps(run_id), do: fn_run_data("/v0/runs/#{run_id}/actions")
+  defp fn_run_batch(run_id), do: fn_run_data("/v0/runs/#{run_id}/batch")
+
+  defp fn_run_data(path) do
+    key = Signature.hashed_signing_key(Config.signing_key())
+    headers = if is_nil(key), do: [], else: [authorization: "Bearer " <> key]
+
+    headers =
+      if is_nil(Config.env()),
+        do: headers,
+        else: Keyword.put(headers, :"x-inngest-env", Config.env())
+
+    case httpclient(:api, headers: headers) |> Tesla.get(path) do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        # parse result just in case it isn't already parsed
+        result =
+          case body do
+            _ = %{} -> body
+            _ -> Jason.decode!(body)
+          end
+
+        {:ok, result}
+
+      {:ok, %Tesla.Env{body: error}} ->
+        {:error, error}
+
+      {:error, error} ->
+        {:error, error}
+    end
   end
 end
