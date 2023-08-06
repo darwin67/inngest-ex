@@ -2,6 +2,93 @@ defmodule Inngest.Function do
   @moduledoc """
   Module to be used within user code to setup an Inngest function.
   Making it servable and invokable.
+
+  Creating an Inngest function is as easy as using `Inngest.Function`. It creates
+  the necessary attributes and handlers it needs to work with Inngest.
+
+      defmodule MyApp.Inngest.SomeJob do
+        use Inngest.Function,
+          id: "my-function", # optional
+          name: "some job", # required
+          event_name: "job/foobar", # required
+          batch_events: %{max_size: 10, timeout: "3s"} # optional
+      end
+
+  ## Function configuration
+
+  The `Inngest.Function` macro accepts the following options.
+
+  #### `id` - `string` (optional)
+
+  A unique identifier for your function to override the default name.
+  Also known in technical terms, a `slug`.
+
+  #### `name` - `string` (required)
+
+  A unique name for your function. This will be used to create a unique
+  slug id by default if `id` is not provided.
+
+  #### `event_name` or `cron` - `string` (required)
+
+  See [Trigger](#module-trigger) for reference.
+
+  #### `batch_events` - `map` (optional)
+
+  Configure how the function should consume batches of events.
+  Accepts a `map` with the following attributes:
+
+  - `max_size` - `number`: The maximum number of events a batch can have. Current limit is `100`
+  - `timeout` - `string`: How long to wait before invoking the function with the batch even if it's not full
+
+  ## Trigger
+
+  A trigger is exactlyi what the name says. It's the thing that triggers a function
+  to run. One of the following is required, and they're mutually exclusive.
+
+  #### `event_name` - `string`
+
+  The name of the event that will trigger this event to run.
+  We recommend it to name it with a prefix so it's a easier pattern to identify
+  what it's for.
+
+  e.g. `auth/signup.email.send`
+
+  #### `cron` - `string`
+
+  A [unix-cron](https://crontab.guru/) compatible schedule string.
+
+  Optional timezone prefix, e.g. `TZ=Europe/Paris 0 12 * * 5`.
+
+  ## Handlers
+
+  The handlers are your code that runs whenever the trigger occurs.
+
+      defmodule MyApp.Inngest.SomeJob do
+        use Inngest.Function,
+        name: "some job",
+        event_name: "job/foobar"
+
+        # This will run when an event `job/foobar` is received
+        run "do something", %{event: event, data: data} do
+          # do
+          # some
+          # stuff
+
+          {:ok, %{result: result}} # returns a map as a result
+        end
+      end
+
+  Unlike some other SDKs, the Elixir SDK follows the pattern `ExUnit` is using.
+  Essentially providing a DSL that wraps your logic, making them deterministic.
+
+  All handlers can be repeated, and they will be executed in the order they're
+  declared:
+
+  - `Inngest.Function.run/3` - Run code non-deterministically, executing every time the function is triggered
+  - `Inngest.Function.step/3` - Run code deterministically, and individually retryable.
+  - `Inngest.Function.sleep/1` or `Inngest.Function.sleep/3` - Sleep for a given amount of time or until a given time.
+  - `Inngest.Function.wait_for_event/3` - Pause a function's execution until another event is received.
+
   """
   alias Inngest.Config
   alias Inngest.Function.{Step, Trigger}
