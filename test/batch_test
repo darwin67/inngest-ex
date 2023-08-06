@@ -1,0 +1,8 @@
+#!/bin/bash
+
+EVENT_KEY=""
+PAYLOAD='{ "name": "test/event", "data": {"yo": "lo"} }'
+
+for i in {1..10}; do
+  curl -X POST "https://inn.gs/e/$EVENT_KEY" --data "$PAYLOAD"
+done

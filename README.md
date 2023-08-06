@@ -1,4 +1,6 @@
 [![CI](https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml/badge.svg)](https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/inngest.svg)](https://hex.pm/packages/inngest)
+[![Hexdocs.pm](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/inngest/)
 
 <!-- MDOC ! -->
 
