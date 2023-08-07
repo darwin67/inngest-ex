@@ -28,6 +28,7 @@ defmodule Inngest.Function.Handler do
         %{steps: steps} = _handler,
         %{
           event: event,
+          events: events,
           params: %{
             "ctx" => %{
               "stack" => %{
@@ -115,7 +116,7 @@ defmodule Inngest.Function.Handler do
         end
       end)
 
-    fn_arg = %{event: event, data: state_data}
+    fn_arg = %{event: event, events: events, data: state_data}
     exec(next, fn_arg)
   end
 
