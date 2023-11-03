@@ -1,4 +1,6 @@
 defmodule Inngest.Function.Opts do
+  @moduledoc false
+
   defstruct [
     :id,
     :name,
