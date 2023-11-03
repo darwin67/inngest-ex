@@ -4,6 +4,8 @@ defmodule Inngest.V1.Function do
 
   @callback id() :: binary()
 
+  @callback slug() :: binary()
+
   @callback name() :: binary()
 
   @callback trigger() :: Trigger.t()
@@ -27,6 +29,9 @@ defmodule Inngest.V1.Function do
         |> List.first()
         |> Map.get(:id)
       end
+
+      @impl true
+      def slug(), do: id()
 
       @impl true
       def name() do
@@ -63,7 +68,8 @@ defmodule Inngest.V1.Function do
           id: id(),
           name: name(),
           triggers: [trigger()],
-          steps: step(path)
+          steps: step(path),
+          mod: __MODULE__
         }
       end
     end

@@ -47,15 +47,17 @@ defmodule Inngest.Router.Register do
   defp register(path, functions, opts) do
     framework = Keyword.get(opts, :framework)
 
-    payload = %{
-      url: Config.app_host() <> path,
-      v: "1",
-      deployType: "ping",
-      sdk: Config.sdk_version(),
-      framework: framework,
-      appName: Config.app_name(),
-      functions: functions |> Enum.map(fn {_, v} -> v.mod.serve(path) end)
-    }
+    payload =
+      %{
+        url: Config.app_host() <> path,
+        v: "1",
+        deployType: "ping",
+        sdk: Config.sdk_version(),
+        framework: framework,
+        appName: Config.app_name(),
+        functions: functions |> Enum.map(fn {_, v} -> v.mod.serve(path) end)
+      }
+      |> IO.inspect()
 
     key = Inngest.Signature.hashed_signing_key(Config.signing_key())
     headers = if is_nil(key), do: [], else: [authorization: "Bearer " <> key]
