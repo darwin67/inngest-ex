@@ -48,7 +48,7 @@ defmodule Inngest.Function do
 
   Optional timezone prefix, e.g. `TZ=Europe/Paris 0 12 * * 5`.
   """
-  alias Inngest.{Config, Trigger}
+  alias Inngest.{Config, Trigger, Handler}
   alias Inngest.Function.Step
 
   @doc """
@@ -69,7 +69,7 @@ defmodule Inngest.Function do
   @doc """
   The method to be called when the Inngest function starts execution
   """
-  @callback run(map()) :: {:ok, any()} | {:error, any()}
+  @callback run(Handler.t()) :: {:ok, any()} | {:error, any()}
 
   defmacro __using__(_opts) do
     quote location: :keep do

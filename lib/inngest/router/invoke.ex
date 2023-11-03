@@ -3,8 +3,7 @@ defmodule Inngest.Router.Invoke do
 
   import Plug.Conn
   import Inngest.Router.Helper
-  alias Inngest.{Config, Signature}
-  alias Inngest.Function.Handler
+  alias Inngest.{Config, Signature, Handler}
 
   @content_type "application/json"
 
@@ -81,22 +80,17 @@ defmodule Inngest.Router.Invoke do
   # 400, error -> non retriable error
   # 500, error -> retriable error
   @spec invoke(map()) :: {200 | 206 | 400 | 500, binary()}
-  defp invoke(
-         %{ctx: ctx, event: event, events: events, fn_slug: fn_slug, funcs: funcs, params: params} =
-           _
-       ) do
+  defp invoke(%{ctx: ctx, event: event, events: events, fn_slug: fn_slug, funcs: funcs} = _) do
     func = Map.get(funcs, fn_slug)
 
-    args = %{
-      event: Inngest.Event.from(event),
-      events: Enum.map(events, &Inngest.Event.from/1),
-      run_id: Map.get(ctx, "run_id"),
-      params: params
-    }
-
     {status, resp} =
-      func.mod
-      |> Handler.invoke(args)
+      %Handler{
+        event: Inngest.Event.from(event),
+        events: Enum.map(events, &Inngest.Event.from/1),
+        run_id: Map.get(ctx, "run_id"),
+        step: Inngest.StepTool
+      }
+      |> Handler.invoke(func.mod)
 
     payload =
       case Jason.encode(resp) do
