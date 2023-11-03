@@ -8,15 +8,15 @@ defmodule Inngest.Function do
 
       defmodule MyApp.Inngest.SomeJob do
         use Inngest.Function
-        alias Inngest.Function.{Opts, Trigger}
+        alias Inngest.{FnOpts, Trigger}
 
-        @func %Opts{id: "my-func", name: "some job"}
+        @func %FnOpts{id: "my-func", name: "some job"}
         @trigger %Trigger{event: "job/foobar"}
       end
 
   ## Function Options
 
-  The `Inngest.Function.Opts` accepts the following attributes.
+  The `Inngest.FnOpts` accepts the following attributes.
 
   #### `id` - `string` (required)
 
@@ -48,8 +48,8 @@ defmodule Inngest.Function do
 
   Optional timezone prefix, e.g. `TZ=Europe/Paris 0 12 * * 5`.
   """
-  alias Inngest.Config
-  alias Inngest.Function.{Step, Trigger}
+  alias Inngest.{Config, Trigger}
+  alias Inngest.Function.Step
 
   @doc """
   Returns the function's human-readable ID, such as "sign-up-flow"
@@ -73,8 +73,8 @@ defmodule Inngest.Function do
 
   defmacro __using__(_opts) do
     quote location: :keep do
-      alias Inngest.Client
-      alias Inngest.Function.{Trigger, Step}
+      alias Inngest.{Client, Trigger}
+      alias Inngest.Function.Step
 
       Enum.each(
         [:func, :trigger],
@@ -165,4 +165,20 @@ defmodule Inngest.Function do
   # end
 
   def validate_datetime(_), do: {:error, "Expect valid DateTime formatted input"}
+end
+
+defmodule Inngest.FnOpts do
+  @moduledoc false
+
+  defstruct [
+    :id,
+    :name,
+    :retries
+  ]
+
+  @type t() :: %__MODULE__{
+          id: binary(),
+          name: binary(),
+          retries: number()
+        }
 end

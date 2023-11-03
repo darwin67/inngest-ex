@@ -1,4 +1,4 @@
-defmodule Inngest.Function.Trigger do
+defmodule Inngest.Trigger do
   @moduledoc """
   Struct representing a function trigger.
 
@@ -7,10 +7,10 @@ defmodule Inngest.Function.Trigger do
   ## Examples
 
       # defining an event trigger
-      %Inngest.Function.Trigger{event: "auth/signup.email"}
+      %Inngest.Trigger{event: "auth/signup.email"}
 
       # defining a cron trigger, and can accept a timezone
-      %Inngest.Function.Trigger{cron: "TZ=America/Los_Angeles * * * * *"}
+      %Inngest.Trigger{cron: "TZ=America/Los_Angeles * * * * *"}
   """
 
   defstruct [
@@ -29,7 +29,7 @@ defmodule Inngest.Function.Trigger do
         }
 end
 
-defimpl Jason.Encoder, for: Inngest.Function.Trigger do
+defimpl Jason.Encoder, for: Inngest.Trigger do
   def encode(%{cron: cron} = value, opts) when is_binary(cron) do
     Jason.Encode.map(Map.take(value, [:cron]), opts)
   end

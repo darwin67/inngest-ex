@@ -49,7 +49,7 @@ defmodule Inngest.MixProject do
           Function: [
             Inngest.Event,
             Inngest.Function,
-            Inngest.Function.Trigger,
+            Inngest.Trigger,
             Inngest.Function.Step,
             Inngest.Function.Handler
           ],

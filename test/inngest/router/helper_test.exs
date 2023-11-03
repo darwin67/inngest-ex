@@ -19,7 +19,7 @@ defmodule Inngest.Router.HelperTest do
                    }
                  },
                  triggers: [
-                   %Inngest.Function.Trigger{
+                   %Inngest.Trigger{
                      event: "my/awesome.event",
                      expression: nil,
                      cron: nil

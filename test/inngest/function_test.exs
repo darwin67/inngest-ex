@@ -2,7 +2,7 @@ defmodule Inngest.FunctionTest do
   use ExUnit.Case, async: true
 
   alias Inngest.Function
-  alias Inngest.Function.Trigger
+  alias Inngest.Trigger
   alias Inngest.{TestEventFn, TestCronFn}
 
   describe "slug/0" do
