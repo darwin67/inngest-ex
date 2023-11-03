@@ -3,121 +3,17 @@ defmodule Inngest.Function.Handler do
   A struct that keeps info about function, and
   handles the invoking of steps
   """
-  alias Inngest.Function.{Step, UnhashedOp, GeneratorOpCode, Handler}
-
-  defstruct [:mod, :file, :steps]
-
-  @type t() :: %__MODULE__{
-          mod: module(),
-          file: binary(),
-          steps: [Step.t()]
-        }
+  alias Inngest.Function.{UnhashedOp, GeneratorOpCode}
 
   @doc """
   Handles the invoking of steps and runs from the executor
   """
-  @spec invoke(Handler.t(), map()) :: {200 | 206 | 400 | 500, map()}
-  # No steps detected
-  def invoke(%{steps: []} = _handler, _params) do
-    {200, %{message: "no steps detected"}}
-  end
-
-  # TODO: remove the linter ignore
-  # credo:disable-for-next-line
-  def invoke(
-        %{steps: steps} = _handler,
-        %{
-          event: event,
-          events: events,
-          params: %{
-            "ctx" => %{
-              "stack" => %{
-                "current" => _current,
-                "stack" => stack
-              }
-            },
-            "steps" => data
-          }
-        } = _args
-      ) do
-    %{state_data: state_data, next: next} =
-      steps
-      |> Enum.reduce(%{state_data: %{}, next: nil, idx: 0}, fn step, acc ->
-        %{state_data: state_data, next: next, idx: idx} = acc
-
-        case next do
-          nil ->
-            case step.step_type do
-              :exec_run ->
-                case exec(step, %{event: event, data: state_data}) do
-                  :ok ->
-                    acc
-
-                  {:ok, result} ->
-                    acc
-                    |> Map.put(:state_data, Map.merge(state_data, result))
-
-                  {:error, _error} ->
-                    acc
-                end
-
-              _ ->
-                hash =
-                  UnhashedOp.from_step(step)
-                  |> UnhashedOp.hash()
-
-                state = Map.get(data, hash)
-
-                state =
-                  if hash == Enum.at(stack, idx) do
-                    # credo:disable-for-next-line
-                    case step.step_type do
-                      # credo:disable-for-next-line
-                      :step_sleep ->
-                        # credo:disable-for-next-line
-                        if is_nil(state), do: %{}, else: state
-
-                      # credo:disable-for-next-line
-                      :step_wait_for_event ->
-                        # credo:disable-for-next-line
-                        %{step.name => state}
-
-                      # credo:disable-for-next-line
-                      :step_run ->
-                        # credo:disable-for-next-line
-                        if is_nil(state), do: %{step.name => state}, else: state
-
-                      _ ->
-                        state
-                    end
-                  else
-                    state
-                  end
-
-                # use step name as key if cached state is not a map value
-                state =
-                  if !is_nil(state) && !is_map(state) do
-                    %{step.name => state}
-                  else
-                    state
-                  end
-
-                next = if is_nil(state), do: step, else: nil
-                state = if is_nil(state), do: state_data, else: state_data |> Map.merge(state)
-
-                acc
-                |> Map.put(:state_data, state)
-                |> Map.put(:next, next)
-                |> Map.put(:idx, idx + 1)
-            end
-
-          _ ->
-            acc
-        end
-      end)
-
-    fn_arg = %{event: event, events: events, data: state_data}
-    exec(next, fn_arg)
+  @spec invoke(Inngest.V1.Function, map()) :: {200 | 206 | 400 | 500, map()}
+  def invoke(mod, args) do
+    case mod.run(args) do
+      {:ok, val} -> {200, val}
+      {:error, val} -> {400, val}
+    end
   end
 
   # Nothing left to run, return as completed

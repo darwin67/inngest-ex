@@ -95,7 +95,7 @@ defmodule Inngest.Router.Invoke do
     }
 
     {status, resp} =
-      func.mod.__handler__()
+      func.mod
       |> Handler.invoke(args)
 
     payload =
