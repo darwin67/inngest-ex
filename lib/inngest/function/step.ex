@@ -7,8 +7,6 @@ defmodule Inngest.Function.Step do
   defstruct [
     :id,
     :name,
-    :step_type,
-    :tags,
     :mod,
     :runtime,
     :retries,
@@ -18,9 +16,7 @@ defmodule Inngest.Function.Step do
   @type t() :: %__MODULE__{
           id: atom(),
           name: binary(),
-          step_type: atom(),
           opts: map(),
-          tags: map(),
           mod: module(),
           runtime: RunTime,
           retries: Retry
