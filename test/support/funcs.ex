@@ -14,7 +14,7 @@ defmodule Inngest.TestEventFn do
   }
 
   @impl true
-  def run(args) do
+  def exec(args) do
     {:ok, "hello world"}
   end
 

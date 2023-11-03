@@ -20,7 +20,7 @@ defmodule Inngest.Handler do
 
   @spec invoke(t(), Inngest.Function) :: {200 | 206 | 400 | 500, map()}
   def invoke(handler, mod) do
-    case mod.run(handler) do
+    case mod.exec(handler) do
       {:ok, val} -> {200, val}
       {:error, val} -> {400, val}
     end

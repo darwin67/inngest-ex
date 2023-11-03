@@ -69,7 +69,7 @@ defmodule Inngest.Function do
   @doc """
   The method to be called when the Inngest function starts execution
   """
-  @callback run(Handler.t()) :: {:ok, any()} | {:error, any()}
+  @callback exec(Handler.t()) :: {:ok, any()} | {:error, any()}
 
   defmacro __using__(_opts) do
     quote location: :keep do
