@@ -8,6 +8,8 @@ defmodule Inngest.V1.Function do
 
   @callback trigger() :: Trigger.t()
 
+  @callback run(map()) :: {:ok, any()} | {:error, any()}
+
   defmacro __using__(_opts) do
     quote location: :keep do
       alias Inngest.Client

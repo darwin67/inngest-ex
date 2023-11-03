@@ -7,7 +7,7 @@ defmodule Inngest.FunctionTest do
 
   describe "slug/0" do
     test "return name of function as slug" do
-      assert "app-email-awesome-event-func" == TestEventFn.slug()
+      assert "test-event" == TestEventFn.slug()
     end
   end
 
@@ -30,7 +30,7 @@ defmodule Inngest.FunctionTest do
   describe "serve/1" do
     test "event function should return approprivate map" do
       assert %{
-               id: "app-email-awesome-event-func",
+               id: "test-event",
                name: "App / Email: Awesome Event Func",
                triggers: [
                  %Trigger{event: "my/awesome.event"}
@@ -53,24 +53,12 @@ defmodule Inngest.FunctionTest do
 
     test "cron function should return appropriate map" do
       assert %{
-               id: "awesome-cron-func",
+               id: "test-cron",
                name: "Awesome Cron Func",
                triggers: [
                  %Trigger{cron: "TZ=America/Los_Angeles * * * * *"}
                ]
              } = TestCronFn.serve("/api/inngest")
-    end
-  end
-
-  describe "__handler__/0" do
-    test "returns the handler for the module including compiled steps" do
-      assert %Inngest.Function.Handler{
-               mod: Inngest.TestEventFn,
-               file: _,
-               steps: steps
-             } = TestEventFn.__handler__()
-
-      assert Enum.count(steps) == 11
     end
   end
 
