@@ -1,7 +1,7 @@
 defmodule Inngest.TestEventFn do
   @moduledoc false
 
-  use Inngest.V1.Function
+  use Inngest.Function
   alias Inngest.Function.{Opts, Trigger}
 
   @func %Opts{id: "test-event", name: "App / Email: Awesome Event Func"}
@@ -90,7 +90,7 @@ end
 defmodule Inngest.TestCronFn do
   @moduledoc false
 
-  use Inngest.V1.Function
+  use Inngest.Function
   alias Inngest.Function.{Opts, Trigger}
 
   @func %Opts{id: "test-cron", name: "Awesome Cron Func"}

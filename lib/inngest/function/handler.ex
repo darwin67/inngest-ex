@@ -8,7 +8,7 @@ defmodule Inngest.Function.Handler do
   @doc """
   Handles the invoking of steps and runs from the executor
   """
-  @spec invoke(Inngest.V1.Function, map()) :: {200 | 206 | 400 | 500, map()}
+  @spec invoke(Inngest.Function, map()) :: {200 | 206 | 400 | 500, map()}
   def invoke(mod, args) do
     case mod.run(args) do
       {:ok, val} -> {200, val}
