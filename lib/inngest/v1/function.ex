@@ -2,8 +2,6 @@ defmodule Inngest.V1.Function do
   alias Inngest.Config
   alias Inngest.Function.Trigger
 
-  @callback id() :: binary()
-
   @callback slug() :: binary()
 
   @callback name() :: binary()
@@ -23,7 +21,7 @@ defmodule Inngest.V1.Function do
       @behaviour Inngest.V1.Function
 
       @impl true
-      def id() do
+      def slug() do
         __MODULE__.__info__(:attributes)
         |> Keyword.get(:func)
         |> List.first()
@@ -31,15 +29,12 @@ defmodule Inngest.V1.Function do
       end
 
       @impl true
-      def slug(), do: id()
-
-      @impl true
       def name() do
         case __MODULE__.__info__(:attributes)
              |> Keyword.get(:func)
              |> List.first()
              |> Map.get(:name) do
-          nil -> id()
+          nil -> slug()
           name -> name
         end
       end
@@ -57,7 +52,7 @@ defmodule Inngest.V1.Function do
             id: :step,
             name: "step",
             runtime: %Step.RunTime{
-              url: "${Config.app_host() <> path}?fnId=#{id()}&step=step"
+              url: "#{Config.app_host() <> path}?fnId=#{slug()}&step=step"
             },
             retries: %Step.Retry{}
           }
@@ -65,7 +60,7 @@ defmodule Inngest.V1.Function do
 
       def serve(path) do
         %{
-          id: id(),
+          id: slug(),
           name: name(),
           triggers: [trigger()],
           steps: step(path),
