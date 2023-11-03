@@ -4,7 +4,7 @@ defmodule Inngest.Dev.EventFn2 do
   use Inngest.V1.Function
   alias Inngest.Function.{Opts, Trigger}
 
-  @func %Opts{name: "test func v2"}
+  @func %Opts{id: "test-func-v2", name: "test func v2"}
   @trigger %Trigger{event: "test/hello"}
 
   def run(args) do
