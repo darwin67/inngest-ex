@@ -59,7 +59,33 @@ defmodule Inngest.Router.Invoke do
         false ->
           with sig <- conn |> Plug.Conn.get_req_header("x-inngest-signature") |> List.first(),
                true <- Signature.signing_key_valid?(sig, Config.signing_key(), body) do
-            invoke(args)
+            func = Map.get(funcs, fn_slug)
+
+            # NOTES:
+            # *********  RESPONSE  ***********
+            # Each results has a specific meaning to it.
+            # status, data
+            # 206, generatorcode -> store result and continue execution
+            # 200, resp -> execution completed (including steps) of function
+            # 400, error -> non retriable error
+            # 500, error -> retriable error
+            {status, resp} =
+              %Handler{
+                ctx: ctx,
+                event: Inngest.Event.from(event),
+                events: Enum.map(events, &Inngest.Event.from/1),
+                run_id: Map.get(ctx, "run_id"),
+                step: Inngest.StepTool
+              }
+              |> Handler.invoke(func.mod)
+
+            payload =
+              case Jason.encode(resp) do
+                {:ok, val} -> val
+                {:error, err} -> Jason.encode!(err.message)
+              end
+
+            {status, payload}
           else
             _ -> {400, Jason.encode!(%{error: "unable to verify signature"})}
           end
@@ -69,37 +95,6 @@ defmodule Inngest.Router.Invoke do
     |> put_resp_content_type(@content_type)
     |> send_resp(status, payload)
     |> halt()
-  end
-
-  # NOTES:
-  # *********  RESPONSE  ***********
-  # Each results has a specific meaning to it.
-  # status, data
-  # 206, generatorcode -> store result and continue execution
-  # 200, resp -> execution completed (including steps) of function
-  # 400, error -> non retriable error
-  # 500, error -> retriable error
-  @spec invoke(map()) :: {200 | 206 | 400 | 500, binary()}
-  defp invoke(%{ctx: ctx, event: event, events: events, fn_slug: fn_slug, funcs: funcs} = _) do
-    func = Map.get(funcs, fn_slug)
-
-    {status, resp} =
-      %Handler{
-        ctx: ctx,
-        event: Inngest.Event.from(event),
-        events: Enum.map(events, &Inngest.Event.from/1),
-        run_id: Map.get(ctx, "run_id"),
-        step: Inngest.StepTool
-      }
-      |> Handler.invoke(func.mod)
-
-    payload =
-      case Jason.encode(resp) do
-        {:ok, val} -> val
-        {:error, err} -> Jason.encode!(err.message)
-      end
-
-    {status, payload}
   end
 
   defp fn_run_steps(run_id), do: fn_run_data("/v0/runs/#{run_id}/actions")

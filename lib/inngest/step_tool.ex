@@ -7,7 +7,12 @@ defmodule Inngest.StepTool do
   def run(ctx, _step_id, func) do
     ctx |> IO.inspect()
 
+    # check for hash
+    # if found, return value
+
+    # if not, execute function
     func.()
+    # cancel execution and return
   end
 
   def sleep() do
