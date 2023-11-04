@@ -2,7 +2,7 @@ defmodule Inngest.Function.UnhashedOp do
   @moduledoc false
 
   alias Inngest.Enums
-  alias Inngest.Function.Step
+  # alias Inngest.Function.Step
 
   defstruct [:name, :op, pos: 0, opts: %{}]
 
@@ -13,15 +13,15 @@ defmodule Inngest.Function.UnhashedOp do
           opts: map()
         }
 
-  @spec from_step(Step.t()) :: t()
-  def from_step(step) do
-    %__MODULE__{
-      name: step.name,
-      op: Enums.opcode(step.step_type),
-      pos: Map.get(step.tags, :idx, 0),
-      opts: step.opts
-    }
-  end
+  # @spec from_step(Step.t()) :: t()
+  # def from_step(step) do
+  #   %__MODULE__{
+  #     name: step.name,
+  #     op: Enums.opcode(step.step_type),
+  #     pos: Map.get(step.tags, :idx, 0),
+  #     opts: step.opts
+  #   }
+  # end
 
   @spec hash(t()) :: binary()
   def hash(unhashedop) do

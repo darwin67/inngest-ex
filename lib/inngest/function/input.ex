@@ -20,6 +20,8 @@ defmodule Inngest.Function.Input do
 end
 
 defmodule Inngest.Function.Context do
+  @moduledoc false
+
   defstruct [
     :attempt,
     :run_id,

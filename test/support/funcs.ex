@@ -7,14 +7,14 @@ defmodule Inngest.TestEventFn do
   @func %FnOpts{id: "test-event", name: "App / Email: Awesome Event Func"}
   @trigger %Trigger{event: "my/awesome.event"}
 
-  @counts %{
-    fn_count: 0,
-    step1_count: 0,
-    step2_count: 0
-  }
+  # @counts %{
+  #   fn_count: 0,
+  #   step1_count: 0,
+  #   step2_count: 0
+  # }
 
   @impl true
-  def exec(args) do
+  def exec(_ctx, _args) do
     {:ok, "hello world"}
   end
 
@@ -95,4 +95,9 @@ defmodule Inngest.TestCronFn do
 
   @func %FnOpts{id: "test-cron", name: "Awesome Cron Func"}
   @trigger %Trigger{cron: "TZ=America/Los_Angeles * * * * *"}
+
+  @impl true
+  def exec(_ctx, _args) do
+    {:ok, "cron"}
+  end
 end
