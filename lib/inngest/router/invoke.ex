@@ -91,16 +91,22 @@ defmodule Inngest.Router.Invoke do
   defp invoke(%{ctx: ctx, event: event, events: events, fn_slug: fn_slug, funcs: funcs} = _) do
     func = Map.get(funcs, fn_slug)
 
-    case %Handler{
-           ctx: ctx,
-           event: Inngest.Event.from(event),
-           events: Enum.map(events, &Inngest.Event.from/1),
-           run_id: Map.get(ctx, "run_id"),
-           step: Inngest.StepTool
-         }
-         |> func.mod.exec() do
-      {:ok, val} -> {200, val}
-      {:error, val} -> {400, val}
+    input = %Inngest.Function.Input{
+      ctx: ctx,
+      event: Inngest.Event.from(event),
+      events: Enum.map(events, &Inngest.Event.from/1),
+      run_id: Map.get(ctx, "run_id"),
+      step: Inngest.StepTool
+    }
+
+    try do
+      func.mod.exec(input)
+    catch
+      # TODO: Panic Control
+
+      _ ->
+        # TODO: return error
+        {400, "error"}
     end
   end
 

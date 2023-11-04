@@ -1,4 +1,4 @@
-defmodule Inngest.Handler do
+defmodule Inngest.Function.Input do
   @moduledoc false
 
   defstruct [

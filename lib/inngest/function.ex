@@ -48,8 +48,8 @@ defmodule Inngest.Function do
 
   Optional timezone prefix, e.g. `TZ=Europe/Paris 0 12 * * 5`.
   """
-  alias Inngest.{Config, Trigger, Handler}
-  alias Inngest.Function.Step
+  alias Inngest.{Config, Trigger}
+  alias Inngest.Function.{Input, Step}
 
   @doc """
   Returns the function's human-readable ID, such as "sign-up-flow"
@@ -69,7 +69,7 @@ defmodule Inngest.Function do
   @doc """
   The method to be called when the Inngest function starts execution
   """
-  @callback exec(Handler.t()) :: {:ok, any()} | {:error, any()}
+  @callback exec(Input.t()) :: {:ok, any()} | {:error, any()}
 
   defmacro __using__(_opts) do
     quote location: :keep do
