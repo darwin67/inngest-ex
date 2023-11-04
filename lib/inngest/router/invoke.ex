@@ -3,7 +3,8 @@ defmodule Inngest.Router.Invoke do
 
   import Plug.Conn
   import Inngest.Router.Helper
-  alias Inngest.{Config, Signature, Handler, Utils}
+  alias Inngest.{Config, Signature}
+  alias Inngest.Function.GeneratorOpCode
 
   @content_type "application/json"
 
@@ -37,29 +38,43 @@ defmodule Inngest.Router.Invoke do
          %{request_path: path, private: %{raw_body: [body]}} = conn,
          %{"event" => event, "events" => events, "ctx" => ctx, "fnId" => fn_slug} = params
        ) do
-    funcs =
+    func =
       params
       |> load_functions()
       |> func_map(path)
+      |> Map.get(fn_slug)
 
-    args = %{
-      ctx: struct(Inngest.Handler.Context, Utils.keys_to_atoms(ctx)),
-      event: event,
-      events: events,
-      fn_slug: fn_slug,
-      funcs: funcs,
-      params: params
+    ctx = %Inngest.Function.Context{
+      attempt: Map.get(ctx, "attempt", 0),
+      run_id: Map.get(ctx, "run_id"),
+      stack: Map.get(ctx, "stack"),
+      steps: Map.get(params, "steps")
+    }
+
+    input = %Inngest.Function.Input{
+      event: Inngest.Event.from(event),
+      events: Enum.map(events, &Inngest.Event.from/1),
+      run_id: Map.get(ctx, "run_id"),
+      step: Inngest.StepTool
     }
 
     {status, payload} =
       case Config.is_dev() do
         true ->
-          invoke(args)
+          {status, resp} = invoke(func, ctx, input)
+
+          payload =
+            case Jason.encode(resp) do
+              {:ok, val} -> val
+              {:error, err} -> Jason.encode!(err.message)
+            end
+
+          {status, payload}
 
         false ->
           with sig <- conn |> Plug.Conn.get_req_header("x-inngest-signature") |> List.first(),
                true <- Signature.signing_key_valid?(sig, Config.signing_key(), body) do
-            {status, resp} = invoke(args)
+            {status, resp} = invoke(func, ctx, input)
 
             payload =
               case Jason.encode(resp) do
@@ -87,22 +102,19 @@ defmodule Inngest.Router.Invoke do
   # 200, resp -> execution completed (including steps) of function
   # 400, error -> non retriable error
   # 500, error -> retriable error
-  @spec invoke(map()) :: {number(), any()}
-  defp invoke(%{ctx: ctx, event: event, events: events, fn_slug: fn_slug, funcs: funcs} = _) do
-    func = Map.get(funcs, fn_slug)
-
-    input = %Inngest.Function.Input{
-      ctx: ctx,
-      event: Inngest.Event.from(event),
-      events: Enum.map(events, &Inngest.Event.from/1),
-      run_id: Map.get(ctx, "run_id"),
-      step: Inngest.StepTool
-    }
-
+  defp invoke(func, ctx, input) do
     try do
-      func.mod.exec(input)
+      case func.mod.exec(ctx, input) do
+        {:ok, val} ->
+          {200, val}
+
+        {:error, error} ->
+          {400, error}
+      end
     catch
       # TODO: Panic Control
+      %GeneratorOpCode{} = opcode ->
+        {206, opcode}
 
       _ ->
         # TODO: return error

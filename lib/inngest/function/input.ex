@@ -2,7 +2,6 @@ defmodule Inngest.Function.Input do
   @moduledoc false
 
   defstruct [
-    :ctx,
     :event,
     :events,
     :step,
@@ -12,7 +11,6 @@ defmodule Inngest.Function.Input do
   ]
 
   @type t() :: %__MODULE__{
-          ctx: map(),
           event: Inngest.Event.t(),
           events: [Inngest.Event.t()],
           step: Inngest.StepTool,
@@ -21,24 +19,18 @@ defmodule Inngest.Function.Input do
         }
 end
 
-defmodule Inngest.Handler.Context do
+defmodule Inngest.Function.Context do
   defstruct [
     :attempt,
-    :disable_immediate_execution,
-    :env,
-    :fn_id,
     :run_id,
     :stack,
-    :use_api
+    :steps
   ]
 
   @type t() :: %__MODULE__{
           attempt: number(),
-          disable_immediate_execution: boolean(),
-          env: binary(),
-          fn_id: binary(),
           run_id: binary(),
           stack: map(),
-          use_api: boolean()
+          steps: map()
         }
 end
