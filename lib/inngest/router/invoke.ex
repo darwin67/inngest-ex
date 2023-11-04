@@ -3,7 +3,7 @@ defmodule Inngest.Router.Invoke do
 
   import Plug.Conn
   import Inngest.Router.Helper
-  alias Inngest.{Config, Signature, Handler}
+  alias Inngest.{Config, Signature, Handler, Utils}
 
   @content_type "application/json"
 
@@ -43,7 +43,7 @@ defmodule Inngest.Router.Invoke do
       |> func_map(path)
 
     args = %{
-      ctx: ctx,
+      ctx: struct(Inngest.Handler.Context, Utils.keys_to_atoms(ctx)),
       event: event,
       events: events,
       fn_slug: fn_slug,
@@ -85,6 +85,7 @@ defmodule Inngest.Router.Invoke do
 
     {status, resp} =
       %Handler{
+        ctx: ctx,
         event: Inngest.Event.from(event),
         events: Enum.map(events, &Inngest.Event.from/1),
         run_id: Map.get(ctx, "run_id"),

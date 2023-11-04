@@ -3,8 +3,10 @@ defmodule Inngest.StepTool do
 
   @type id() :: binary()
 
-  @spec run(id(), fun()) :: nil
-  def run(_step_id, func) do
+  @spec run(map(), id(), fun()) :: nil
+  def run(ctx, _step_id, func) do
+    ctx |> IO.inspect()
+
     func.()
   end
 

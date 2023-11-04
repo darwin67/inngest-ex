@@ -8,14 +8,14 @@ defmodule Inngest.Dev.EventFn2 do
   @trigger %Trigger{event: "test/hello"}
 
   @impl true
-  def exec(%{run_id: run_id, step: step} = _args) do
+  def exec(%{ctx: ctx, run_id: run_id, step: step} = _args) do
     greet =
-      step.run("hello", fn ->
+      step.run(ctx, "hello", fn ->
         "Hello world"
       end)
 
     name =
-      step.run("name", fn ->
+      step.run(ctx, "name", fn ->
         "John Doe"
       end)
 

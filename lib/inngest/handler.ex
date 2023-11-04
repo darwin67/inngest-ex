@@ -2,6 +2,7 @@ defmodule Inngest.Handler do
   @moduledoc false
 
   defstruct [
+    :ctx,
     :event,
     :events,
     :step,
@@ -11,6 +12,7 @@ defmodule Inngest.Handler do
   ]
 
   @type t() :: %__MODULE__{
+          ctx: map(),
           event: Inngest.Event.t(),
           events: [Inngest.Event.t()],
           step: Inngest.StepTool,
@@ -25,4 +27,26 @@ defmodule Inngest.Handler do
       {:error, val} -> {400, val}
     end
   end
+end
+
+defmodule Inngest.Handler.Context do
+  defstruct [
+    :attempt,
+    :disable_immediate_execution,
+    :env,
+    :fn_id,
+    :run_id,
+    :stack,
+    :use_api
+  ]
+
+  @type t() :: %__MODULE__{
+          attempt: number(),
+          disable_immediate_execution: boolean(),
+          env: binary(),
+          fn_id: binary(),
+          run_id: binary(),
+          stack: map(),
+          use_api: boolean()
+        }
 end
