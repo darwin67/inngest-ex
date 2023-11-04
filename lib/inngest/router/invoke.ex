@@ -59,25 +59,7 @@ defmodule Inngest.Router.Invoke do
         false ->
           with sig <- conn |> Plug.Conn.get_req_header("x-inngest-signature") |> List.first(),
                true <- Signature.signing_key_valid?(sig, Config.signing_key(), body) do
-            func = Map.get(funcs, fn_slug)
-
-            # NOTES:
-            # *********  RESPONSE  ***********
-            # Each results has a specific meaning to it.
-            # status, data
-            # 206, generatorcode -> store result and continue execution
-            # 200, resp -> execution completed (including steps) of function
-            # 400, error -> non retriable error
-            # 500, error -> retriable error
-            {status, resp} =
-              %Handler{
-                ctx: ctx,
-                event: Inngest.Event.from(event),
-                events: Enum.map(events, &Inngest.Event.from/1),
-                run_id: Map.get(ctx, "run_id"),
-                step: Inngest.StepTool
-              }
-              |> Handler.invoke(func.mod)
+            {status, resp} = invoke(args)
 
             payload =
               case Jason.encode(resp) do
@@ -95,6 +77,31 @@ defmodule Inngest.Router.Invoke do
     |> put_resp_content_type(@content_type)
     |> send_resp(status, payload)
     |> halt()
+  end
+
+  # NOTES:
+  # *********  RESPONSE  ***********
+  # Each results has a specific meaning to it.
+  # status, data
+  # 206, generatorcode -> store result and continue execution
+  # 200, resp -> execution completed (including steps) of function
+  # 400, error -> non retriable error
+  # 500, error -> retriable error
+  @spec invoke(map()) :: {number(), any()}
+  defp invoke(%{ctx: ctx, event: event, events: events, fn_slug: fn_slug, funcs: funcs} = _) do
+    func = Map.get(funcs, fn_slug)
+
+    case %Handler{
+           ctx: ctx,
+           event: Inngest.Event.from(event),
+           events: Enum.map(events, &Inngest.Event.from/1),
+           run_id: Map.get(ctx, "run_id"),
+           step: Inngest.StepTool
+         }
+         |> func.mod.exec() do
+      {:ok, val} -> {200, val}
+      {:error, val} -> {400, val}
+    end
   end
 
   defp fn_run_steps(run_id), do: fn_run_data("/v0/runs/#{run_id}/actions")

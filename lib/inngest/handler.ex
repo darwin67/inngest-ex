@@ -19,14 +19,6 @@ defmodule Inngest.Handler do
           run_id: binary(),
           attempt: number()
         }
-
-  @spec invoke(t(), Inngest.Function) :: {200 | 206 | 400 | 500, map()}
-  def invoke(handler, mod) do
-    case mod.exec(handler) do
-      {:ok, val} -> {200, val}
-      {:error, val} -> {400, val}
-    end
-  end
 end
 
 defmodule Inngest.Handler.Context do
