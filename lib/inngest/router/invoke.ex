@@ -90,6 +90,7 @@ defmodule Inngest.Router.Invoke do
 
     conn
     |> put_resp_content_type(@content_type)
+    |> put_req_header("x-inngest-sdk", "elixir:v1")
     |> send_resp(status, payload)
     |> halt()
   end
@@ -114,7 +115,7 @@ defmodule Inngest.Router.Invoke do
     catch
       # TODO: Panic Control
       %GeneratorOpCode{} = opcode ->
-        {206, opcode}
+        {206, [opcode]}
 
       _ ->
         # TODO: return error

@@ -16,16 +16,14 @@ defmodule Inngest.StepTool do
         # if not, execute function
         result = func.()
 
-        opcode = %GeneratorOpCode{
+        # cancel execution and return with opcode
+        throw(%GeneratorOpCode{
           id: hashed_id,
           name: step_id,
           display_name: step_id,
           op: op.op,
           data: result
-        }
-
-        # cancel execution and return
-        throw(opcode)
+        })
 
       # if found, return value
       val ->
