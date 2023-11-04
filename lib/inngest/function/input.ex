@@ -26,7 +26,7 @@ defmodule Inngest.Function.Context do
     :attempt,
     :run_id,
     :stack,
-    :steps
+    steps: %{}
   ]
 
   @type t() :: %__MODULE__{

@@ -1,17 +1,17 @@
 defmodule Inngest.StepTool do
   @moduledoc false
 
-  alias Inngest.Function.{UnhashedOp, GeneratorOpCode}
+  alias Inngest.Function.{Context, UnhashedOp, GeneratorOpCode}
 
   @type id() :: binary()
 
-  @spec run(map(), id(), fun()) :: nil
-  def run(ctx, step_id, func) do
+  @spec run(Context.t(), id(), fun()) :: any()
+  def run(%{steps: steps} = _ctx, step_id, func) do
     op = %UnhashedOp{name: step_id, op: "Step"}
     hashed_id = UnhashedOp.hash(op)
 
     # check for hash
-    case ctx |> Map.get(:steps, %{}) |> Map.get(hashed_id) do
+    case Map.get(steps, hashed_id) do
       nil ->
         # if not, execute function
         result = func.()
@@ -31,7 +31,22 @@ defmodule Inngest.StepTool do
     end
   end
 
-  def sleep() do
+  @spec sleep(Context.t(), id(), binary()) :: nil
+  def sleep(%{steps: steps} = _ctx, step_id, duration) do
+    op = %UnhashedOp{name: step_id, op: "Sleep"}
+    hashed_id = UnhashedOp.hash(op)
+
+    if Map.has_key?(steps, hashed_id) do
+      nil
+    else
+      throw(%GeneratorOpCode{
+        id: hashed_id,
+        name: duration,
+        display_name: step_id,
+        op: op.op,
+        data: nil
+      })
+    end
   end
 
   def sleep_until() do

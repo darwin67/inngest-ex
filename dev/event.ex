@@ -17,6 +17,8 @@ defmodule Inngest.Dev.EventFn2 do
       end)
       |> IO.inspect()
 
+    step.sleep(ctx, "sleep-test", "10s")
+
     IO.inspect("Second log")
 
     name =
