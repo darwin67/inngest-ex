@@ -38,10 +38,15 @@ jobs:
         run: make deps
 
       - name: Run tests with coverage
-        run: mix coveralls.github
+        run: mix coveralls.json
         env:
           MIX_ENV: test
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   formatter:
     name: Formatter

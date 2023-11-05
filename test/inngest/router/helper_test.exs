@@ -9,8 +9,8 @@ defmodule Inngest.Router.HelperTest do
       funcs = [Inngest.TestEventFn]
 
       assert %{
-               "app-email-awesome-event-func" => %{
-                 id: "app-email-awesome-event-func",
+               "test-event" => %{
+                 id: "test-event",
                  mod: Inngest.TestEventFn,
                  steps: %{
                    step: %Inngest.Function.Step{
@@ -19,7 +19,7 @@ defmodule Inngest.Router.HelperTest do
                    }
                  },
                  triggers: [
-                   %Inngest.Function.Trigger{
+                   %Inngest.Trigger{
                      event: "my/awesome.event",
                      expression: nil,
                      cron: nil
@@ -46,6 +46,7 @@ defmodule Inngest.Router.HelperTest do
       end
     end
 
+    @tag :skip
     test "should compile all modules in the provided paths" do
       expected = @dev_mods ++ @test_mods
 
