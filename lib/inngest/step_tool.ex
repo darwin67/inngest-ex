@@ -122,9 +122,10 @@ defmodule Inngest.StepTool do
     case Map.get(steps, hashed_id) do
       nil ->
         display_name =
-          cond do
-            is_map(events) -> Map.get(events, :name, step_id)
-            true -> step_id
+          if is_map(events) do
+            Map.get(events, :name, step_id)
+          else
+            step_id
           end
 
         # if not, execute function
