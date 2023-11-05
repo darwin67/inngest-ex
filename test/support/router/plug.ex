@@ -1,10 +1,9 @@
-defmodule Inngest.Dev.Router do
+defmodule Inngest.Test.PlugRouter do
   use Plug.Router
   use Inngest.Router, :plug
-  alias Inngest.Dev.{EventFn, CronFn}
 
   require Logger
-  Logger.configure(level: System.get_env("DEV_LOG_LEVEL", :debug))
+  Logger.configure(level: System.get_env("DEV_LOG_LEVEL", "debug"))
 
   plug(Plug.Logger, log: :debug)
 
@@ -26,7 +25,7 @@ defmodule Inngest.Dev.Router do
     |> send_resp(200, data)
   end
 
-  inngest("/api/inngest", path: System.get_env("INNGEST_FN_PATH", "dev/**"))
+  inngest("/api/inngest", path: "test/support/cases/*")
 
   match _ do
     send_resp(conn, 404, "oops\n")
@@ -34,7 +33,9 @@ defmodule Inngest.Dev.Router do
 
   def start_server() do
     Task.async(fn ->
-      webserver = {Plug.Cowboy, plug: Inngest.Dev.Router, scheme: :http, options: [port: 4000]}
+      webserver =
+        {Plug.Cowboy, plug: Inngest.Test.PlugRouter, scheme: :http, options: [port: 4000]}
+
       {:ok, _} = Supervisor.start_link([webserver], strategy: :one_for_one)
       Logger.info("Server listening on 127.0.0.1:4000")
 

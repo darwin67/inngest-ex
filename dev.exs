@@ -2,5 +2,5 @@
 Dotenv.load()
 
 # Start server
-Inngest.Dev.Router.start_server()
+Inngest.Test.PlugRouter.start_server()
 |> Task.await(:infinity)
