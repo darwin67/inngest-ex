@@ -1,43 +1,46 @@
-defmodule Inngest.Dev.EventFn do
+defmodule Inngest.Dev.EventFn2 do
   @moduledoc false
 
-  use Inngest.Function,
-    name: "test func",
-    event: "test/event"
+  use Inngest.Function
+  alias Inngest.{FnOpts, Trigger}
 
-  # batch_events: %{max_size: 3, timeout: "10s"}
+  @func %FnOpts{id: "test-func-v2", name: "test func v2"}
+  @trigger %Trigger{event: "test/hello"}
 
-  run "test 1st run" do
-    {:ok, %{run: "do something"}}
-  end
+  @impl true
+  def exec(ctx, %{run_id: run_id, step: step} = _args) do
+    IO.inspect("First log")
 
-  step "test 1st step" do
-    {:ok, %{hello: "world"}}
-  end
+    greet =
+      step.run(ctx, "hello", fn ->
+        "Hello world"
+      end)
+      |> IO.inspect()
 
-  sleep "2s"
+    step.sleep(ctx, "sleep-test", "10s")
+    # step.sleep(ctx, "sleep-until-test", "2023-11-05T00:12:00Z")
 
-  step "test 2nd step" do
-    {:ok, 100}
-  end
+    IO.inspect("Second log")
 
-  sleep "2s"
-  # sleep "until 1m later" do
-  #   "2023-07-18T07:31:00Z"
-  # end
+    # step.wait_for_event(ctx, "wait-test", %{
+    #   event: "test/yolo",
+    #   timeout: "1h"
+    #   # match: "data.foo"
+    # })
+    # |> IO.inspect()
 
-  step "test 3rd - state accumulate" do
-    {:ok, %{result: "ok"}}
-  end
+    step.send_event(ctx, "test-event-sending", %{
+      name: "test/foobar",
+      data: %{"foo" => "bar"}
+    })
+    |> IO.inspect()
 
-  # wait_for_event "test/wait" do
-  #   match = "data.yo"
-  #   [timeout: "1d", if: "event.#{match} == async.#{match}"]
-  # end
+    name =
+      step.run(ctx, "name", fn ->
+        "John Doe"
+      end)
+      |> IO.inspect()
 
-  # wait_for_event "test/wait", do: [timeout: "1d", match: "data.yo"]
-
-  run "result", %{data: data} do
-    {:ok, data}
+    {:ok, "#{greet} #{name}"} |> IO.inspect()
   end
 end

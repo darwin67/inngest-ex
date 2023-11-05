@@ -49,7 +49,7 @@ defmodule Inngest.Router.Register do
 
     payload = %{
       url: Config.app_host() <> path,
-      v: "1",
+      v: "0.1",
       deployType: "ping",
       sdk: Config.sdk_version(),
       framework: framework,

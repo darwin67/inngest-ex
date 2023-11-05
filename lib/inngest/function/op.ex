@@ -2,7 +2,7 @@ defmodule Inngest.Function.UnhashedOp do
   @moduledoc false
 
   alias Inngest.Enums
-  alias Inngest.Function.Step
+  # alias Inngest.Function.Step
 
   defstruct [:name, :op, pos: 0, opts: %{}]
 
@@ -13,15 +13,15 @@ defmodule Inngest.Function.UnhashedOp do
           opts: map()
         }
 
-  @spec from_step(Step.t()) :: t()
-  def from_step(step) do
-    %__MODULE__{
-      name: step.name,
-      op: Enums.opcode(step.step_type),
-      pos: Map.get(step.tags, :idx, 0),
-      opts: step.opts
-    }
-  end
+  # @spec from_step(Step.t()) :: t()
+  # def from_step(step) do
+  #   %__MODULE__{
+  #     name: step.name,
+  #     op: Enums.opcode(step.step_type),
+  #     pos: Map.get(step.tags, :idx, 0),
+  #     opts: step.opts
+  #   }
+  # end
 
   @spec hash(t()) :: binary()
   def hash(unhashedop) do
@@ -35,7 +35,6 @@ defmodule Inngest.Function.GeneratorOpCode do
 
   alias Inngest.Enums
 
-  @derive Jason.Encoder
   defstruct [
     # op represents the type of operation invoked in the function
     :op,
@@ -45,6 +44,8 @@ defmodule Inngest.Function.GeneratorOpCode do
     # name represents the name of the step, or the sleep duration
     # for sleeps
     :name,
+    # display_name represents the display name of the step on the UI
+    :display_name,
     # opts indicate the options for the operation, e.g matching
     # expressions when setting up async event listeners via
     # `waitForEvent`, or retry policies for steps
@@ -58,7 +59,18 @@ defmodule Inngest.Function.GeneratorOpCode do
           op: Enums.opcode(),
           id: binary(),
           name: binary(),
+          display_name: binary(),
           opts: any(),
-          data: map()
+          data: any()
         }
+end
+
+defimpl Jason.Encoder, for: Inngest.Function.GeneratorOpCode do
+  def encode(value, opts) do
+    value =
+      value
+      |> Map.put(:displayName, Map.get(value, :display_name))
+
+    Jason.Encode.map(value, opts)
+  end
 end
