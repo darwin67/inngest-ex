@@ -4,6 +4,7 @@ defmodule Inngest.StepTool do
   alias Inngest.Function.{Context, UnhashedOp, GeneratorOpCode}
 
   @type id() :: binary()
+  @type datetime() :: binary() | DateTime.t() | Date.t() | NaiveDateTime.t()
 
   @spec run(Context.t(), id(), fun()) :: any()
   def run(%{steps: steps} = _ctx, step_id, func) do
@@ -49,7 +50,26 @@ defmodule Inngest.StepTool do
     end
   end
 
-  def sleep_until() do
+  @spec sleep_until(Context.t(), id(), datetime()) :: nil
+  def sleep_until(%{steps: steps} = _ctx, step_id, time) do
+    op = %UnhashedOp{name: step_id, op: "Sleep"}
+    hashed_id = UnhashedOp.hash(op)
+
+    if Map.has_key?(steps, hashed_id) do
+      nil
+    else
+      case Inngest.Function.validate_datetime(time) do
+        {:ok, datetime} ->
+          throw(%GeneratorOpCode{
+            id: hashed_id,
+            name: datetime,
+            op: op
+          })
+
+        {:error, error} ->
+          {:error, error}
+      end
+    end
   end
 
   def wait_for_event() do
