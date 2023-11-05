@@ -22,6 +22,13 @@ defmodule Inngest.Dev.EventFn2 do
 
     IO.inspect("Second log")
 
+    step.wait_for_event(ctx, "wait-test", %{
+      event: "test/yolo",
+      timeout: "1h"
+      # match: "data.foo"
+    })
+    |> IO.inspect()
+
     name =
       step.run(ctx, "name", fn ->
         "John Doe"

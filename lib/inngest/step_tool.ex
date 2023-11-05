@@ -1,6 +1,7 @@
 defmodule Inngest.StepTool do
   @moduledoc false
 
+  alias Inngest.Event
   alias Inngest.Function.{Context, UnhashedOp, GeneratorOpCode}
 
   @type id() :: binary()
@@ -72,7 +73,46 @@ defmodule Inngest.StepTool do
     end
   end
 
-  def wait_for_event() do
+  @spec wait_for_event(Context.t(), id(), map()) :: map()
+  def wait_for_event(%{steps: steps} = _ctx, step_id, opts) do
+    op = %UnhashedOp{name: step_id, op: "WaitForEvent"}
+    hashed_id = UnhashedOp.hash(op)
+
+    if steps |> Map.has_key?(hashed_id) do
+      case steps |> Map.get(hashed_id) do
+        nil -> nil
+        event -> Event.from(event)
+      end
+    else
+      opts =
+        opts
+        |> Enum.reduce(%{}, fn
+          {key, value}, acc -> Map.put(acc, key, value)
+          keyword, acc when is_list(keyword) -> Enum.into(keyword, acc)
+        end)
+
+      opts =
+        cond do
+          Map.has_key?(opts, :match) ->
+            match = Map.get(opts, :match)
+            timeout = Map.get(opts, :timeout)
+            event = Map.get(opts, :event)
+            %{event: event, timeout: timeout, if: "event.#{match} == async.#{match}"}
+
+          Map.has_key?(opts, :if) ->
+            Map.take(opts, [:event, :timeout, :if])
+
+          true ->
+            Map.take(opts, [:event, :timeout])
+        end
+
+      throw(%GeneratorOpCode{
+        id: hashed_id,
+        name: step_id,
+        op: op.op,
+        opts: opts
+      })
+    end
   end
 
   def send_event() do
