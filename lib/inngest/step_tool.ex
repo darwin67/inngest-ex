@@ -115,6 +115,33 @@ defmodule Inngest.StepTool do
     end
   end
 
-  def send_event() do
+  def send_event(%{steps: steps} = _ctx, step_id, events) do
+    op = %UnhashedOp{name: step_id, op: "Step"}
+    hashed_id = UnhashedOp.hash(op)
+
+    case Map.get(steps, hashed_id) do
+      nil ->
+        display_name =
+          cond do
+            is_map(events) -> Map.get(events, :name, step_id)
+            true -> step_id
+          end
+
+        # if not, execute function
+        result = Inngest.Client.send(events)
+
+        # cancel execution and return with opcode
+        throw(%GeneratorOpCode{
+          id: hashed_id,
+          name: "sendEvent",
+          display_name: "Send " <> display_name,
+          op: op.op,
+          data: result
+        })
+
+      # if found, return value
+      val ->
+        val
+    end
   end
 end
