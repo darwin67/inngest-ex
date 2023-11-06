@@ -1,4 +1,4 @@
-defmodule Inngest.Test.Case.SleepFn do
+defmodule Inngest.Test.Case.SleepUntilFn do
   @moduledoc false
 
   use Inngest.Function
