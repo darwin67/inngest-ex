@@ -5,7 +5,7 @@ defmodule Inngest.Test.Case.StepFn do
   alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "step-fn", name: "Step Function"}
-  @trigger %Trigger{event: "test/step"}
+  @trigger %Trigger{event: "test/plug.step"}
 
   @count 0
 
