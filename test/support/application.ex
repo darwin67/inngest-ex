@@ -6,12 +6,11 @@ defmodule Inngest.Test.Application do
 
   @impl true
   def start(_type, _args) do
-    # Load env
-    Dotenv.load()
-
     children = [
       Inngest.Test.PlugRouter
     ]
+
+    children = if Mix.env() == :test, do: children ++ [Inngest.Test.DevServer], else: children
 
     opts = [strategy: :one_for_one, name: Inngest.Test.Supervisor]
     Supervisor.start_link(children, opts)

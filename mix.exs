@@ -103,7 +103,7 @@ defmodule Inngest.MixProject do
       {:slugify, "~> 1.3"},
 
       # dev / test
-      {:plug_cowboy, "~> 2.0", only: :dev},
+      {:plug_cowboy, "~> 2.0", only: [:dev, :test]},
       {:phoenix, "~> 1.6", only: [:dev, :test]},
       # {:bandit, "~> 0.6", only: :dev},
       {:tz, "~> 0.26", only: :dev},
