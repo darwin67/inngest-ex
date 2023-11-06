@@ -3,6 +3,9 @@ defmodule Inngest.Router.PlugTest do
 
   alias Inngest.Test.DevServer
 
+  # 5s
+  @default_sleep 5_000
+
   describe "no step fn" do
     test "should run successfully" do
       assert {:ok,
@@ -11,7 +14,7 @@ defmodule Inngest.Router.PlugTest do
                 "status" => 200
               }} = Inngest.send(%{name: "test/plug.no-step", data: %{}})
 
-      Process.sleep(5000)
+      Process.sleep(@default_sleep)
 
       assert {:ok,
               %{
@@ -33,9 +36,21 @@ defmodule Inngest.Router.PlugTest do
                 "status" => 200
               }} = Inngest.send(%{name: "test/plug.step", data: %{}})
 
-      Process.sleep(5000)
+      Process.sleep(@default_sleep)
 
-      assert {:ok, resp} = DevServer.run_ids(event_id) |> IO.inspect()
+      assert {:ok,
+              %{
+                "data" => [
+                  %{
+                    "output" => 5,
+                    "run_id" => _run_id,
+                    "status" => "Completed"
+                  }
+                ]
+              }} = DevServer.run_ids(event_id)
+
+      # TODO: check on step outputs
+      # assert {:ok, resp} = DevServer.fn_run(run_id) |> IO.inspect()
     end
   end
 end

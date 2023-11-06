@@ -47,6 +47,12 @@ defmodule Inngest.Test.DevServer do
     |> parse_resp()
   end
 
+  def fn_run(run_id) do
+    client()
+    |> Tesla.get("/v1/runs/#{run_id}")
+    |> parse_resp()
+  end
+
   defp client() do
     middleware = [
       {Tesla.Middleware.BaseUrl, @base_url},
