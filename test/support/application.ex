@@ -10,7 +10,10 @@ defmodule Inngest.Test.Application do
       Inngest.Test.PlugRouter
     ]
 
-    children = if Mix.env() == :test, do: children ++ [Inngest.Test.DevServer], else: children
+    children =
+      if System.get_env("MIX_ENV") == "test",
+        do: children ++ [Inngest.Test.DevServer],
+        else: children
 
     opts = [strategy: :one_for_one, name: Inngest.Test.Supervisor]
     Supervisor.start_link(children, opts)

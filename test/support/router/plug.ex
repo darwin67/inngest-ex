@@ -1,4 +1,6 @@
 defmodule Inngest.Test.PlugRouter do
+  @moduledoc false
+
   use Plug.Router
   use Inngest.Router, :plug
 
