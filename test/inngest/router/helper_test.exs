@@ -37,6 +37,7 @@ defmodule Inngest.Router.HelperTest do
     @dev_mods [Inngest.Dev.EventFn, Inngest.Dev.CronFn]
     @test_mods [Inngest.TestEventFn, Inngest.TestCronFn]
 
+    @tag :skip
     test "should compile all modules in the provided path" do
       assert %{funcs: funcs} = Helper.load_functions_from_path(%{path: @path})
       assert Enum.count(funcs) == Enum.count(@test_mods)

@@ -79,13 +79,14 @@ defmodule Inngest.MixProject do
     ]
   end
 
-  defp elixirc_paths(:dev), do: ["lib", "dev"]
+  defp elixirc_paths(:dev), do: ["lib", "test/support"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {Inngest.Test.Application, []},
       extra_applications: [:logger]
     ]
   end
@@ -102,7 +103,7 @@ defmodule Inngest.MixProject do
       {:slugify, "~> 1.3"},
 
       # dev / test
-      {:plug_cowboy, "~> 2.0", only: :dev},
+      {:plug_cowboy, "~> 2.0", only: [:dev, :test]},
       {:phoenix, "~> 1.6", only: [:dev, :test]},
       # {:bandit, "~> 0.6", only: :dev},
       {:tz, "~> 0.26", only: :dev},
@@ -121,7 +122,7 @@ defmodule Inngest.MixProject do
       "fmt:check": [
         "format --check-formatted mix.exs 'lib/**/*.{ex,exs}' 'test/**/*.{ex,exs}'"
       ],
-      dev: "run --no-halt dev.exs"
+      dev: "run --no-halt"
     ]
   end
 end
