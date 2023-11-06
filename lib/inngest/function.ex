@@ -133,6 +133,8 @@ defmodule Inngest.Function do
     end
   end
 
+  def validate_datetime(%DateTime{} = datetime), do: Timex.format(datetime, "{RFC3339}")
+
   def validate_datetime(datetime) when is_binary(datetime) do
     with {:error, _} <- Timex.parse(datetime, "{RFC3339}"),
          {:error, _} <- Timex.parse(datetime, "{YYYY}-{MM}-{DD}T{h24}:{mm}:{ss}"),
@@ -159,10 +161,6 @@ defmodule Inngest.Function do
         {:error, "Unknown result"}
     end
   end
-
-  # TODO: Allow parsing DateTime, Date
-  # def validate_datetime(%DateTime{} = datetime) do
-  # end
 
   def validate_datetime(_), do: {:error, "Expect valid DateTime formatted input"}
 end

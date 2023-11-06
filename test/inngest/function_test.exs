@@ -95,6 +95,14 @@ defmodule Inngest.FunctionTest do
       end
     end
 
+    test "should accept Datetime objects" do
+      now = Timex.now()
+      later = Timex.shift(now, minutes: 5)
+
+      assert {:ok, expected} = Timex.format(later, "{RFC3339}")
+      assert {:ok, ^expected} = Function.validate_datetime(later)
+    end
+
     test "should return error for invalid string format" do
       assert {:error, "Unknown format for DateTime"} = Function.validate_datetime("yolo")
     end
