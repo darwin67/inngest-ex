@@ -76,6 +76,38 @@ defmodule Inngest.Router.PlugTest do
     end
   end
 
+  describe "sleep_until fn" do
+    test "should run successfully" do
+      event_id = send_test_event("test/plug.sleep_until")
+      Process.sleep(@default_sleep)
+
+      # it should be sleeping so have not completed
+      assert {:ok,
+              %{
+                "data" => [
+                  %{
+                    "run_id" => run_id,
+                    "status" => "Running",
+                    "ended_at" => nil
+                  }
+                ]
+              }} = DevServer.run_ids(event_id)
+
+      # wait till sleep is done
+      Process.sleep(@default_sleep)
+
+      assert {:ok,
+              %{
+                "data" => %{
+                  "event_id" => ^event_id,
+                  "run_id" => ^run_id,
+                  "output" => "yolo",
+                  "status" => "Completed"
+                }
+              }} = DevServer.fn_run(run_id)
+    end
+  end
+
   defp send_test_event(event) do
     assert {:ok,
             %{

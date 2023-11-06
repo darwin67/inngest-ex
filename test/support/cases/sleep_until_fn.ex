@@ -9,8 +9,13 @@ defmodule Inngest.Test.Case.SleepUntilFn do
 
   @impl true
   def exec(ctx, %{step: step} = _args) do
-    now = step.run(ctx, "now", fn -> Timex.now() end)
-    until = Timex.shift(now, seconds: 10)
+    until =
+      step.run(ctx, "until", fn ->
+        Timex.now()
+        |> Timex.shift(seconds: 30)
+        |> Timex.format!("{ISO:Extended:Z}")
+      end)
+      |> IO.inspect()
 
     step.sleep_until(ctx, "test-sleep-until", until)
 
