@@ -113,12 +113,11 @@ defmodule Inngest.Router.Invoke do
           {400, error}
       end
     catch
-      # TODO: Panic Control
+      # Finished step, report back to executor
       %GeneratorOpCode{} = opcode ->
         {206, [opcode]}
 
       _ ->
-        # TODO: return error
         {400, "error"}
     end
   end

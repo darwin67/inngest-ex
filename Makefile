@@ -8,7 +8,7 @@ deps:
 
 .PHONY: test
 test:
-	mix test
+	MIX_ENV=test mix test
 
 .PHONY: test-cover
 test-cover:

@@ -1,27 +1,14 @@
 defmodule Inngest.Function.UnhashedOp do
   @moduledoc false
 
-  alias Inngest.Enums
-  # alias Inngest.Function.Step
-
   defstruct [:name, :op, pos: 0, opts: %{}]
 
   @type t() :: %__MODULE__{
           name: binary(),
-          op: Enums.opcode(),
+          op: binary(),
           pos: number(),
           opts: map()
         }
-
-  # @spec from_step(Step.t()) :: t()
-  # def from_step(step) do
-  #   %__MODULE__{
-  #     name: step.name,
-  #     op: Enums.opcode(step.step_type),
-  #     pos: Map.get(step.tags, :idx, 0),
-  #     opts: step.opts
-  #   }
-  # end
 
   @spec hash(t()) :: binary()
   def hash(unhashedop) do
@@ -32,8 +19,6 @@ end
 
 defmodule Inngest.Function.GeneratorOpCode do
   @moduledoc false
-
-  alias Inngest.Enums
 
   defstruct [
     # op represents the type of operation invoked in the function
@@ -56,7 +41,7 @@ defmodule Inngest.Function.GeneratorOpCode do
   ]
 
   @type t() :: %__MODULE__{
-          op: Enums.opcode(),
+          op: binary(),
           id: binary(),
           name: binary(),
           display_name: binary(),
