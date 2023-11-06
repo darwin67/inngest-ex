@@ -13,8 +13,14 @@ defmodule Inngest.Client do
     client = httpclient(:event, opts)
 
     case Tesla.post(client, "/e/#{event_key}", payload) do
-      {:ok, %Tesla.Env{status: 200}} ->
-        :ok
+      {:ok, %Tesla.Env{status: 200, body: resp}} ->
+        # NOTE: because resp headers currently says text/plain
+        # so http client won't automatically decode it as json
+        if is_binary(resp) do
+          Jason.decode(resp)
+        else
+          {:ok, resp}
+        end
 
       {:ok, %Tesla.Env{status: 400}} ->
         {:error, "invalid event data"}
