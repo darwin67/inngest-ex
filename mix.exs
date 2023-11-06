@@ -86,6 +86,7 @@ defmodule Inngest.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {Inngest.Test.Application, []},
       extra_applications: [:logger]
     ]
   end
@@ -121,7 +122,7 @@ defmodule Inngest.MixProject do
       "fmt:check": [
         "format --check-formatted mix.exs 'lib/**/*.{ex,exs}' 'test/**/*.{ex,exs}'"
       ],
-      dev: "run --no-halt dev.exs"
+      dev: "run --no-halt"
     ]
   end
 end
