@@ -152,10 +152,11 @@ jobs:
         run: make dialyzer
 
   conventional-commit-lint:
-    name: Conventional Commit Lint
+    name: Validate PR title
     runs-on: ubuntu-latest
     steps:
-      - name: Check for PR title
-        uses: agenthunt/conventional-commit-checker-action@v1.0.0
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          pr-body-regex: ""
+          wip: true
