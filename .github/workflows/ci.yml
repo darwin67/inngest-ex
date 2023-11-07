@@ -8,6 +8,10 @@ on:
 env:
   MIX_ENV: test
 
+permissions:
+  pull-requests: read
+  statuses: write
+
 jobs:
   test:
     name: Test
