@@ -7,7 +7,7 @@ defmodule Inngest.Client do
   @doc """
   Send one or a batch of events to Inngest
   """
-  @spec send(Event.t() | list(Event.t()), Keyword.t()) :: :ok | {:error, binary()}
+  @spec send(Event.t() | list(Event.t()), Keyword.t()) :: {:ok, map()} | {:error, binary()}
   def send(payload, opts \\ []) do
     event_key = Config.event_key()
     client = httpclient(:event, opts)

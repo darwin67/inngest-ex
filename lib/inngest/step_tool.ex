@@ -130,7 +130,8 @@ defmodule Inngest.StepTool do
           end
 
         # if not, execute function
-        result = Inngest.Client.send(events)
+        # TODO: handle error responses as well
+        {:ok, %{"ids" => event_ids, "status" => 200}} = Inngest.Client.send(events)
 
         # cancel execution and return with opcode
         throw(%GeneratorOpCode{
@@ -138,7 +139,7 @@ defmodule Inngest.StepTool do
           name: "sendEvent",
           display_name: "Send " <> display_name,
           op: op.op,
-          data: result
+          data: %{event_ids: event_ids}
         })
 
       # if found, return value
