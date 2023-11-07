@@ -25,6 +25,9 @@ defmodule Inngest.Test.DevServer do
     {:ok, task.pid}
   end
 
+  @impl true
+  def handle_info(_, _), do: {:noreply, nil}
+
   def run_ids(event_id) do
     client()
     |> Tesla.get("/v1/events/#{event_id}/runs")
