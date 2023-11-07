@@ -133,6 +133,9 @@ defmodule Inngest.Function do
     end
   end
 
+  # TODO:
+  # def validate_datetime(%Date{} = date), do: nil
+
   def validate_datetime(%DateTime{} = datetime),
     do: Timex.format(datetime, "{YYYY}-{0M}-{0D}T{h24}:{m}:{s}Z")
 
