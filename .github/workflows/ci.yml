@@ -152,6 +152,7 @@ jobs:
         run: make dialyzer
 
   conventional-commit-lint:
+    name: Conventional Commit Lint
     runs-on: ubuntu-latest
     steps:
       - name: Check for PR title
