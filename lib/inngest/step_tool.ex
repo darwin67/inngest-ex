@@ -63,7 +63,7 @@ defmodule Inngest.StepTool do
         {:ok, datetime} ->
           throw(%GeneratorOpCode{
             id: hashed_id,
-            name: step_id,
+            name: datetime,
             display_name: datetime,
             op: op.op
           })

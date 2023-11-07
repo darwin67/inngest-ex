@@ -105,7 +105,7 @@ defmodule Inngest.Router.PlugTest do
                 "data" => %{
                   "event_id" => ^event_id,
                   "run_id" => ^run_id,
-                  "output" => "yolo",
+                  "output" => "awake",
                   "status" => "Completed"
                 }
               }} = DevServer.fn_run(run_id)
