@@ -7,6 +7,7 @@ defmodule Inngest.Router.PlugTest do
   @default_sleep 5_000
 
   describe "no step fn" do
+    @tag :integration
     test "should run successfully" do
       event_id = send_test_event("test/plug.no-step")
       Process.sleep(@default_sleep)
@@ -24,6 +25,7 @@ defmodule Inngest.Router.PlugTest do
   end
 
   describe "multi-step fn" do
+    @tag :integration
     test "should run successfully" do
       event_id = send_test_event("test/plug.step")
       Process.sleep(@default_sleep)
@@ -45,6 +47,7 @@ defmodule Inngest.Router.PlugTest do
   end
 
   describe "sleep fn" do
+    @tag :integration
     test "should run successfully" do
       event_id = send_test_event("test/plug.sleep")
       Process.sleep(@default_sleep)
@@ -77,6 +80,7 @@ defmodule Inngest.Router.PlugTest do
   end
 
   describe "sleep_until fn" do
+    @tag :integration
     test "should run successfully" do
       event_id = send_test_event("test/plug.sleep_until")
       Process.sleep(@default_sleep)
