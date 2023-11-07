@@ -12,6 +12,11 @@ defmodule Inngest.Function do
 
         @func %FnOpts{id: "my-func", name: "some job"}
         @trigger %Trigger{event: "job/foobar"}
+
+        @impl true
+        def exec(ctx, input) do
+          {:ok, "hello world"}
+        end
       end
 
   ## Function Options

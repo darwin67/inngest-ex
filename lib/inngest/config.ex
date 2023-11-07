@@ -11,6 +11,10 @@ defmodule Inngest.Config do
   @api_url "https://api.inngest.com"
   @dev_server_url "http://127.0.0.1:8288"
 
+  @doc """
+  Returns the host of where this inngest function will be served from.
+  Defaults to `http://127.0.0.1:4000` for local development.
+  """
   @spec app_host() :: binary()
   def app_host() do
     with nil <- System.get_env("INNGEST_APP_HOST"),
@@ -21,6 +25,10 @@ defmodule Inngest.Config do
     end
   end
 
+  @doc """
+  Returns the App name to be registered with the inngestion functions.
+  Defaults to `InngestApp`.
+  """
   @spec app_name() :: binary()
   def app_name() do
     with nil <- System.get_env("INNGEST_APP_NAME"),
@@ -31,6 +39,9 @@ defmodule Inngest.Config do
     end
   end
 
+  @doc """
+  Returns the current inngest environment.
+  """
   @spec env() :: atom()
   def env() do
     case System.get_env("INNGEST_ENV") do
@@ -42,6 +53,10 @@ defmodule Inngest.Config do
     end
   end
 
+  @doc """
+  Returns the base url for accessing the event API.
+  This is where the events are sent to.
+  """
   @spec event_url() :: binary()
   def event_url() do
     with nil <- System.get_env("INNGEST_EVENT_URL"),
@@ -55,6 +70,9 @@ defmodule Inngest.Config do
     end
   end
 
+  @doc """
+  returns the base url for Inngest.
+  """
   @spec inngest_url() :: binary()
   def inngest_url() do
     with nil <- System.get_env("INNGEST_URL"),
@@ -89,6 +107,9 @@ defmodule Inngest.Config do
     end
   end
 
+  @doc """
+  Returns the set event_key.
+  """
   @spec event_key() :: binary()
   def event_key() do
     with nil <- System.get_env("INNGEST_EVENT_KEY"),
@@ -99,6 +120,9 @@ defmodule Inngest.Config do
     end
   end
 
+  @doc """
+  Returns the set registration key.
+  """
   @spec signing_key() :: binary()
   def signing_key() do
     with nil <- System.get_env("INNGEST_SIGNING_KEY"),
