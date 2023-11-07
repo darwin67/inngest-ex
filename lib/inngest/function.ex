@@ -87,6 +87,7 @@ defmodule Inngest.Function do
       )
 
       @behaviour Inngest.Function
+      @default_retries 3
 
       @impl true
       def slug() do
@@ -135,14 +136,25 @@ defmodule Inngest.Function do
           mod: __MODULE__
         }
       end
+
+      defp retries() do
+        case __MODULE__.__info__(:attributes)
+             |> Keyword.get(:func)
+             |> List.first()
+             |> Map.get(:retries) do
+          nil -> @default_retries
+          retry -> retry
+        end
+      end
     end
   end
 
-  # TODO:
-  # def validate_datetime(%Date{} = date), do: nil
-
+  @spec validate_datetime(any()) :: {:ok, binary()} | {:error, binary()}
   def validate_datetime(%DateTime{} = datetime),
     do: Timex.format(datetime, "{YYYY}-{0M}-{0D}T{h24}:{m}:{s}Z")
+
+  # TODO:
+  # def validate_datetime(%Date{} = date), do: nil
 
   def validate_datetime(datetime) when is_binary(datetime) do
     with {:error, _} <- Timex.parse(datetime, "{RFC3339}"),
