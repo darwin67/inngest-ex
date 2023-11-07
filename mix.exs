@@ -25,12 +25,12 @@ defmodule Inngest.MixProject do
 
       # Docs
       name: "Inngest",
-      source_url: "https://github.com/darwin67/ex_inngest",
+      source_url: "https://github.com/inngest/ex_inngest",
       description: "Elixir SDK for Inngest",
       homepage_url: "https://inngest.com",
       docs: [
         main: "Inngest",
-        authors: ["Darwin Wu"],
+        authors: ["Inngest Engineering<eng@inngest.com>"],
         # source_ref: "v#{@version}",
         assets: "docs/assets",
         logo: "docs/assets/logo.png",
@@ -72,9 +72,9 @@ defmodule Inngest.MixProject do
 
   defp package do
     [
-      maintainers: ["Darwin Wu"],
+      maintainers: ["Inngest Engineering<eng@inngest.com>"],
       licenses: ["GPL-3.0-or-later"],
-      links: %{github: "https://github.com/darwin67/ex_inngest"},
+      links: %{github: "https://github.com/inngest/ex_inngest"},
       files: ~w(lib mix.exs README.md LICENSE VERSION CHANGELOG.md)
     ]
   end

@@ -1,12 +1,35 @@
-[![CI](https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml/badge.svg)](https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml)
-[![Hex.pm](https://img.shields.io/hexpm/v/inngest.svg)](https://hex.pm/packages/inngest)
-[![Hexdocs.pm](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/inngest/)
+## Notice
+
+This is the README for `main` branch, which is for pre `0.2.0` release.
 
 <!-- MDOC ! -->
 
-### Experimental - non official, use at your own risk
+<div align="center">
+  <a href="https://www.inngest.com"><img src="https://user-images.githubusercontent.com/306177/191580717-1f563f4c-31e3-4aa0-848c-5ddc97808a9a.png" width="300" /></a>
+  <br/>
+  <br/>
+  <p>
+    A durable event-driven workflow engine SDK for Elixir.<br />
+    Read the <a href="https://www.inngest.com/docs?ref=github-inngest-elixir-readme">documentation</a> and get started in minutes.
+  </p>
+  <p>
+    <a href="https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml"><img src="https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml/badge.svg"></a>
+    <a href="https://hex.pm/packages/inngest"><img src="https://img.shields.io/hexpm/v/inngest.svg" /></a>
+    <a href="https://hexdocs.pm/inngest/"><img src="https://img.shields.io/badge/hex-docs-lightgreen.svg" /></a>
+    <br/>
+    <a href="https://www.inngest.com/discord"><img src="https://img.shields.io/discord/842170679536517141?label=discord" /></a>
+    <a href="https://twitter.com/inngest"><img src="https://img.shields.io/twitter/follow/inngest?style=social" /></a>
+  </p>
+</div>
 
-Elixir SDK for **[Inngest](https://www.inngest.com)**
+# [Inngest](https://www.inngest.com) Elixir SDK
+
+Inngest's Elixir SDK allows you to create event-driven, durable workflows in your
+existing API — without new infrastructure.
+
+It's useful if you want to build reliable software without worrying about queues,
+events, subscribers, workers, or other complex primitives such as concurrency,
+parallelism, event batching, or distributed debounce. These are all built in.
 
 ## Installation
 
@@ -17,7 +40,7 @@ to your list of dependencies in `mix.exs`
 # mix.exs
 def deps do
   [
-    {:inngest, "~> 0.1"}
+    {:inngest, git: "https://github.com/inngest/ex_inngest.git", branch: "main"}
   ]
 end
 ```
@@ -31,71 +54,74 @@ macro.
 
 ``` elixir
 defmodule MyApp.AwesomeFunction do
-  use Inngest.Function,
-    name: "awesome function", # The name of the function
-    event: "func/awesome"     # The event this function will react to
+  use Inngest.Function
+  alias Inngest.{FnOpts, Trigger}
 
-  # Declare a "run" macro that runs contains the business logic
-  run "hello world" do
-    {:ok, %{result: "hello world"}}
+  @func %FnOpts{id: "awesome-fn", name: "Awesome Function"} # The id and name of the function
+  @trigger %Trigger{event: "func/awesome"} # The event this function will react to
+
+  @impl true
+  def exec(_ctx, _input) do
+    IO.inspect("Do something")
+
+    {:ok, "hello world"}
   end
 end
 ```
 
-The Elixir SDK follows `ExUnit`'s pattern of accumulative macros, where each block
-is a self contained piece of logic.
-
-You can declare multiple blocks of `run` or other available macros, and the function
-will execute the code in the order it is declared.
+And just like that, you have an Inngest function that will react to an event called `func/awesome`.
+`Inngest.Function.exec/2` will then be called by the SDK to run and execute the logic.
 
 #### Advanced
 
-Here's a slightly more complicated version, which should provide you an idea what is
-capable with Inngest.
+The above example will be no different from other background processing libraries, so let's take a
+look at a more complicated version. Which should provide you an idea what is capable with Inngest.
 
 ``` elixir
 defmodule MyApp.AwesomeFunction do
-  use Inngest.Function,
-    name: "awesome function", # The name of the function
-    event: "func/awesome"     # The event this function will react to
+  use Inngest.Function
+  alias Inngest.{FnOpts, Trigger}
 
-  # An Inngest function will automatically retry when it fails
+  @func %FnOpts{id: "awesome-fn", name: "Awesome Function"} # The id and name of the function
+  @trigger %Trigger{event: "func/awesome"} # The event this function will react to
 
-  # "run" is a normal unit execution. It is not memorized and will be
-  # executed every time the function gets re-invoked.
-  #
-  # The return "data" from each execution block will be accumulated
-  # and passed on to the next execution
-  run "1st run" do
-    {:ok, %{run: "do something"}}
-  end
+  @impl true
+  def exec(ctx, %{step: step} = input) do
+    IO.inspect("Starting function...")
 
-  # "step" is a unit execution where the return value will be memorized.
-  # An already executed "step" will not be executed again when re-invoked
-  # and will use the previously returned value
-  #
-  # e.g. The previous `%{run: "do something"}` can be extracted out via
-  # pattern matching, just like how you do it in `ExUnit`
-  step "1st step", %{data: %{run: output}} do
-    {:ok, %{hey: output}}
-  end
+    %{greet: greet} =
+      # A return value wrapped in a `step` are memorized, meaning
+      # it's guaranteed to be idempotent.
+      # if it fails, it'll be retried.
+      step.run(ctx, "step1", fn ->
+        %{greet: "hello"}
+      end)
 
-  # "sleep" will pause the execution for the declared amount of duration.
-  sleep "2s"
+    # Sleeping will pause the execution from running, and function
+    # will be reinvoked when time is up.
+    step.sleep(ctx, "wait-a-little", "10s")
 
-  step "2nd step" do
-    {:ok, %{yo: "lo"}}
-  end
+    %{name: name} =
+      step.run(ctx, "retrieve-user", fn ->
+        # retrieve user from here
+        %{name: user_name}
+      end)
 
-  # "sleep" can also sleep until a valid datetime string
-  sleep "until July 31 2023 - 8pm", do: "2023-07-18T07:31:00Z"
+    # There are times you want to wait for something to happen before
+    # continue on the workflow. `wait_for_event` allows exactly that.
+    evt = step.wait_for_event("wait-for-registration-complete", %{
+      event: "user/register.completed",
+      timeout: "1h"
+    })
 
-  # "wait_for_event" will pause the function execution until the declared
-  # event is received
-  wait_for_event "test/wait", do: [timeout: "1d", match: "data.yo"]
+    # You might want to trigger some other workflow, sending an event
+    # will trigger the functions that are registered against the `event`.
+    step.send_event("completed-work", %{
+      name: "func/awesome.completed",
+      data: %{name: name}
+    })
 
-  step "result", %{data: data} do
-    {:ok, %{result: data}}
+    {:ok, %{greetings: "#{greet} #{name}", registered: is_nil(evt)}}
   end
 end
 ```
