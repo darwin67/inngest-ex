@@ -4,9 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### Documentation
+
+- Docs: Update docs to prepare for 0.2 release (#62)
+
 ### Features
 
 - Feat: add event batching to function configuration
+- Feat: Change approach for SDK (#59)
+
+### Miscellaneous Tasks
+
+- Chore: update ci.yml
+- Chore: Clean up (#60)
+- Chore: Integration tests (#61)
 
 ## [0.1.9] - 2023-08-01
 
