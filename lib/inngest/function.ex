@@ -133,7 +133,8 @@ defmodule Inngest.Function do
     end
   end
 
-  def validate_datetime(%DateTime{} = datetime), do: Timex.format(datetime, "{RFC3339}")
+  def validate_datetime(%DateTime{} = datetime),
+    do: Timex.format(datetime, "{YYYY}-{0M}-{0D}T{h24}:{m}:{s}Z")
 
   def validate_datetime(datetime) when is_binary(datetime) do
     with {:error, _} <- Timex.parse(datetime, "{RFC3339}"),

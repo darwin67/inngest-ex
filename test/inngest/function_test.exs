@@ -96,11 +96,9 @@ defmodule Inngest.FunctionTest do
     end
 
     test "should accept Datetime objects" do
-      now = Timex.now()
-      later = Timex.shift(now, minutes: 5)
-
-      assert {:ok, expected} = Timex.format(later, "{RFC3339}")
-      assert {:ok, ^expected} = Function.validate_datetime(later)
+      dt = DateTime.new!(~D[2024-05-24], ~T[13:26:08.003], "Etc/UTC")
+      expected = "2024-05-24T13:26:08Z"
+      assert {:ok, ^expected} = Function.validate_datetime(dt)
     end
 
     test "should return error for invalid string format" do
