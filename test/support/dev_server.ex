@@ -25,22 +25,6 @@ defmodule Inngest.Test.DevServer do
     {:ok, task.pid}
   end
 
-  @impl true
-  def terminate(_, _) do
-    # credo:disable-for-next-line
-    IO.inspect("Terminating...")
-    System.cmd("pkill", ["inngest-cli"])
-  end
-
-  @impl true
-  def handle_info({:EXIT, _from, _reason}, _) do
-    # credo:disable-for-next-line
-    IO.inspect("handling exit...")
-
-    System.cmd("pkill", ["inngest-cli"])
-    {:noreply, nil}
-  end
-
   def run_ids(event_id) do
     client()
     |> Tesla.get("/v1/events/#{event_id}/runs")
