@@ -15,11 +15,11 @@ defmodule Inngest.Test.DevServer do
 
     task =
       Task.async(fn ->
-        System.cmd("inngest-cli", [
-          "dev",
-          "-u",
-          "http://127.0.0.1:4000/api/inngest"
-        ])
+        System.cmd(
+          "inngest-cli",
+          ["dev", "-u", "http://127.0.0.1:4000/api/inngest"],
+          stderr_to_stdout: true
+        )
       end)
 
     {:ok, task.pid}
