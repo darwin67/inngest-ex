@@ -1,4 +1,6 @@
 defmodule Inngest.Test.Helper do
+  @moduledoc false
+
   alias Inngest
 
   def send_test_event(event) do
