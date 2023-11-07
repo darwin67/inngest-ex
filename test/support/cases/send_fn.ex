@@ -9,12 +9,12 @@ defmodule Inngest.Test.Case.SendFn do
 
   @impl true
   def exec(ctx, %{step: step} = _args) do
-    step.send_event(ctx, "send-test", %{
-      name: "test/yolo",
-      data: %{}
-    })
-    |> IO.inspect()
+    resp =
+      step.send_event(ctx, "send-test", %{
+        name: "test/yolo",
+        data: %{}
+      })
 
-    {:ok, "sent"}
+    {:ok, resp}
   end
 end

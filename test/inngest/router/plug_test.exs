@@ -112,6 +112,30 @@ defmodule Inngest.Router.PlugTest do
     end
   end
 
+  describe "send_event fn" do
+    @tag :integration
+    test "should run successfully" do
+      event_id = send_test_event("test/plug.send")
+      Process.sleep(@default_sleep)
+
+      assert {:ok,
+              %{
+                "data" => [
+                  %{
+                    "output" => %{
+                      "event_ids" => event_ids
+                    },
+                    "run_id" => _run_id,
+                    "status" => "Completed"
+                  }
+                ]
+              }} = DevServer.run_ids(event_id)
+
+      assert Enum.count(event_ids) > 0
+      assert is_list(event_ids)
+    end
+  end
+
   defp send_test_event(event) do
     assert {:ok,
             %{
