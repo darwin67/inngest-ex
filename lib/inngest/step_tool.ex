@@ -109,7 +109,8 @@ defmodule Inngest.StepTool do
 
       throw(%GeneratorOpCode{
         id: hashed_id,
-        name: step_id,
+        name: Map.get(opts, :event, step_id),
+        display_name: step_id,
         op: op.op,
         opts: opts
       })
