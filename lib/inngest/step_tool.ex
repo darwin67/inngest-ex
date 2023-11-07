@@ -64,7 +64,8 @@ defmodule Inngest.StepTool do
           throw(%GeneratorOpCode{
             id: hashed_id,
             name: datetime,
-            op: op
+            display_name: datetime,
+            op: op.op
           })
 
         {:error, error} ->
@@ -108,7 +109,8 @@ defmodule Inngest.StepTool do
 
       throw(%GeneratorOpCode{
         id: hashed_id,
-        name: step_id,
+        name: Map.get(opts, :event, step_id),
+        display_name: step_id,
         op: op.op,
         opts: opts
       })
@@ -129,7 +131,8 @@ defmodule Inngest.StepTool do
           end
 
         # if not, execute function
-        result = Inngest.Client.send(events)
+        # TODO: handle error responses as well
+        {:ok, %{"ids" => event_ids, "status" => 200}} = Inngest.Client.send(events)
 
         # cancel execution and return with opcode
         throw(%GeneratorOpCode{
@@ -137,7 +140,7 @@ defmodule Inngest.StepTool do
           name: "sendEvent",
           display_name: "Send " <> display_name,
           op: op.op,
-          data: result
+          data: %{event_ids: event_ids}
         })
 
       # if found, return value

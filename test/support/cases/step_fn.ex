@@ -5,7 +5,7 @@ defmodule Inngest.Test.Case.StepFn do
   alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "step-fn", name: "Step Function"}
-  @trigger %Trigger{event: "test/step"}
+  @trigger %Trigger{event: "test/plug.step"}
 
   @count 0
 
@@ -13,6 +13,7 @@ defmodule Inngest.Test.Case.StepFn do
   def exec(ctx, %{step: step} = _args) do
     step1 = step.run(ctx, "step1", fn -> @count + 1 end)
     tmp = step1 + 1
+
     step2 = step.run(ctx, "step2", fn -> tmp + 1 end)
     tmp2 = step2 + 1
 

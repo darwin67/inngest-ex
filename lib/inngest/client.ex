@@ -7,14 +7,20 @@ defmodule Inngest.Client do
   @doc """
   Send one or a batch of events to Inngest
   """
-  @spec send(Event.t() | list(Event.t()), Keyword.t()) :: :ok | {:error, binary()}
+  @spec send(Event.t() | list(Event.t()), Keyword.t()) :: {:ok, map()} | {:error, binary()}
   def send(payload, opts \\ []) do
     event_key = Config.event_key()
     client = httpclient(:event, opts)
 
     case Tesla.post(client, "/e/#{event_key}", payload) do
-      {:ok, %Tesla.Env{status: 200}} ->
-        :ok
+      {:ok, %Tesla.Env{status: 200, body: resp}} ->
+        # NOTE: because resp headers currently says text/plain
+        # so http client won't automatically decode it as json
+        if is_binary(resp) do
+          Jason.decode(resp)
+        else
+          {:ok, resp}
+        end
 
       {:ok, %Tesla.Env{status: 400}} ->
         {:error, "invalid event data"}
