@@ -123,7 +123,9 @@ defmodule Inngest.Function do
             runtime: %Step.RunTime{
               url: "#{Config.app_host() <> path}?fnId=#{slug()}&step=step"
             },
-            retries: %Step.Retry{}
+            retries: %Step.Retry{
+              attempts: retries()
+            }
           }
         }
 
