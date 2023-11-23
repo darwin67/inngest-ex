@@ -86,17 +86,19 @@ defmodule Inngest.Router.Invoke do
       func.mod.exec(ctx, input) |> SdkResponse.from_result()
     rescue
       non_retry in Inngest.NonRetriableError ->
-        SdkResponse.from_result({:error, non_retry.message, :noretry})
+        SdkResponse.from_result(
+          {:error, Exception.format(:error, non_retry, __STACKTRACE__), :noretry}
+        )
 
       error ->
-        SdkResponse.from_result({:error, error.message, :retry})
+        SdkResponse.from_result({:error, Exception.format(:error, error, __STACKTRACE__), :retry})
     catch
       # Finished step, report back to executor
       %GeneratorOpCode{} = opcode ->
         SdkResponse.from_result({:ok, [opcode], :continue})
 
       error ->
-        SdkResponse.from_result({:error, "unknown error: #{error}", []})
+        SdkResponse.from_result({:error, Exception.format(:error, error, __STACKTRACE__), []})
     end
   end
 
