@@ -17,7 +17,7 @@ defmodule Inngest.Function.Cases.NoRetryTest do
                 %{
                   "output" => %{
                     "error" => "invalid status code: 400",
-                    "message" => "not retrying!",
+                    "message" => stacktrace,
                     "name" => "Error"
                   },
                   "run_id" => _run_id,
@@ -25,5 +25,7 @@ defmodule Inngest.Function.Cases.NoRetryTest do
                 }
               ]
             }} = DevServer.run_ids(event_id)
+
+    assert stacktrace =~ "not retrying!"
   end
 end

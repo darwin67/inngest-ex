@@ -10,13 +10,14 @@ defmodule Inngest.SdkResponse do
   defstruct [
     :status,
     :body,
-    :retry
+    retry: true
   ]
 
   @type t() :: %__MODULE__{
           status: number(),
           body: binary(),
-          retry: nil | :noretry | binary() | boolean()
+          # string is for seconds to be delayed
+          retry: boolean() | binary()
         }
 
   alias Inngest.Headers
@@ -29,7 +30,15 @@ defmodule Inngest.SdkResponse do
   # 200, resp -> execution completed (including steps) of function
   # 400, error -> non retriable error
   # 500, error -> retriable error
-  def from_result({:ok, value}) do
+
+  def from_result({:ok, opcodes}, continue: true) do
+    %__MODULE__{
+      status: 206,
+      body: Jason.encode!(opcodes)
+    }
+  end
+
+  def from_result({:ok, value}, _opts) do
     case Jason.encode(value) do
       {:ok, encoded} ->
         %__MODULE__{
@@ -45,17 +54,12 @@ defmodule Inngest.SdkResponse do
     end
   end
 
-  def from_result({:ok, opcodes, :continue}) do
-    %__MODULE__{
-      status: 206,
-      body: Jason.encode!(opcodes)
-    }
-  end
-
   # No retry error response
-  def from_result({:error, error, :noretry}) do
+  def from_result({:error, error}, [{:retry, false} | _] = opts) do
+    stacktrace = Keyword.get(opts, :stacktrace, [])
+
     encoded =
-      case Jason.encode(error) do
+      case Exception.format(:error, error, stacktrace) |> Jason.encode() do
         {:ok, encoded} -> encoded
         {:error, _} -> "Failed to encode error: #{error}"
       end
@@ -63,13 +67,16 @@ defmodule Inngest.SdkResponse do
     %__MODULE__{
       status: 400,
       body: encoded,
-      retry: :noretry
+      retry: false
     }
   end
 
-  def from_result({:error, error, _}) do
+  def from_result({:error, error}, opts) do
+    stacktrace = Keyword.get(opts, :stacktrace, [])
+    retry = Keyword.get(opts, :retry, true)
+
     encoded =
-      case Jason.encode(error) do
+      case Exception.format(:error, error, stacktrace) |> Jason.encode() do
         {:ok, encoded} -> encoded
         {:error, _} -> "Failed to encode error: #{error}"
       end
@@ -77,15 +84,22 @@ defmodule Inngest.SdkResponse do
     %__MODULE__{
       status: 500,
       body: encoded,
-      retry: true
+      retry: retry
     }
   end
+
+  def from_result(_, _),
+    do: %__MODULE__{
+      status: 400,
+      body: "Unknown result",
+      retry: true
+    }
 
   @doc """
   Set the retry header depending on response
   """
   @spec maybe_retry_header(Plug.Conn.t(), t()) :: Plug.Conn.t()
-  def maybe_retry_header(conn, %{retry: :noretry} = _resp) do
+  def maybe_retry_header(conn, %{retry: false} = _resp) do
     Plug.Conn.put_resp_header(conn, Headers.no_retry(), "true")
   end
 

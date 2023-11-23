@@ -69,7 +69,7 @@ defmodule Inngest.Router.Invoke do
             invoke(func, ctx, input)
           else
             _ ->
-              SdkResponse.from_result({:error, "unable to verify signature", :noretry})
+              SdkResponse.from_result({:error, "unable to verify signature"}, retry: false)
           end
       end
 
@@ -83,22 +83,20 @@ defmodule Inngest.Router.Invoke do
 
   defp invoke(func, ctx, input) do
     try do
-      func.mod.exec(ctx, input) |> SdkResponse.from_result()
+      func.mod.exec(ctx, input) |> SdkResponse.from_result([])
     rescue
       non_retry in Inngest.NonRetriableError ->
-        SdkResponse.from_result(
-          {:error, Exception.format(:error, non_retry, __STACKTRACE__), :noretry}
-        )
+        SdkResponse.from_result({:error, non_retry}, retry: false, stacktrace: __STACKTRACE__)
 
       error ->
-        SdkResponse.from_result({:error, Exception.format(:error, error, __STACKTRACE__), :retry})
+        SdkResponse.from_result({:error, error}, stacktrace: __STACKTRACE__)
     catch
       # Finished step, report back to executor
       %GeneratorOpCode{} = opcode ->
-        SdkResponse.from_result({:ok, [opcode], :continue})
+        SdkResponse.from_result({:ok, [opcode]}, continue: true)
 
       error ->
-        SdkResponse.from_result({:error, Exception.format(:error, error, __STACKTRACE__), []})
+        SdkResponse.from_result({:error, error}, stacktrace: __STACKTRACE__)
     end
   end
 
