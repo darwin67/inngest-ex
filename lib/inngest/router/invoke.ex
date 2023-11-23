@@ -3,7 +3,7 @@ defmodule Inngest.Router.Invoke do
 
   import Plug.Conn
   import Inngest.Router.Helper
-  alias Inngest.{Config, Signature}
+  alias Inngest.{Config, Headers, Signature, SdkResponse}
   alias Inngest.Function.GeneratorOpCode
 
   @content_type "application/json"
@@ -58,73 +58,45 @@ defmodule Inngest.Router.Invoke do
       step: Inngest.StepTool
     }
 
-    {status, payload} =
+    resp =
       case Config.is_dev() do
         true ->
-          {status, resp} = invoke(func, ctx, input)
-
-          payload =
-            case Jason.encode(resp) do
-              {:ok, val} -> val
-              {:error, err} -> Jason.encode!(err.message)
-            end
-
-          {status, payload}
+          invoke(func, ctx, input)
 
         false ->
           with sig <- conn |> Plug.Conn.get_req_header("x-inngest-signature") |> List.first(),
                true <- Signature.signing_key_valid?(sig, Config.signing_key(), body) do
-            {status, resp} = invoke(func, ctx, input)
-
-            payload =
-              case Jason.encode(resp) do
-                {:ok, val} -> val
-                {:error, err} -> Jason.encode!(err.message)
-              end
-
-            {status, payload}
+            invoke(func, ctx, input)
           else
-            _ -> {400, Jason.encode!(%{error: "unable to verify signature"})}
+            _ ->
+              SdkResponse.from_result({:error, "unable to verify signature", :noretry})
           end
       end
 
     conn
     |> put_resp_content_type(@content_type)
-    |> put_req_header("x-inngest-sdk", "elixir:v1")
-    |> send_resp(status, payload)
+    |> put_resp_header(Headers.sdk_version(), Config.sdk_version())
+    |> SdkResponse.maybe_retry_header(resp)
+    |> send_resp(resp.status, resp.body)
     |> halt()
   end
 
-  # NOTES:
-  # *********  RESPONSE  ***********
-  # Each results has a specific meaning to it.
-  # status, data
-  # 206, generatorcode -> store result and continue execution
-  # 200, resp -> execution completed (including steps) of function
-  # 400, error -> non retriable error
-  # 500, error -> retriable error
   defp invoke(func, ctx, input) do
     try do
-      case func.mod.exec(ctx, input) do
-        {:ok, val} ->
-          {200, val}
-
-        {:error, error} ->
-          {400, error}
-      end
+      func.mod.exec(ctx, input) |> SdkResponse.from_result()
     rescue
       non_retry in Inngest.NonRetriableError ->
-        {400, non_retry.message}
+        SdkResponse.from_result({:error, non_retry.message, :noretry})
 
-      err ->
-        {400, err.message}
+      error ->
+        SdkResponse.from_result({:error, error.message, :retry})
     catch
       # Finished step, report back to executor
       %GeneratorOpCode{} = opcode ->
-        {206, [opcode]}
+        SdkResponse.from_result({:ok, [opcode], :continue})
 
-      _ ->
-        {400, "error"}
+      error ->
+        SdkResponse.from_result({:error, "unknown error: #{error}", []})
     end
   end
 

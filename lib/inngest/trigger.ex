@@ -31,10 +31,14 @@ end
 
 defimpl Jason.Encoder, for: Inngest.Trigger do
   def encode(%{cron: cron} = value, opts) when is_binary(cron) do
-    Jason.Encode.map(Map.take(value, [:cron]), opts)
+    value
+    |> Map.take([:cron])
+    |> Jason.Encode.map(opts)
   end
 
   def encode(value, opts) do
-    Jason.Encode.map(Map.take(value, [:event, :expression]), opts)
+    value
+    |> Map.take([:event, :expression])
+    |> Jason.Encode.map(opts)
   end
 end

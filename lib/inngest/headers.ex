@@ -3,17 +3,16 @@ defmodule Inngest.Headers do
   Header values used by the SDK
   """
 
-  def env, do: "X-Inngest-Env"
-  def forwarded_for, do: "X-Forwarded-For"
-  def framework, do: "X-Inngest-Framework"
-  def platform, do: "X-Inngest-Platform"
-  def sdk, do: "X-Inngest-SDK"
-  def signature, do: "X-Inngest-Signature"
-  def server_kind, do: "X-Inngest-Server-Kind"
-  def req_version, do: "X-Inngest-Req-Version"
-  def server_timing, do: "Server-Timing"
+  def env, do: "x-inngest-env"
+  def forwarded_for, do: "x-forwarded-for"
+  def framework, do: "x-inngest-framework"
+  def platform, do: "x-inngest-platform"
+  def sdk_version, do: "x-inngest-sdk"
+  def signature, do: "x-inngest-signature"
+  def server_kind, do: "x-inngest-server-kind"
+  def server_timing, do: "server-timing"
 
-  # Retries
-  def no_retry, do: "X-Inngest-No-Retry"
-  def retry_after, do: "Retry-After"
+  # retries
+  def no_retry, do: "x-inngest-no-retry"
+  def retry_after, do: "retry-after"
 end
