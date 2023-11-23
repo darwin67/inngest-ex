@@ -64,7 +64,7 @@ defmodule Inngest.Router.Invoke do
           invoke(func, ctx, input)
 
         false ->
-          with sig <- conn |> Plug.Conn.get_req_header("x-inngest-signature") |> List.first(),
+          with sig <- conn |> Plug.Conn.get_req_header(Headers.signature()) |> List.first(),
                true <- Signature.signing_key_valid?(sig, Config.signing_key(), body) do
             invoke(func, ctx, input)
           else
