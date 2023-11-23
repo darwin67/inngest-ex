@@ -113,6 +113,9 @@ defmodule Inngest.Router.Invoke do
           {400, error}
       end
     rescue
+      non_retry in Inngest.NonRetriableError ->
+        {400, non_retry.message}
+
       err ->
         {400, err.message}
     catch
