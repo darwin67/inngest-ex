@@ -6,6 +6,10 @@ dev:
 deps:
 	mix deps.get
 
+.PHONY: build
+build:
+	mix compile
+
 .PHONY: unit-test
 unit-test:
 	MIX_ENV=test UNIT=true mix test
