@@ -1,4 +1,8 @@
 defmodule Inngest.Headers do
+  @moduledoc """
+  Header values used by the SDK
+  """
+
   def forwarded_for, do: "X-Forwarded-For"
   def framework, do: "X-Inngest-Framework"
   def no_retry, do: "X-Inngest-No-Retry"

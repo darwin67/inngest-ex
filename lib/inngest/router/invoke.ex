@@ -112,6 +112,9 @@ defmodule Inngest.Router.Invoke do
         {:error, error} ->
           {400, error}
       end
+    rescue
+      err ->
+        {400, err.message}
     catch
       # Finished step, report back to executor
       %GeneratorOpCode{} = opcode ->
@@ -121,6 +124,8 @@ defmodule Inngest.Router.Invoke do
         {400, "error"}
     end
   end
+
+  ## Helper functions to retrieve data from API
 
   defp fn_run_steps(run_id), do: fn_run_data("/v0/runs/#{run_id}/actions")
   defp fn_run_batch(run_id), do: fn_run_data("/v0/runs/#{run_id}/batch")
