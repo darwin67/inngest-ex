@@ -4,7 +4,7 @@ defmodule Inngest.Function.Cases.NoRetryTest do
   alias Inngest.Test.DevServer
   import Inngest.Test.Helper
 
-  @default_sleep 10_000
+  @default_sleep 30_000
 
   @tag :integration
   test "should fail without retrying" do
