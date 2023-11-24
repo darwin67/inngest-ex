@@ -76,11 +76,6 @@ defmodule Inngest.Function do
   """
   @callback exec(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
 
-  @doc """
-  The method to be called when the Inngest function fails
-  """
-  @callback handle_failure(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
-
   defmacro __using__(_opts) do
     quote location: :keep do
       alias Inngest.{Client, Trigger}
@@ -120,34 +115,53 @@ defmodule Inngest.Function do
         |> List.first()
       end
 
-      @impl true
-      def handle_failure(_ctx, _input), do: {:ok, "noop"}
-      defoverridable handle_failure: 2
-
-      def step(path),
-        do: %{
-          step: %Step{
-            id: :step,
-            name: "step",
-            runtime: %Step.RunTime{
-              url: "#{Config.app_host() <> path}?fnId=#{slug()}&step=step"
-            },
-            retries: %Step.Retry{
-              attempts: retries()
-            }
-          }
-        }
-
       def serve(path) do
+        handler =
+          if failure_handler_defined?(__MODULE__) do
+            id = "#{slug()}-failure"
+
+            [
+              %{
+                id: id,
+                name: "#{name()} (failure)",
+                triggers: [%Trigger{event: "inngest/function.failed"}],
+                steps: %{
+                  step: %Step{
+                    id: :step,
+                    name: "step",
+                    runtime: %Step.RunTime{
+                      url: "#{Config.app_host() <> path}?fnId=#{id}&step=step"
+                    },
+                    retries: %Step.Retry{
+                      attempts: 0
+                    }
+                  }
+                }
+              }
+            ]
+          else
+            []
+          end
+
         [
           %{
             id: slug(),
             name: name(),
             triggers: [trigger()],
-            steps: step(path),
-            mod: __MODULE__
+            steps: %{
+              step: %Step{
+                id: :step,
+                name: "step",
+                runtime: %Step.RunTime{
+                  url: "#{Config.app_host() <> path}?fnId=#{slug()}&step=step"
+                },
+                retries: %Step.Retry{
+                  attempts: retries()
+                }
+              }
+            }
           }
-        ]
+        ] ++ handler
       end
 
       defp retries() do
@@ -158,6 +172,10 @@ defmodule Inngest.Function do
           nil -> @default_retries
           retry -> retry
         end
+      end
+
+      defp failure_handler_defined?(mod) do
+        mod.__info__(:functions) |> Keyword.get(:handle_failure) == 2
       end
     end
   end

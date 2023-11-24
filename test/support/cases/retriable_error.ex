@@ -24,4 +24,8 @@ defmodule Inngest.Test.Case.RetriableError do
 
     {:ok, "completed"}
   end
+
+  def handle_failure(_ctx, _input) do
+    {:ok, "noop"}
+  end
 end
