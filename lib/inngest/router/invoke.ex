@@ -40,7 +40,6 @@ defmodule Inngest.Router.Invoke do
        ) do
     func =
       params
-      |> IO.inspect()
       |> load_functions()
       |> Enum.find(fn func ->
         Enum.member?(func.slugs(), fn_slug)
@@ -85,7 +84,11 @@ defmodule Inngest.Router.Invoke do
 
   defp invoke(func, ctx, input) do
     try do
-      func.exec(ctx, input) |> SdkResponse.from_result([])
+      if is_failure?(input) do
+        func.handle_failure(ctx, input) |> SdkResponse.from_result([])
+      else
+        func.exec(ctx, input) |> SdkResponse.from_result([])
+      end
     rescue
       non_retry in Inngest.NonRetriableError ->
         SdkResponse.from_result({:error, non_retry}, retry: false, stacktrace: __STACKTRACE__)
@@ -142,4 +145,7 @@ defmodule Inngest.Router.Invoke do
         {:error, error}
     end
   end
+
+  defp is_failure?(%{event: %{name: "inngest/function.failed"}} = _input), do: true
+  defp is_failure?(_), do: false
 end
