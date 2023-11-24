@@ -40,6 +40,12 @@ defmodule Inngest.Test.DevServer do
     |> parse_resp()
   end
 
+  def list_events() do
+    client()
+    |> Tesla.get("/v1/events")
+    |> parse_resp()
+  end
+
   defp client() do
     middleware = [
       {Tesla.Middleware.BaseUrl, @base_url},
