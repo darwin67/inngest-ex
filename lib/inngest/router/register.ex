@@ -22,9 +22,7 @@ defmodule Inngest.Router.Register do
     funcs =
       params
       |> load_functions()
-      |> Enum.flat_map(fn func ->
-        func.serve(path)
-      end)
+      |> Enum.flat_map(& &1.serve(path))
 
     {status, resp} =
       case register(path, funcs, framework: framework) do
