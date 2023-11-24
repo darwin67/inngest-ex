@@ -4,13 +4,12 @@ defmodule Inngest.Headers do
   """
 
   def env, do: "x-inngest-env"
-  def forwarded_for, do: "x-forwarded-for"
-  def framework, do: "x-inngest-framework"
-  def platform, do: "x-inngest-platform"
+  # def framework, do: "x-inngest-framework"
+  # def platform, do: "x-inngest-platform"
   def sdk_version, do: "x-inngest-sdk"
   def signature, do: "x-inngest-signature"
   def server_kind, do: "x-inngest-server-kind"
-  def server_timing, do: "server-timing"
+  # def server_timing, do: "server-timing"
 
   # retries
   def no_retry, do: "x-inngest-no-retry"
