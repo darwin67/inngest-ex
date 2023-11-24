@@ -54,26 +54,10 @@ defmodule Inngest.SdkResponse do
     end
   end
 
-  # No retry error response
-  def from_result({:error, error}, [{:retry, false} | _] = opts) do
-    stacktrace = Keyword.get(opts, :stacktrace, [])
-
-    encoded =
-      case Exception.format(:error, error, stacktrace) |> Jason.encode() do
-        {:ok, encoded} -> encoded
-        {:error, _} -> "Failed to encode error: #{error}"
-      end
-
-    %__MODULE__{
-      status: 400,
-      body: encoded,
-      retry: false
-    }
-  end
-
   def from_result({:error, error}, opts) do
     stacktrace = Keyword.get(opts, :stacktrace, [])
     retry = Keyword.get(opts, :retry, true)
+    status = if retry, do: 500, else: 400
 
     encoded =
       case Exception.format(:error, error, stacktrace) |> Jason.encode() do
@@ -82,7 +66,7 @@ defmodule Inngest.SdkResponse do
       end
 
     %__MODULE__{
-      status: 500,
+      status: status,
       body: encoded,
       retry: retry
     }
