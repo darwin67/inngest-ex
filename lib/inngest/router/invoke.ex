@@ -35,14 +35,13 @@ defmodule Inngest.Router.Invoke do
   end
 
   defp exec(
-         %{request_path: path, private: %{raw_body: [body]}} = conn,
+         %{private: %{raw_body: [body]}} = conn,
          %{"event" => event, "events" => events, "ctx" => ctx, "fnId" => fn_slug} = params
        ) do
     func =
       params
       |> load_functions()
-      |> func_map(path)
-      |> Map.get(fn_slug)
+      |> Enum.find(fn func -> func.slug() == fn_slug end)
 
     ctx = %Inngest.Function.Context{
       attempt: Map.get(ctx, "attempt", 0),
@@ -83,7 +82,7 @@ defmodule Inngest.Router.Invoke do
 
   defp invoke(func, ctx, input) do
     try do
-      func.mod.exec(ctx, input) |> SdkResponse.from_result([])
+      func.exec(ctx, input) |> SdkResponse.from_result([])
     rescue
       non_retry in Inngest.NonRetriableError ->
         SdkResponse.from_result({:error, non_retry}, retry: false, stacktrace: __STACKTRACE__)

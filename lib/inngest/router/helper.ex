@@ -3,15 +3,6 @@ defmodule Inngest.Router.Helper do
 
   alias Inngest.Config
 
-  @spec func_map(list(), binary()) :: map()
-  def func_map(funcs, path) do
-    funcs
-    |> Enum.reduce(%{}, fn func, x ->
-      slug = func.slug()
-      Map.put(x, slug, func.serve(path))
-    end)
-  end
-
   def load_functions(params) do
     if Config.path_runtime_eval() do
       %{funcs: funcs} = load_functions_from_path(params)
