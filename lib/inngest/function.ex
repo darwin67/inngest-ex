@@ -77,9 +77,9 @@ defmodule Inngest.Function do
   @callback exec(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
 
   @doc """
-  The method to be callbed when the Inngest function fails
+  The method to be called when the Inngest function fails
   """
-  @callback on_failure(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
+  @callback handle_failure(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
 
   defmacro __using__(_opts) do
     quote location: :keep do
@@ -121,7 +121,8 @@ defmodule Inngest.Function do
       end
 
       @impl true
-      def on_failure(_ctx, _input), do: {:ok, "noop"}
+      def handle_failure(_ctx, _input), do: {:ok, "noop"}
+      defoverridable handle_failure: 2
 
       def step(path),
         do: %{
