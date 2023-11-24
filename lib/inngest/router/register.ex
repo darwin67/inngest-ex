@@ -22,7 +22,7 @@ defmodule Inngest.Router.Register do
     funcs =
       params
       |> load_functions()
-      |> func_map(path)
+      |> Enum.flat_map(& &1.serve(path))
 
     {status, resp} =
       case register(path, funcs, framework: framework) do
@@ -54,7 +54,7 @@ defmodule Inngest.Router.Register do
       sdk: Config.sdk_version(),
       framework: framework,
       appName: Config.app_name(),
-      functions: functions |> Enum.map(fn {_, v} -> v.mod.serve(path) end)
+      functions: functions
     }
 
     key = Inngest.Signature.hashed_signing_key(Config.signing_key())

@@ -3,33 +3,6 @@ defmodule Inngest.Router.HelperTest do
 
   alias Inngest.Router.Helper
 
-  describe "func_map/2" do
-    test "should return a function map" do
-      path = "/api/inngest"
-      funcs = [Inngest.TestEventFn]
-
-      assert %{
-               "test-event" => %{
-                 id: "test-event",
-                 mod: Inngest.TestEventFn,
-                 steps: %{
-                   step: %Inngest.Function.Step{
-                     id: :step,
-                     name: "step"
-                   }
-                 },
-                 triggers: [
-                   %Inngest.Trigger{
-                     event: "my/awesome.event",
-                     expression: nil,
-                     cron: nil
-                   }
-                 ]
-               }
-             } = Helper.func_map(funcs, path)
-    end
-  end
-
   describe "load_functions_from_path/1" do
     @path "test/support/**/*.ex"
     @paths ["dev/**/*.ex", @path]

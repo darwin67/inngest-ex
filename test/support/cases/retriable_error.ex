@@ -24,4 +24,13 @@ defmodule Inngest.Test.Case.RetriableError do
 
     {:ok, "completed"}
   end
+
+  def handle_failure(ctx, %{step: step} = _args) do
+    _ =
+      step.run(ctx, "handle-failure", fn ->
+        "CATCH ERROR!!!"
+      end)
+
+    {:ok, "error handled"}
+  end
 end
