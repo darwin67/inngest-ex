@@ -40,8 +40,11 @@ defmodule Inngest.Router.Invoke do
        ) do
     func =
       params
+      |> IO.inspect()
       |> load_functions()
-      |> Enum.find(&(&1.slug() == fn_slug))
+      |> Enum.find(fn func ->
+        Enum.member?(func.slugs(), fn_slug)
+      end)
 
     ctx = %Inngest.Function.Context{
       attempt: Map.get(ctx, "attempt", 0),

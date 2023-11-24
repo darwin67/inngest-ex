@@ -115,16 +115,26 @@ defmodule Inngest.Function do
         |> List.first()
       end
 
+      def slugs() do
+        failure = if failure_handler_defined?(__MODULE__), do: [failure_slug()], else: []
+        [slug()] ++ failure
+      end
+
       def serve(path) do
         handler =
           if failure_handler_defined?(__MODULE__) do
-            id = "#{slug()}-failure"
+            id = failure_slug()
 
             [
               %{
                 id: id,
                 name: "#{name()} (failure)",
-                triggers: [%Trigger{event: "inngest/function.failed"}],
+                triggers: [
+                  %Trigger{
+                    event: "inngest/function.failed",
+                    expression: "event.data.function_id == \"#{slug()}\""
+                  }
+                ],
                 steps: %{
                   step: %Step{
                     id: :step,
@@ -177,6 +187,8 @@ defmodule Inngest.Function do
       defp failure_handler_defined?(mod) do
         mod.__info__(:functions) |> Keyword.get(:handle_failure) == 2
       end
+
+      defp failure_slug(), do: "#{slug()}-failure"
     end
   end
 
