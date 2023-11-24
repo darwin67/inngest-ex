@@ -29,36 +29,40 @@ defmodule Inngest.FunctionTest do
 
   describe "serve/1" do
     test "event function should return approprivate map" do
-      assert %{
-               id: "test-event",
-               name: "App / Email: Awesome Event Func",
-               triggers: [
-                 %Trigger{event: "my/awesome.event"}
-               ],
-               steps: %{
-                 step: %{
-                   id: _,
-                   name: _,
-                   runtime: %{
-                     type: "http",
-                     url: _
-                   },
-                   retries: %{
-                     attempts: _
+      assert [
+               %{
+                 id: "test-event",
+                 name: "App / Email: Awesome Event Func",
+                 triggers: [
+                   %Trigger{event: "my/awesome.event"}
+                 ],
+                 steps: %{
+                   step: %{
+                     id: _,
+                     name: _,
+                     runtime: %{
+                       type: "http",
+                       url: _
+                     },
+                     retries: %{
+                       attempts: _
+                     }
                    }
                  }
                }
-             } = TestEventFn.serve("/api/inngest")
+             ] = TestEventFn.serve("/api/inngest")
     end
 
     test "cron function should return appropriate map" do
-      assert %{
-               id: "test-cron",
-               name: "Awesome Cron Func",
-               triggers: [
-                 %Trigger{cron: "TZ=America/Los_Angeles * * * * *"}
-               ]
-             } = TestCronFn.serve("/api/inngest")
+      assert [
+               %{
+                 id: "test-cron",
+                 name: "Awesome Cron Func",
+                 triggers: [
+                   %Trigger{cron: "TZ=America/Los_Angeles * * * * *"}
+                 ]
+               }
+             ] = TestCronFn.serve("/api/inngest")
     end
   end
 
