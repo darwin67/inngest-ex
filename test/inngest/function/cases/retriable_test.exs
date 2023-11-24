@@ -4,12 +4,12 @@ defmodule Inngest.Function.Cases.RetriableTest do
   alias Inngest.Test.DevServer
   import Inngest.Test.Helper
 
-  @sec 1_000
+  @default_sleep 10_000
 
   @tag :integration
   test "should fail after retrying" do
     event_id = send_test_event("test/plug.retriable")
-    Process.sleep(5 * @sec)
+    Process.sleep(@default_sleep)
 
     assert {:ok,
             %{
@@ -21,7 +21,7 @@ defmodule Inngest.Function.Cases.RetriableTest do
               ]
             }} = DevServer.run_ids(event_id)
 
-    Process.sleep(10 * @sec)
+    Process.sleep(@default_sleep)
 
     assert {:ok,
             %{
@@ -33,7 +33,7 @@ defmodule Inngest.Function.Cases.RetriableTest do
               ]
             }} = DevServer.run_ids(event_id)
 
-    Process.sleep(20 * @sec)
+    Process.sleep(2 * @default_sleep)
 
     assert {:ok,
             %{
