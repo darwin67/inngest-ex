@@ -3,11 +3,9 @@ defmodule Inngest.Test.PlugRouter do
 
   use Plug.Router
   use Inngest.Router, :plug
-
   require Logger
-  Logger.configure(level: System.get_env("DEV_LOG_LEVEL", "debug"))
 
-  plug(Plug.Logger, log: :debug)
+  plug(Plug.Logger)
 
   plug(Plug.Parsers,
     parsers: [:urlencoded, :json],

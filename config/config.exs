@@ -11,3 +11,11 @@ config :inngest,
   # signing_key: "",
   # event_key: ""
   env: :dev
+
+config :logger, :console,
+  level: :debug,
+  colors: [enabled: true]
+
+# Import environment specific config. This must remain at the bottom
+# of this file so it overrides the configuration defined above.
+import_config "#{config_env()}.exs"
