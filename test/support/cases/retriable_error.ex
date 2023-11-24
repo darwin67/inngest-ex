@@ -2,7 +2,7 @@ defmodule Inngest.Test.Case.RetriableError do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
+  alias Inngest.{FnOpts, Trigger, RetryAfterError}
 
   @func %FnOpts{id: "retriable-fn", name: "Retriable Function", retries: 2}
   @trigger %Trigger{event: "test/plug.retriable"}
@@ -17,7 +17,7 @@ defmodule Inngest.Test.Case.RetriableError do
 
     _retry =
       step.run(ctx, "should-retry", fn ->
-        raise YoloError
+        raise RetryAfterError, message: "YOLO!!!", seconds: 5
       end)
 
     _ = step.run(ctx, "wont-run", fn -> "hello" end)

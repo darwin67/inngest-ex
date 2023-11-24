@@ -88,6 +88,14 @@ defmodule Inngest.Router.Invoke do
       non_retry in Inngest.NonRetriableError ->
         SdkResponse.from_result({:error, non_retry}, retry: false, stacktrace: __STACKTRACE__)
 
+      retry in Inngest.RetryAfterError ->
+        delay = Map.get(retry, :seconds)
+
+        SdkResponse.from_result({:error, retry.message},
+          retry: delay,
+          stacktrace: __STACKTRACE__
+        )
+
       error ->
         SdkResponse.from_result({:error, error}, stacktrace: __STACKTRACE__)
     catch

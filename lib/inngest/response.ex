@@ -2,6 +2,10 @@ defmodule Inngest.NonRetriableError do
   defexception message: "Not retrying error. Exiting."
 end
 
+defmodule Inngest.RetryAfterError do
+  defexception [:message, seconds: 3]
+end
+
 defmodule Inngest.SdkResponse do
   @moduledoc """
   Represents an SDK response to the executor when ran
@@ -17,7 +21,7 @@ defmodule Inngest.SdkResponse do
           status: number(),
           body: binary(),
           # string is for seconds to be delayed
-          retry: boolean() | binary()
+          retry: boolean() | number()
         }
 
   alias Inngest.Headers
@@ -87,8 +91,8 @@ defmodule Inngest.SdkResponse do
     Plug.Conn.put_resp_header(conn, Headers.no_retry(), "true")
   end
 
-  def maybe_retry_header(conn, %{retry: dur} = _resp) when is_binary(dur) do
-    Plug.Conn.put_resp_header(conn, Headers.retry_after(), dur)
+  def maybe_retry_header(conn, %{retry: dur} = _resp) when is_number(dur) do
+    Plug.Conn.put_resp_header(conn, Headers.retry_after(), to_string(dur))
   end
 
   def maybe_retry_header(conn, _resp), do: conn
