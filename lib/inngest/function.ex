@@ -76,6 +76,11 @@ defmodule Inngest.Function do
   """
   @callback exec(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
 
+  @doc """
+  The method to be callbed when the Inngest function fails
+  """
+  @callback on_failure(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
+
   defmacro __using__(_opts) do
     quote location: :keep do
       alias Inngest.{Client, Trigger}
@@ -87,6 +92,7 @@ defmodule Inngest.Function do
       )
 
       @behaviour Inngest.Function
+      @default_retries 3
 
       @impl true
       def slug() do
@@ -114,6 +120,9 @@ defmodule Inngest.Function do
         |> List.first()
       end
 
+      @impl true
+      def on_failure(_ctx, _input), do: {:ok, "noop"}
+
       def step(path),
         do: %{
           step: %Step{
@@ -122,7 +131,9 @@ defmodule Inngest.Function do
             runtime: %Step.RunTime{
               url: "#{Config.app_host() <> path}?fnId=#{slug()}&step=step"
             },
-            retries: %Step.Retry{}
+            retries: %Step.Retry{
+              attempts: retries()
+            }
           }
         }
 
@@ -135,14 +146,25 @@ defmodule Inngest.Function do
           mod: __MODULE__
         }
       end
+
+      defp retries() do
+        case __MODULE__.__info__(:attributes)
+             |> Keyword.get(:func)
+             |> List.first()
+             |> Map.get(:retries) do
+          nil -> @default_retries
+          retry -> retry
+        end
+      end
     end
   end
 
-  # TODO:
-  # def validate_datetime(%Date{} = date), do: nil
-
+  @spec validate_datetime(any()) :: {:ok, binary()} | {:error, binary()}
   def validate_datetime(%DateTime{} = datetime),
     do: Timex.format(datetime, "{YYYY}-{0M}-{0D}T{h24}:{m}:{s}Z")
+
+  # TODO:
+  # def validate_datetime(%Date{} = date), do: nil
 
   def validate_datetime(datetime) when is_binary(datetime) do
     with {:error, _} <- Timex.parse(datetime, "{RFC3339}"),

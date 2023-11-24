@@ -3,7 +3,7 @@ defmodule Inngest.Router.Register do
 
   import Plug.Conn
   import Inngest.Router.Helper
-  alias Inngest.Config
+  alias Inngest.{Config, Headers}
 
   @content_type "application/json"
 
@@ -63,7 +63,7 @@ defmodule Inngest.Router.Register do
     headers =
       if is_nil(Config.env()),
         do: headers,
-        else: Keyword.put(headers, :"x-inngest-env", Config.env())
+        else: Keyword.put(headers, String.to_atom(Headers.env()), Config.env())
 
     case Tesla.post(httpclient(:register, headers: headers), "/fn/register", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
