@@ -139,13 +139,15 @@ defmodule Inngest.Function do
         }
 
       def serve(path) do
-        %{
-          id: slug(),
-          name: name(),
-          triggers: [trigger()],
-          steps: step(path),
-          mod: __MODULE__
-        }
+        [
+          %{
+            id: slug(),
+            name: name(),
+            triggers: [trigger()],
+            steps: step(path),
+            mod: __MODULE__
+          }
+        ]
       end
 
       defp retries() do

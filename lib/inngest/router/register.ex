@@ -22,7 +22,7 @@ defmodule Inngest.Router.Register do
     funcs =
       params
       |> load_functions()
-      |> Enum.map(fn func ->
+      |> Enum.flat_map(fn func ->
         func.serve(path)
       end)
 
