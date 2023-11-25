@@ -16,6 +16,10 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        elixir: [1.12, 1.13, 1.14, 1.15]
+        otp: [24.3, 25.3, 26.1]
 
     steps:
       - uses: actions/checkout@v3
