@@ -171,6 +171,7 @@ defmodule Inngest.Function do
               }
             }
           }
+          |> maybe_debounce()
         ] ++ handler
       end
 
@@ -181,6 +182,23 @@ defmodule Inngest.Function do
              |> Map.get(:retries) do
           nil -> @default_retries
           retry -> retry
+        end
+      end
+
+      defp maybe_debounce(config) do
+        case __MODULE__.__info__(:attributes)
+             |> Keyword.get(:func)
+             |> List.first()
+             |> Map.get(:debounce) do
+          nil ->
+            config
+
+          debounce ->
+            if Map.get(debounce, :period) == nil do
+              raise Inngest.InvalidDebounceConfigError
+            else
+              Map.put(config, :debounce, debounce)
+            end
         end
       end
 
@@ -235,12 +253,19 @@ defmodule Inngest.FnOpts do
   defstruct [
     :id,
     :name,
-    :retries
+    :retries,
+    :debounce
   ]
 
   @type t() :: %__MODULE__{
           id: binary(),
           name: binary(),
-          retries: number()
+          retries: number() | nil,
+          debounce: debounce() | nil
+        }
+
+  @type debounce() :: %{
+          key: nil | binary(),
+          period: binary()
         }
 end
