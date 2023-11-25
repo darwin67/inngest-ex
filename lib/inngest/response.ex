@@ -1,11 +1,3 @@
-defmodule Inngest.NonRetriableError do
-  defexception message: "Not retrying error. Exiting."
-end
-
-defmodule Inngest.RetryAfterError do
-  defexception [:message, seconds: 3]
-end
-
 defmodule Inngest.SdkResponse do
   @moduledoc """
   Represents an SDK response to the executor when ran
