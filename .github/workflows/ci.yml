@@ -14,12 +14,14 @@ permissions:
 
 jobs:
   test:
-    name: Test
+    name: Test (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        elixir: [1.13, 1.14, 1.15]
-        otp: [24.3, 25.3, 26.1]
+        # NOTE: best effort coverage
+        # https://hexdocs.pm/elixir/compatibility-and-deprecations.html#compatibility-between-elixir-and-erlang-otp
+        elixir: ["1.14", "1.15"]
+        otp: ["24.3", "25.3"]
 
     steps:
       - uses: actions/checkout@v3
