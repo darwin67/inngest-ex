@@ -32,4 +32,48 @@ defmodule Inngest.Function.Cases.DebounceTest do
               ]
             }} = DevServer.run_ids(next_id)
   end
+
+  describe "with key" do
+    @event_name "test/plug.debounce-with-key"
+
+    @tag :integration
+    test "should only debounce when key matches" do
+      hello = send_test_event(@event_name, %{foobar: "hello"})
+      yolo = send_test_event(@event_name, %{foobar: "yolo"})
+      Process.sleep(@default_sleep)
+
+      # have not started yet
+      assert {:ok, %{"data" => []}} = DevServer.run_ids(hello)
+      assert {:ok, %{"data" => []}} = DevServer.run_ids(yolo)
+      # send again
+      yolo_2 = send_test_event(@event_name, %{foobar: "yolo"})
+
+      Process.sleep(@default_sleep)
+
+      assert {:ok, %{"data" => []}} = DevServer.run_ids(yolo_2)
+
+      Process.sleep(@default_sleep * 2)
+      assert {:ok, %{"data" => []}} = DevServer.run_ids(yolo)
+
+      assert {:ok,
+              %{
+                "data" => [
+                  %{
+                    "output" => "debounced",
+                    "status" => "Completed"
+                  }
+                ]
+              }} = DevServer.run_ids(hello)
+
+      assert {:ok,
+              %{
+                "data" => [
+                  %{
+                    "output" => "debounced",
+                    "status" => "Completed"
+                  }
+                ]
+              }} = DevServer.run_ids(yolo_2)
+    end
+  end
 end
