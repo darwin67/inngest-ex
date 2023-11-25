@@ -27,8 +27,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: 25.3
-          elixir-version: 1.14.4
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
 
       - name: Set Node.js 20.x
         uses: actions/setup-node@v3
@@ -48,8 +48,8 @@ jobs:
             # _build
           key: mix-test-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            mix-test-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
-            mix-test-${{ runner.os }}-
+            mix-test-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
+            mix-test-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
             mix-test-
 
       - name: Install dependencies
