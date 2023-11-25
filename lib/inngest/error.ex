@@ -9,3 +9,7 @@ end
 defmodule Inngest.InvalidDebounceConfigError do
   defexception message: "a 'period' must be set for debounce"
 end
+
+defmodule Inngest.InvalidBatchEventConfigError do
+  defexception [:message]
+end

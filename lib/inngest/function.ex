@@ -172,6 +172,7 @@ defmodule Inngest.Function do
             }
           }
           |> maybe_debounce()
+          |> maybe_batch_events()
         ] ++ handler
       end
 
@@ -199,6 +200,47 @@ defmodule Inngest.Function do
             else
               Map.put(config, :debounce, debounce)
             end
+        end
+      end
+
+      defp maybe_batch_events(config) do
+        case __MODULE__.__info__(:attributes)
+             |> Keyword.get(:func)
+             |> List.first()
+             |> Map.get(:batch_events) do
+          nil ->
+            config
+
+          batch ->
+            max_size = Map.get(batch, :max_size)
+            timeout = Map.get(batch, :timeout)
+
+            if is_nil(max_size) do
+              raise Inngest.InvalidBatchEventConfigError,
+                message: "'max_size' must be set for batch_events"
+            end
+
+            if is_nil(timeout) do
+              raise Inngest.InvalidBatchEventConfigError,
+                message: "'timeout' must be set for batch_events"
+            end
+
+            case Regex.run(~r/(\d+)s/i, timeout) do
+              nil ->
+                raise Inngest.InvalidBatchEventConfigError,
+                  message: "invalid 'timeout' value: #{timeout}"
+
+              match ->
+                dur = match |> Enum.at(1) |> String.to_integer()
+
+                if dur < 1 || dur > 60 do
+                  raise Inngest.InvalidBatchEventConfigError,
+                    message: "'timeout' duration: #{dur}s, needs to be 1s - 60s"
+                end
+            end
+
+            batch = batch |> Map.put(:maxSize, max_size) |> Map.drop([:max_size])
+            Map.put(config, :batchEvents, batch)
         end
       end
 
@@ -254,18 +296,25 @@ defmodule Inngest.FnOpts do
     :id,
     :name,
     :retries,
-    :debounce
+    :debounce,
+    :batch_events
   ]
 
   @type t() :: %__MODULE__{
           id: binary(),
           name: binary(),
           retries: number() | nil,
-          debounce: debounce() | nil
+          debounce: debounce() | nil,
+          batch_events: batch_events() | nil
         }
 
   @type debounce() :: %{
           key: nil | binary(),
           period: binary()
+        }
+
+  @type batch_events() :: %{
+          max_size: number(),
+          timeout: binary()
         }
 end
