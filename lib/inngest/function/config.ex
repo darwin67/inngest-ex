@@ -6,6 +6,7 @@ defmodule Inngest.FnOpts do
     :name,
     :debounce,
     :batch_events,
+    :rate_limit,
     retries: 3
   ]
 
@@ -16,17 +17,24 @@ defmodule Inngest.FnOpts do
           name: binary(),
           retries: number() | nil,
           debounce: debounce() | nil,
-          batch_events: batch_events() | nil
+          batch_events: batch_events() | nil,
+          rate_limit: rate_limit() | nil
         }
 
   @type debounce() :: %{
-          key: nil | binary(),
+          key: binary() | nil,
           period: binary()
         }
 
   @type batch_events() :: %{
           max_size: number(),
           timeout: binary()
+        }
+
+  @type rate_limit() :: %{
+          limit: number(),
+          period: binary(),
+          key: binary() | nil
         }
 
   @doc """
