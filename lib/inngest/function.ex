@@ -173,17 +173,8 @@ defmodule Inngest.Function do
       defp retries(), do: fn_opts() |> Map.get(:retries)
 
       defp maybe_debounce(config) do
-        case fn_opts() |> Map.get(:debounce) do
-          nil ->
-            config
-
-          debounce ->
-            if Map.get(debounce, :period) == nil do
-              raise Inngest.InvalidDebounceConfigError
-            else
-              Map.put(config, :debounce, debounce)
-            end
-        end
+        fn_opts()
+        |> Inngest.FnOpts.validate_debounce(config)
       end
 
       defp maybe_batch_events(config) do
