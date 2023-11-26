@@ -87,22 +87,16 @@ defmodule Inngest.Function do
       )
 
       @behaviour Inngest.Function
-      @default_retries 3
 
       @impl true
       def slug() do
-        __MODULE__.__info__(:attributes)
-        |> Keyword.get(:func)
-        |> List.first()
+        fn_opts()
         |> Map.get(:id)
       end
 
       @impl true
       def name() do
-        case __MODULE__.__info__(:attributes)
-             |> Keyword.get(:func)
-             |> List.first()
-             |> Map.get(:name) do
+        case fn_opts() |> Map.get(:name) do
           nil -> slug()
           name -> name
         end
@@ -116,13 +110,13 @@ defmodule Inngest.Function do
       end
 
       def slugs() do
-        failure = if failure_handler_defined?(__MODULE__), do: [failure_slug()], else: []
+        failure = if failure_handler_defined?(), do: [failure_slug()], else: []
         [slug()] ++ failure
       end
 
       def serve(path) do
         handler =
-          if failure_handler_defined?(__MODULE__) do
+          if failure_handler_defined?() do
             id = failure_slug()
 
             [
@@ -172,38 +166,31 @@ defmodule Inngest.Function do
             }
           }
           |> maybe_debounce()
+          |> maybe_batch_events()
         ] ++ handler
       end
 
-      defp retries() do
-        case __MODULE__.__info__(:attributes)
-             |> Keyword.get(:func)
-             |> List.first()
-             |> Map.get(:retries) do
-          nil -> @default_retries
-          retry -> retry
-        end
-      end
+      defp retries(), do: fn_opts() |> Map.get(:retries)
 
       defp maybe_debounce(config) do
-        case __MODULE__.__info__(:attributes)
-             |> Keyword.get(:func)
-             |> List.first()
-             |> Map.get(:debounce) do
-          nil ->
-            config
+        fn_opts()
+        |> Inngest.FnOpts.validate_debounce(config)
+      end
 
-          debounce ->
-            if Map.get(debounce, :period) == nil do
-              raise Inngest.InvalidDebounceConfigError
-            else
-              Map.put(config, :debounce, debounce)
-            end
+      defp maybe_batch_events(config) do
+        fn_opts()
+        |> Inngest.FnOpts.validate_batch_events(config)
+      end
+
+      defp fn_opts() do
+        case __MODULE__.__info__(:attributes) |> Keyword.get(:func) |> List.first() do
+          nil -> %Inngest.FnOpts{}
+          val -> val
         end
       end
 
-      defp failure_handler_defined?(mod) do
-        mod.__info__(:functions) |> Keyword.get(:handle_failure) == 2
+      defp failure_handler_defined?() do
+        __MODULE__.__info__(:functions) |> Keyword.get(:handle_failure) == 2
       end
 
       defp failure_slug(), do: "#{slug()}-failure"
@@ -245,27 +232,4 @@ defmodule Inngest.Function do
   end
 
   def validate_datetime(_), do: {:error, "Expect valid DateTime formatted input"}
-end
-
-defmodule Inngest.FnOpts do
-  @moduledoc false
-
-  defstruct [
-    :id,
-    :name,
-    :retries,
-    :debounce
-  ]
-
-  @type t() :: %__MODULE__{
-          id: binary(),
-          name: binary(),
-          retries: number() | nil,
-          debounce: debounce() | nil
-        }
-
-  @type debounce() :: %{
-          key: nil | binary(),
-          period: binary()
-        }
 end
