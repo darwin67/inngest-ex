@@ -178,41 +178,8 @@ defmodule Inngest.Function do
       end
 
       defp maybe_batch_events(config) do
-        case fn_opts() |> Map.get(:batch_events) do
-          nil ->
-            config
-
-          batch ->
-            max_size = Map.get(batch, :max_size)
-            timeout = Map.get(batch, :timeout)
-
-            if is_nil(max_size) do
-              raise Inngest.InvalidBatchEventConfigError,
-                message: "'max_size' must be set for batch_events"
-            end
-
-            if is_nil(timeout) do
-              raise Inngest.InvalidBatchEventConfigError,
-                message: "'timeout' must be set for batch_events"
-            end
-
-            case Regex.run(~r/(\d+)s/i, timeout) do
-              nil ->
-                raise Inngest.InvalidBatchEventConfigError,
-                  message: "invalid 'timeout' value: #{timeout}"
-
-              match ->
-                dur = match |> Enum.at(1) |> String.to_integer()
-
-                if dur < 1 || dur > 60 do
-                  raise Inngest.InvalidBatchEventConfigError,
-                    message: "'timeout' duration: #{dur}s, needs to be 1s - 60s"
-                end
-            end
-
-            batch = batch |> Map.put(:maxSize, max_size) |> Map.drop([:max_size])
-            Map.put(config, :batchEvents, batch)
-        end
+        fn_opts()
+        |> Inngest.FnOpts.validate_batch_events(config)
       end
 
       defp fn_opts() do
