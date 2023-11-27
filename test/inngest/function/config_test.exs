@@ -115,6 +115,26 @@ defmodule Inngest.FnOptsTest do
                      FnOpts.validate_batch_events(opts, @config)
                    end
     end
+
+    test "should raise if rate limit is set with batching" do
+      opts = Map.put(@fn_opts, :rate_limit, %{limit: 1, period: "10m"})
+
+      assert_raise Inngest.BatchEventConfigError,
+                   "'rate_limit' cannot be used with event_batches",
+                   fn ->
+                     FnOpts.validate_batch_events(opts, @config)
+                   end
+    end
+
+    test "should raise if cancel_on is set with batching" do
+      opts = Map.put(@fn_opts, :cancel_on, %{event: "hello"})
+
+      assert_raise Inngest.BatchEventConfigError,
+                   "'cancel_on' cannot be used with event_batches",
+                   fn ->
+                     FnOpts.validate_batch_events(opts, @config)
+                   end
+    end
   end
 
   describe "validate_rate_limit/2" do
