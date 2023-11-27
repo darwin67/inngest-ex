@@ -310,5 +310,24 @@ defmodule Inngest.FnOptsTest do
                      FnOpts.validate_cancel_on(opts, @config)
                    end
     end
+
+    test "should raise if there are > 5 cancellation triggers" do
+      cancel = [
+        %{event: "test/cancel"},
+        %{event: "helloworld"},
+        %{event: "foobar"},
+        %{event: "yolo"},
+        %{event: "inngest"},
+        %{event: "something"}
+      ]
+
+      opts = %{@fn_opts | cancel_on: cancel}
+
+      assert_raise Inngest.CancelConfigError,
+                   "cannot have more than 5 cancellation triggers",
+                   fn ->
+                     FnOpts.validate_cancel_on(opts, @config)
+                   end
+    end
   end
 end

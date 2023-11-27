@@ -238,6 +238,11 @@ defmodule Inngest.FnOpts do
         Map.put(config, :cancel, [settings])
 
       [_ | _] = settings ->
+        if Enum.count(settings) > 5 do
+          raise Inngest.CancelConfigError,
+            message: "cannot have more than 5 cancellation triggers"
+        end
+
         Enum.each(settings, &validate_cancel_on/1)
         Map.put(config, :cancel, settings)
     end
