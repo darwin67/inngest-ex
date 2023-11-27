@@ -176,7 +176,7 @@ defmodule Inngest.FnOptsTest do
       }
     }
 
-    test "should succeed with valid config" do
+    test "should succeed with valid settings" do
       assert %{
                concurrency: %{
                  limit: 2
@@ -184,11 +184,32 @@ defmodule Inngest.FnOptsTest do
              } = FnOpts.validate_concurrency(@fn_opts, @config)
     end
 
+    test "should succeed with multiple settings" do
+      opts = %{@fn_opts | concurrency: [%{limit: 2, scope: "fn"}, %{limit: 10, scope: "account"}]}
+
+      assert %{
+               concurrency: [
+                 %{limit: 2, scope: "fn"},
+                 %{limit: 10, scope: "account"}
+               ]
+             } = FnOpts.validate_concurrency(opts, @config)
+    end
+
     test "should raise when limit is missing" do
       opts = drop_at(@fn_opts, [:concurrency, :limit])
 
       assert_raise Inngest.ConcurrencyConfigError,
                    "'limit' must be set for concurrency",
+                   fn ->
+                     FnOpts.validate_concurrency(opts, @config)
+                   end
+    end
+
+    test "should raise if scope is invalid" do
+      opts = %{@fn_opts | concurrency: %{limit: 2, scope: "hello"}}
+
+      assert_raise Inngest.ConcurrencyConfigError,
+                   "invalid scope 'hello', needs to be \"fn\"|\"env\"|\"account\"",
                    fn ->
                      FnOpts.validate_concurrency(opts, @config)
                    end

@@ -41,10 +41,17 @@ defmodule Inngest.FnOpts do
           key: binary() | nil
         }
 
-  @type concurrency() :: %{
+  @type concurrency() ::
+          number()
+          | concurrency_option()
+          | list(concurrency_option())
+
+  @type concurrency_option() :: %{
           limit: number(),
-          key: binary() | nil
+          key: binary() | nil,
+          scope: binary() | nil
         }
+  @concurrency_scopes ["fn", "env", "account"]
 
   @doc """
   Validate the debounce configuration
@@ -156,14 +163,30 @@ defmodule Inngest.FnOpts do
       nil ->
         config
 
-      concurrency ->
-        limit = Map.get(concurrency, :limit)
+      %{} = setting ->
+        validate_concurrency(setting)
+        Map.put(config, :concurrency, setting)
 
-        if is_nil(limit) do
-          raise Inngest.ConcurrencyConfigError, message: "'limit' must be set for concurrency"
-        end
+      [_ | _] = settings ->
+        Enum.each(settings, &validate_concurrency/1)
+        Map.put(config, :concurrency, settings)
 
-        Map.put(config, :concurrency, concurrency)
+      _ ->
+        raise Inngest.ConcurrencyConfigError, message: "invalid concurrency setting"
+    end
+  end
+
+  defp validate_concurrency(%{} = setting) do
+    limit = Map.get(setting, :limit)
+    scope = Map.get(setting, :scope)
+
+    if is_nil(limit) do
+      raise Inngest.ConcurrencyConfigError, message: "'limit' must be set for concurrency"
+    end
+
+    if !is_nil(scope) && !Enum.member?(@concurrency_scopes, scope) do
+      raise Inngest.ConcurrencyConfigError,
+        message: "invalid scope '#{scope}', needs to be \"fn\"|\"env\"|\"account\""
     end
   end
 end
