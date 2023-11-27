@@ -11,6 +11,7 @@ defmodule Inngest.FnOpts do
     :rate_limit,
     :idempotency,
     :concurrency,
+    :cancel_on,
     retries: 3
   ]
 
@@ -24,7 +25,8 @@ defmodule Inngest.FnOpts do
           batch_events: batch_events() | nil,
           rate_limit: rate_limit() | nil,
           idempotency: idempotency() | nil,
-          concurrency: concurrency() | nil
+          concurrency: concurrency() | nil,
+          cancel_on: cancel_on() | nil
         }
 
   @type debounce() :: %{
@@ -56,6 +58,12 @@ defmodule Inngest.FnOpts do
           scope: binary() | nil
         }
   @concurrency_scopes ["fn", "env", "account"]
+
+  @type cancel_on() :: %{
+          event: binary(),
+          match: binary() | nil,
+          timeout: binary() | nil
+        }
 
   @doc """
   Validate the debounce settings
