@@ -9,6 +9,7 @@ defmodule Inngest.FnOpts do
     :debounce,
     :batch_events,
     :rate_limit,
+    :idempotency,
     :concurrency,
     retries: 3
   ]
@@ -22,6 +23,7 @@ defmodule Inngest.FnOpts do
           debounce: debounce() | nil,
           batch_events: batch_events() | nil,
           rate_limit: rate_limit() | nil,
+          idempotency: idempotency() | nil,
           concurrency: concurrency() | nil
         }
 
@@ -40,6 +42,8 @@ defmodule Inngest.FnOpts do
           period: binary(),
           key: binary() | nil
         }
+
+  @type idempotency() :: binary()
 
   @type concurrency() ::
           number()
