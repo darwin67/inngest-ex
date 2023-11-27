@@ -21,3 +21,7 @@ end
 defmodule Inngest.ConcurrencyConfigError do
   defexception [:message]
 end
+
+defmodule Inngest.IdempotencyConfigError do
+  defexception [:message]
+end

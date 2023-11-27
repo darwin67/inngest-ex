@@ -168,31 +168,27 @@ defmodule Inngest.Function do
           |> maybe_debounce()
           |> maybe_batch_events()
           |> maybe_rate_limit()
+          |> maybe_idempotency()
           |> maybe_concurrency()
         ] ++ handler
       end
 
       defp retries(), do: fn_opts() |> Map.get(:retries)
 
-      defp maybe_debounce(config) do
-        fn_opts()
-        |> Inngest.FnOpts.validate_debounce(config)
-      end
+      defp maybe_debounce(config),
+        do: fn_opts() |> Inngest.FnOpts.validate_debounce(config)
 
-      defp maybe_batch_events(config) do
-        fn_opts()
-        |> Inngest.FnOpts.validate_batch_events(config)
-      end
+      defp maybe_batch_events(config),
+        do: fn_opts() |> Inngest.FnOpts.validate_batch_events(config)
 
-      defp maybe_rate_limit(config) do
-        fn_opts()
-        |> Inngest.FnOpts.validate_rate_limit(config)
-      end
+      defp maybe_rate_limit(config),
+        do: fn_opts() |> Inngest.FnOpts.validate_rate_limit(config)
 
-      defp maybe_concurrency(config) do
-        fn_opts()
-        |> Inngest.FnOpts.validate_concurrency(config)
-      end
+      defp maybe_idempotency(config),
+        do: fn_opts() |> Inngest.FnOpts.validate_idempotency(config)
+
+      defp maybe_concurrency(config),
+        do: fn_opts() |> Inngest.FnOpts.validate_concurrency(config)
 
       defp fn_opts() do
         case __MODULE__.__info__(:attributes) |> Keyword.get(:func) |> List.first() do

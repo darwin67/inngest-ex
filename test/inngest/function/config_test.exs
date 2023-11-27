@@ -167,6 +167,30 @@ defmodule Inngest.FnOptsTest do
     end
   end
 
+  describe "validate_idempotency/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "Foobar",
+      idempotency: "event.data.foobar"
+    }
+
+    test "should succeed with valid settings" do
+      assert %{
+               idempotency: "event.data.foobar"
+             } = FnOpts.validate_idempotency(@fn_opts, @config)
+    end
+
+    test "should raise if value is not string" do
+      opts = %{@fn_opts | idempotency: false}
+
+      assert_raise Inngest.IdempotencyConfigError,
+                   "idempotency must be a CEL string",
+                   fn ->
+                     FnOpts.validate_idempotency(opts, @config)
+                   end
+    end
+  end
+
   describe "validate_concurrency/2" do
     @fn_opts %FnOpts{
       id: "foobar",
