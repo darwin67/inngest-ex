@@ -17,5 +17,6 @@ mkShell {
     pkgs.yamllint
     pkgs.shfmt
     pkgs.shellcheck
+    pkgs.git-cliff
   ];
 }

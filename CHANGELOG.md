@@ -12,6 +12,12 @@ All notable changes to this project will be documented in this file.
 
 - Feat: add event batching to function configuration
 - Feat: Change approach for SDK (#59)
+- Feat: Add general retry handling and non retriable error (#63)
+- Feat: Add failure handler (#64)
+- Feat: debounce support (#65)
+- Feat: support batching (#66)
+- Feat: rate limit support (#67)
+- Feat: concurrency support (#68)
 
 ### Miscellaneous Tasks
 
