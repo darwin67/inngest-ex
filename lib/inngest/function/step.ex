@@ -18,33 +18,16 @@ defmodule Inngest.Function.Step do
           name: binary(),
           opts: map(),
           mod: module(),
-          runtime: RunTime,
-          retries: Retry
+          runtime: runtime(),
+          retries: retry()
         }
 
-  defmodule RunTime do
-    @moduledoc false
+  @type runtime() :: %{
+          url: binary(),
+          type: binary()
+        }
 
-    @derive Jason.Encoder
-    defstruct [
-      :url,
-      type: "http"
-    ]
-
-    @type t() :: %__MODULE__{
-            type: binary(),
-            url: binary()
-          }
-  end
-
-  defmodule Retry do
-    @moduledoc false
-
-    @derive Jason.Encoder
-    defstruct attempts: 3
-
-    @type t() :: %__MODULE__{
-            attempts: number()
-          }
-  end
+  @type retry() :: %{
+          attempts: number()
+        }
 end

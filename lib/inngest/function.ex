@@ -133,10 +133,11 @@ defmodule Inngest.Function do
                   step: %Step{
                     id: :step,
                     name: "step",
-                    runtime: %Step.RunTime{
+                    runtime: %{
+                      type: "http",
                       url: "#{Config.app_host() <> path}?fnId=#{id}&step=step"
                     },
-                    retries: %Step.Retry{
+                    retries: %{
                       attempts: 0
                     }
                   }
@@ -156,10 +157,11 @@ defmodule Inngest.Function do
               step: %Step{
                 id: :step,
                 name: "step",
-                runtime: %Step.RunTime{
+                runtime: %{
+                  type: "http",
                   url: "#{Config.app_host() <> path}?fnId=#{slug()}&step=step"
                 },
-                retries: %Step.Retry{
+                retries: %{
                   attempts: retries()
                 }
               }
