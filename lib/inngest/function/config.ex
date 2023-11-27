@@ -189,4 +189,7 @@ defmodule Inngest.FnOpts do
         message: "invalid scope '#{scope}', needs to be \"fn\"|\"env\"|\"account\""
     end
   end
+
+  defp validate_concurrency(_),
+    do: raise(Inngest.ConcurrencyConfigError, message: "invalid concurrency setting")
 end
