@@ -167,6 +167,7 @@ defmodule Inngest.Function do
           }
           |> maybe_debounce()
           |> maybe_batch_events()
+          |> maybe_rate_limit()
         ] ++ handler
       end
 
@@ -180,6 +181,11 @@ defmodule Inngest.Function do
       defp maybe_batch_events(config) do
         fn_opts()
         |> Inngest.FnOpts.validate_batch_events(config)
+      end
+
+      defp maybe_rate_limit(config) do
+        fn_opts()
+        |> Inngest.FnOpts.validate_rate_limit(config)
       end
 
       defp fn_opts() do

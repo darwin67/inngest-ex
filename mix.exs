@@ -49,8 +49,10 @@ defmodule Inngest.MixProject do
           Function: [
             Inngest.Event,
             Inngest.Function,
+            Inngest.FnOpts,
             Inngest.Trigger,
             Inngest.Function.Step,
+            Inngest.Function.Context,
             Inngest.Function.Input
           ],
           Router: [

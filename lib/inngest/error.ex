@@ -6,10 +6,14 @@ defmodule Inngest.RetryAfterError do
   defexception [:message, seconds: 3]
 end
 
-defmodule Inngest.InvalidDebounceConfigError do
-  defexception message: "a 'period' must be set for debounce"
+defmodule Inngest.DebounceConfigError do
+  defexception [:message]
 end
 
-defmodule Inngest.InvalidBatchEventConfigError do
+defmodule Inngest.BatchEventConfigError do
+  defexception [:message]
+end
+
+defmodule Inngest.RateLimitConfigError do
   defexception [:message]
 end
