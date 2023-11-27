@@ -166,4 +166,22 @@ defmodule Inngest.FnOptsTest do
                    end
     end
   end
+
+  describe "validate_concurrency/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "Foobar",
+      concurrency: %{
+        limit: 2
+      }
+    }
+
+    test "should succeed with valid config" do
+      assert %{
+               concurrency: %{
+                 limit: 2
+               }
+             } = FnOpts.validate_concurrency(@fn_opts, @config)
+    end
+  end
 end

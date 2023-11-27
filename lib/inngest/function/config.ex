@@ -9,6 +9,7 @@ defmodule Inngest.FnOpts do
     :debounce,
     :batch_events,
     :rate_limit,
+    :concurrency,
     retries: 3
   ]
 
@@ -20,7 +21,8 @@ defmodule Inngest.FnOpts do
           retries: number() | nil,
           debounce: debounce() | nil,
           batch_events: batch_events() | nil,
-          rate_limit: rate_limit() | nil
+          rate_limit: rate_limit() | nil,
+          concurrency: concurrency() | nil
         }
 
   @type debounce() :: %{
@@ -36,6 +38,11 @@ defmodule Inngest.FnOpts do
   @type rate_limit() :: %{
           limit: number(),
           period: binary(),
+          key: binary() | nil
+        }
+
+  @type concurrency() :: %{
+          limit: number(),
           key: binary() | nil
         }
 
@@ -137,6 +144,22 @@ defmodule Inngest.FnOpts do
         end
 
         Map.put(config, :rateLimit, rate_limit)
+    end
+  end
+
+  @doc """
+  Validate the concurrency config
+  """
+  @spec validate_concurrency(t(), map()) :: map()
+  def validate_concurrency(fnopts, config) do
+    case fnopts |> Map.get(:concurrency) do
+      nil ->
+        config
+
+      concurrency ->
+        # limit = Map.get(concurrency, :limit)
+
+        Map.put(config, :concurrency, concurrency)
     end
   end
 end
