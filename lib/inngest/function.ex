@@ -167,6 +167,7 @@ defmodule Inngest.Function do
           }
           |> maybe_debounce()
           |> maybe_batch_events()
+          |> maybe_rate_limit()
         ] ++ handler
       end
 
