@@ -126,7 +126,7 @@ defmodule Inngest.FnOpts do
 
         if !is_nil(cancel_on) do
           raise Inngest.BatchEventConfigError,
-            lmessage: "'cancel_on' cannot be used with event_batches"
+            message: "'cancel_on' cannot be used with event_batches"
         end
 
         case Util.parse_duration(timeout) do
