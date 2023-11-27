@@ -157,7 +157,11 @@ defmodule Inngest.FnOpts do
         config
 
       concurrency ->
-        # limit = Map.get(concurrency, :limit)
+        limit = Map.get(concurrency, :limit)
+
+        if is_nil(limit) do
+          raise Inngest.ConcurrencyConfigError, message: "'limit' must be set for concurrency"
+        end
 
         Map.put(config, :concurrency, concurrency)
     end

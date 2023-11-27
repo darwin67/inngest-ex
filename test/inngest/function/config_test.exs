@@ -183,5 +183,15 @@ defmodule Inngest.FnOptsTest do
                }
              } = FnOpts.validate_concurrency(@fn_opts, @config)
     end
+
+    test "should raise when limit is missing" do
+      opts = drop_at(@fn_opts, [:concurrency, :limit])
+
+      assert_raise Inngest.ConcurrencyConfigError,
+                   "'limit' must be set for concurrency",
+                   fn ->
+                     FnOpts.validate_concurrency(opts, @config)
+                   end
+    end
   end
 end

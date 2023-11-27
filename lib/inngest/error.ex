@@ -17,3 +17,7 @@ end
 defmodule Inngest.RateLimitConfigError do
   defexception [:message]
 end
+
+defmodule Inngest.ConcurrencyConfigError do
+  defexception [:message]
+end
