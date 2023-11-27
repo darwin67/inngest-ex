@@ -1,14 +1,14 @@
-defmodule Inngest.Function.Cases.RateLimitTest do
+defmodule Inngest.Function.Cases.IdempotencyTest do
   use ExUnit.Case, async: true
 
   alias Inngest.Test.DevServer
   import Inngest.Test.Helper
 
-  @default_sleep 10_000
+  @default_sleep 3_000
 
   @tag :integration
-  test "should <= 2 out of 10" do
-    event_ids = Enum.map(1..10, fn _ -> send_test_event("test/plug.ratelimit") end)
+  test "should only run 1 out of 10" do
+    event_ids = Enum.map(1..10, fn _ -> send_test_event("test/plug.idempotency") end)
 
     Process.sleep(@default_sleep)
 
@@ -33,6 +33,6 @@ defmodule Inngest.Function.Cases.RateLimitTest do
       end)
       |> Enum.filter(&(!is_nil(&1)))
 
-    assert Enum.count(fn_runs) <= 2
+    assert Enum.count(fn_runs) == 1
   end
 end
