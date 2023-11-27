@@ -182,6 +182,11 @@ defmodule Inngest.Function do
         |> Inngest.FnOpts.validate_batch_events(config)
       end
 
+      defp maybe_rate_limit(config) do
+        fn_opts()
+        |> Inngest.FnOpts.validate_rate_limit(config)
+      end
+
       defp fn_opts() do
         case __MODULE__.__info__(:attributes) |> Keyword.get(:func) |> List.first() do
           nil -> %Inngest.FnOpts{}

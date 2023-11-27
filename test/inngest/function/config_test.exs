@@ -114,4 +114,24 @@ defmodule Inngest.FnOptsTest do
                    end
     end
   end
+
+  describe "validate_rate_limit/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "Foobar",
+      rate_limit: %{
+        limit: 10,
+        period: "5s"
+      }
+    }
+
+    test "should succeed with valid config" do
+      assert %{
+               rateLimit: %{
+                 limit: 10,
+                 period: "5s"
+               }
+             } = FnOpts.validate_rate_limit(@fn_opts, @config)
+    end
+  end
 end

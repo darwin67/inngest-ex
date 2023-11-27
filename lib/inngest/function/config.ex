@@ -106,8 +106,22 @@ defmodule Inngest.FnOpts do
             end
         end
 
-        batch = batch |> Map.put(:maxSize, max_size) |> Map.drop([:max_size])
+        batch = %{maxSize: max_size, timeout: timeout}
         Map.put(config, :batchEvents, batch)
+    end
+  end
+
+  @doc """
+  Validate the rate limit config
+  """
+  @spec validate_rate_limit(t(), map()) :: map()
+  def validate_rate_limit(fnopts, config) do
+    case fnopts |> Map.get(:rate_limit) do
+      nil ->
+        config
+
+      rate_limit ->
+        Map.put(config, :rateLimit, rate_limit)
     end
   end
 end
