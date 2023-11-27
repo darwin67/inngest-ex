@@ -267,12 +267,28 @@ defmodule Inngest.FnOptsTest do
       }
     }
 
-    test "should succeed with valid settings" do
+    test "should succeed with single setting" do
       assert %{
-               cancel: %{
-                 event: "test/cancel"
-               }
+               cancel: [
+                 %{event: "test/cancel"}
+               ]
              } = FnOpts.validate_cancel_on(@fn_opts, @config)
+    end
+
+    test "should succeed with list of cancels" do
+      cancel = [
+        %{event: "test/cancel"},
+        %{event: "helloworld"}
+      ]
+
+      opts = %{@fn_opts | cancel_on: cancel}
+
+      assert %{
+               cancel: [
+                 %{event: "test/cancel"},
+                 %{event: "helloworld"}
+               ]
+             } = FnOpts.validate_cancel_on(opts, @config)
     end
 
     test "should raise if event is missing" do

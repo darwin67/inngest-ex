@@ -170,6 +170,7 @@ defmodule Inngest.Function do
           |> maybe_rate_limit()
           |> maybe_idempotency()
           |> maybe_concurrency()
+          |> maybe_cancel_on()
         ] ++ handler
       end
 

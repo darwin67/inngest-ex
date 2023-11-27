@@ -47,10 +47,7 @@ defmodule Inngest.FnOpts do
 
   @type idempotency() :: binary()
 
-  @type concurrency() ::
-          number()
-          | concurrency_option()
-          | list(concurrency_option())
+  @type concurrency() :: number() | concurrency_option() | list(concurrency_option())
 
   @type concurrency_option() :: %{
           limit: number(),
@@ -59,9 +56,12 @@ defmodule Inngest.FnOpts do
         }
   @concurrency_scopes ["fn", "env", "account"]
 
-  @type cancel_on() :: %{
+  @type cancel_on() :: cancel_on() | list(cancel_on())
+
+  @type cancel_option() :: %{
           event: binary(),
           match: binary() | nil,
+          if: binary() | nil,
           timeout: binary() | nil
         }
 
@@ -234,25 +234,32 @@ defmodule Inngest.FnOpts do
         config
 
       %{} = settings ->
-        event = Map.get(settings, :event)
-        timeout = Map.get(settings, :timeout)
+        validate_cancel_on(settings)
+        Map.put(config, :cancel, [settings])
 
-        if is_nil(event) do
-          raise Inngest.CancelConfigError, message: "'event' must be set for cancel_on"
-        end
-
-        if !is_nil(timeout) do
-          # credo:disable-for-next-line
-          case Util.parse_duration(timeout) do
-            {:error, error} ->
-              raise Inngest.CancelConfigError, message: error
-
-            {:ok, _} ->
-              nil
-          end
-        end
-
+      [_ | _] = settings ->
+        Enum.each(settings, &validate_cancel_on/1)
         Map.put(config, :cancel, settings)
+    end
+  end
+
+  defp validate_cancel_on(%{} = settings) do
+    event = Map.get(settings, :event)
+    timeout = Map.get(settings, :timeout)
+
+    if is_nil(event) do
+      raise Inngest.CancelConfigError, message: "'event' must be set for cancel_on"
+    end
+
+    if !is_nil(timeout) do
+      # credo:disable-for-next-line
+      case Util.parse_duration(timeout) do
+        {:error, error} ->
+          raise Inngest.CancelConfigError, message: error
+
+        {:ok, _} ->
+          nil
+      end
     end
   end
 end
