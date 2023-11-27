@@ -1,5 +1,7 @@
 defmodule Inngest.FnOpts do
-  @moduledoc false
+  @moduledoc """
+  Function configuration options
+  """
 
   defstruct [
     :id,
