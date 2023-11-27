@@ -168,6 +168,7 @@ defmodule Inngest.Function do
           |> maybe_debounce()
           |> maybe_batch_events()
           |> maybe_rate_limit()
+          |> maybe_concurrency()
         ] ++ handler
       end
 
@@ -186,6 +187,11 @@ defmodule Inngest.Function do
       defp maybe_rate_limit(config) do
         fn_opts()
         |> Inngest.FnOpts.validate_rate_limit(config)
+      end
+
+      defp maybe_concurrency(config) do
+        fn_opts()
+        |> Inngest.FnOpts.validate_concurrency(config)
       end
 
       defp fn_opts() do
