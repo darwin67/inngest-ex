@@ -19,50 +19,176 @@ defmodule Inngest.FnOpts do
   alias Inngest.Util
 
   @type t() :: %__MODULE__{
-          id: binary(),
-          name: binary(),
-          retries: number() | nil,
-          debounce: debounce() | nil,
-          priority: priority() | nil,
-          batch_events: batch_events() | nil,
-          rate_limit: rate_limit() | nil,
-          idempotency: idempotency() | nil,
-          concurrency: concurrency() | nil,
-          cancel_on: cancel_on() | nil
+          id: id(),
+          name: name(),
+          retries: retries(),
+          debounce: debounce(),
+          priority: priority(),
+          batch_events: batch_events(),
+          rate_limit: rate_limit(),
+          idempotency: idempotency(),
+          concurrency: concurrency(),
+          cancel_on: cancel_on()
         }
 
-  @type debounce() :: %{
-          key: binary() | nil,
-          period: binary()
-        }
+  @typedoc """
+  A unique identifier for your function. This should not change between deploys.
+  """
+  @type id() :: binary()
 
-  @type priority() :: %{
-          run: binary() | nil
-        }
+  @typedoc """
+  A name for your function. If defined, this will be shown in the UI as a friendly display name instead of the ID.
+  """
+  @type name() :: binary() | nil
 
-  @type batch_events() :: %{
-          max_size: number(),
-          timeout: binary()
-        }
+  @typedoc """
+  Configure the number of times the function will be retried from `0` to `20`. Default: `3`
+  """
+  @type retries() :: number() | nil
 
-  @type rate_limit() :: %{
-          limit: number(),
-          period: binary(),
-          key: binary() | nil
-        }
+  @typedoc """
+  Options to configure function debounce ([reference](https://www.inngest.com/docs/reference/functions/debounce)).
 
-  @type idempotency() :: binary()
+  **period** - `string` required
 
-  @type concurrency() :: number() | concurrency_option() | list(concurrency_option())
+  The time period of which to set the limit. The period begins when the first matching event is received. How long to wait before invoking the function with the batch even if it's not full. Current permitted values are from `1s` to `7d (168h)`.
 
-  @type concurrency_option() :: %{
-          limit: number(),
-          key: binary() | nil,
-          scope: binary() | nil
-        }
+  **key** - `string` optional
+
+  A unique key expression to apply the debounce to. The expression is evaluated for each triggering event.
+
+  Expressions are defined using the [Common Expression Language (CEL)](https://github.com/google/cel-go) with the original event accessible using dot-notation. Examples:
+
+  * Debounce per customer id: `event.data.customer_id`
+  * Debounce per account and email address: `event.data.account_id + "-" + event.user.email`
+  """
+  @type debounce() ::
+          %{
+            key: binary() | nil,
+            period: binary()
+          }
+          | nil
+
+  @typedoc """
+  Prioritize specific function runs ahead of others ([reference](https://www.inngest.com/docs/reference/functions/run-priority))
+
+  **run** - `string` optional
+
+  An expression which must return an integer between -600 and 600 (by default), with higher return values resulting in a higher priority.
+  See [reference](https://www.inngest.com/docs/reference/functions/run-priority) for more information.
+  """
+  @type priority() ::
+          %{
+            run: binary() | nil
+          }
+          | nil
+
+  @typedoc """
+  Configure how the function should consume batches of events ([reference](https://www.inngest.com/docs/guides/batching))
+
+  **max_size** - `number` required
+
+  The maximum number of events a batch can have. Current limit is `100`.
+
+  **timeout** - `string` required
+
+  How long to wait before invoking the function with the batch even if it's not full.
+  Current permitted values are from `1s` to `60s`.
+  """
+  @type batch_events() ::
+          %{
+            max_size: number(),
+            timeout: binary()
+          }
+          | nil
+
+  @typedoc """
+  Options to configure how to rate limit function execution ([reference](https://www.inngest.com/docs/reference/functions/rate-limit))
+
+  **limit** - `number` required
+
+  The maximum number of functions to run in the given time period.
+
+  **period** - `number` required
+
+  The time period of which to set the limit. The period begins when the first matching event is received.
+  How long to wait before invoking the function with the batch even if it's not full.
+  Current permitted values are from `1s` to `60s`.
+
+  **key** - `string` optional
+
+  A unique key expression to apply the limit to. The expression is evaluated for each triggering event.
+
+  Expressions are defined using the [Common Expression Language (CEL)](https://github.com/google/cel-go) with the original event accessible using dot-notation. Examples:
+
+  * Rate limit per customer id: `event.data.customer_id`
+  * Rate limit per account and email address: `event.data.account_id + "-" + event.user.email`
+
+  """
+  @type rate_limit() ::
+          %{
+            limit: number(),
+            period: binary(),
+            key: binary() | nil
+          }
+          | nil
+
+  @typedoc """
+  A key expression which is used to prevent duplicate events from triggering a function more than once in 24 hours.
+
+  This is equivalent to setting `rate_limit` with a `key`, a limit of `1` and period of `24hr`.
+
+  Expressions are defined using the [Common Expression Language (CEL)](https://github.com/google/cel-go) with the original event accessible using dot-notation. Examples:
+
+  * Only run once for each customer id: `event.data.customer_id`
+  * Only run once for each account and email address: `event.data.account_id + "-" + event.user.email`
+
+  """
+  @type idempotency() :: binary() | nil
+
+  @typedoc """
+  Limit the number of concurrently running functions ([reference](https://www.inngest.com/docs/functions/concurrency))
+
+  **limit** - `string` required
+
+  The maximum number of concurrently running steps.
+
+  **key** - `string` optional
+
+  A unique key expression for which to restrict concurrently running steps to. The expression is evaluated for each triggering event and a unique key is generate.
+  """
+  @type concurrency() :: number() | concurrency_option() | list(concurrency_option()) | nil
+  @type concurrency_option() ::
+          %{
+            limit: number(),
+            key: binary() | nil,
+            scope: binary() | nil
+          }
+          | nil
   @concurrency_scopes ["fn", "env", "account"]
 
-  @type cancel_on() :: cancel_on() | list(cancel_on())
+  @typedoc """
+  Define an event that can be used to cancel a running or sleeping function ([reference](https://www.inngest.com/docs/functions/cancellation))
+
+  **event** - `string` required
+
+  The event name which will be used to cancel
+
+  **match** - `string` optional
+
+  The property to match the event trigger and the cancelling event, using dot-notation
+  e.g. `data.userId`
+
+  **if** - `string` optional
+
+  TODO
+
+  **timeout** - `string` optional
+
+  The amount of time to wait to receive the cancelling event.
+  e.g. `"30m"`, `"3h"`, or `2d`
+  """
+  @type cancel_on() :: cancel_option() | list(cancel_option()) | nil
 
   @type cancel_option() :: %{
           event: binary(),
@@ -103,6 +229,9 @@ defmodule Inngest.FnOpts do
     end
   end
 
+  @doc """
+  Validate the priority settings
+  """
   def validate_priority(fnopts, config) do
     case fnopts |> Map.get(:priority) do
       nil ->
