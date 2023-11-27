@@ -52,17 +52,17 @@ defmodule Inngest.FnOpts do
         period = Map.get(debounce, :period)
 
         if is_nil(period) do
-          raise Inngest.InvalidDebounceConfigError
+          raise Inngest.DebounceConfigError, message: "a 'period' must be set for debounce"
         end
 
         case Util.parse_duration(period) do
           {:error, error} ->
-            raise Inngest.InvalidDebounceConfigError, message: error
+            raise Inngest.DebounceConfigError, message: error
 
           {:ok, seconds} ->
             # credo:disable-for-next-line
             if seconds > 7 * Util.day_in_seconds() do
-              raise Inngest.InvalidDebounceConfigError,
+              raise Inngest.DebounceConfigError,
                 message: "cannot specify period for more than 7 days"
             end
         end
@@ -85,23 +85,23 @@ defmodule Inngest.FnOpts do
         timeout = Map.get(batch, :timeout)
 
         if is_nil(max_size) do
-          raise Inngest.InvalidBatchEventConfigError,
+          raise Inngest.BatchEventConfigError,
             message: "'max_size' must be set for batch_events"
         end
 
         if is_nil(timeout) do
-          raise Inngest.InvalidBatchEventConfigError,
+          raise Inngest.BatchEventConfigError,
             message: "'timeout' must be set for batch_events"
         end
 
         case Util.parse_duration(timeout) do
           {:error, error} ->
-            raise Inngest.InvalidBatchEventConfigError, message: error
+            raise Inngest.BatchEventConfigError, message: error
 
           {:ok, seconds} ->
             # credo:disable-for-next-line
             if seconds < 1 || seconds > 60 do
-              raise Inngest.InvalidBatchEventConfigError,
+              raise Inngest.BatchEventConfigError,
                 message: "'timeout' duration set to '#{timeout}', needs to be 1s - 60s"
             end
         end
@@ -121,6 +121,9 @@ defmodule Inngest.FnOpts do
         config
 
       rate_limit ->
+        limit = Map.get(rate_limit, :limit)
+        period = Map.get(rate_limit, :period)
+
         Map.put(config, :rateLimit, rate_limit)
     end
   end

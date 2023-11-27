@@ -29,19 +29,21 @@ defmodule Inngest.FnOptsTest do
       assert %{debounce: %{period: "5s"}} = FnOpts.validate_debounce(@fn_opts, @config)
     end
 
-    ## Invalid configs
+    ##  configs
     test "should raise when period is missing" do
       opts = drop_at(@fn_opts, [:debounce, :period])
 
-      assert_raise Inngest.InvalidDebounceConfigError, fn ->
-        FnOpts.validate_debounce(opts, @config)
-      end
+      assert_raise Inngest.DebounceConfigError,
+                   "a 'period' must be set for debounce",
+                   fn ->
+                     FnOpts.validate_debounce(opts, @config)
+                   end
     end
 
     test "should raise with invalid period" do
       opts = update_at(@fn_opts, [:debounce, :period], "yolo")
 
-      assert_raise Inngest.InvalidDebounceConfigError, fn ->
+      assert_raise Inngest.DebounceConfigError, "invalid duration: 'yolo'", fn ->
         FnOpts.validate_debounce(opts, @config)
       end
     end
@@ -49,7 +51,7 @@ defmodule Inngest.FnOptsTest do
     test "should raise with period longer than 7 days" do
       opts = update_at(@fn_opts, [:debounce, :period], "8d")
 
-      assert_raise Inngest.InvalidDebounceConfigError, fn ->
+      assert_raise Inngest.DebounceConfigError, fn ->
         FnOpts.validate_debounce(opts, @config)
       end
     end
@@ -77,7 +79,7 @@ defmodule Inngest.FnOptsTest do
     test "should raise if max_size is missing" do
       opts = drop_at(@fn_opts, [:batch_events, :max_size])
 
-      assert_raise Inngest.InvalidBatchEventConfigError,
+      assert_raise Inngest.BatchEventConfigError,
                    "'max_size' must be set for batch_events",
                    fn ->
                      FnOpts.validate_batch_events(opts, @config)
@@ -87,7 +89,7 @@ defmodule Inngest.FnOptsTest do
     test "should raise if timeout is missing" do
       opts = drop_at(@fn_opts, [:batch_events, :timeout])
 
-      assert_raise Inngest.InvalidBatchEventConfigError,
+      assert_raise Inngest.BatchEventConfigError,
                    "'timeout' must be set for batch_events",
                    fn ->
                      FnOpts.validate_batch_events(opts, @config)
@@ -97,7 +99,7 @@ defmodule Inngest.FnOptsTest do
     test "should raise if timeout is invalid" do
       opts = update_at(@fn_opts, [:batch_events, :timeout], "hello")
 
-      assert_raise Inngest.InvalidBatchEventConfigError,
+      assert_raise Inngest.BatchEventConfigError,
                    "invalid duration: 'hello'",
                    fn ->
                      FnOpts.validate_batch_events(opts, @config)
@@ -107,7 +109,7 @@ defmodule Inngest.FnOptsTest do
     test "should raise if timeout is out of range" do
       opts = update_at(@fn_opts, [:batch_events, :timeout], "2m")
 
-      assert_raise Inngest.InvalidBatchEventConfigError,
+      assert_raise Inngest.BatchEventConfigError,
                    "'timeout' duration set to '2m', needs to be 1s - 60s",
                    fn ->
                      FnOpts.validate_batch_events(opts, @config)
