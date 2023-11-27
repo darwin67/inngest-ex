@@ -14,7 +14,6 @@ defmodule Inngest.Test.Case.ConcurrencyFn do
   @trigger %Trigger{event: "test/plug.throttle"}
 
   @impl true
-  @spec exec(any, %{:step => atom, optional(any) => any}) :: {:ok, <<_::72>>}
   def exec(ctx, %{step: step} = _args) do
     _ =
       step.run(ctx, "wait", fn ->

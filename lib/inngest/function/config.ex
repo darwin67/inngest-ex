@@ -9,6 +9,7 @@ defmodule Inngest.FnOpts do
     :debounce,
     :batch_events,
     :rate_limit,
+    :idempotency,
     :concurrency,
     retries: 3
   ]
@@ -22,6 +23,7 @@ defmodule Inngest.FnOpts do
           debounce: debounce() | nil,
           batch_events: batch_events() | nil,
           rate_limit: rate_limit() | nil,
+          idempotency: idempotency() | nil,
           concurrency: concurrency() | nil
         }
 
@@ -41,6 +43,8 @@ defmodule Inngest.FnOpts do
           key: binary() | nil
         }
 
+  @type idempotency() :: binary()
+
   @type concurrency() ::
           number()
           | concurrency_option()
@@ -54,7 +58,7 @@ defmodule Inngest.FnOpts do
   @concurrency_scopes ["fn", "env", "account"]
 
   @doc """
-  Validate the debounce configuration
+  Validate the debounce settings
   """
   @spec validate_debounce(t(), map()) :: map()
   def validate_debounce(fnopts, config) do
@@ -86,7 +90,7 @@ defmodule Inngest.FnOpts do
   end
 
   @doc """
-  Validate the event batch config
+  Validate the event batch settings
   """
   @spec validate_batch_events(t(), map()) :: map()
   def validate_batch_events(fnopts, config) do
@@ -121,7 +125,7 @@ defmodule Inngest.FnOpts do
   end
 
   @doc """
-  Validate the rate limit config
+  Validate the rate limit settings
   """
   @spec validate_rate_limit(t(), map()) :: map()
   def validate_rate_limit(fnopts, config) do
@@ -155,7 +159,25 @@ defmodule Inngest.FnOpts do
   end
 
   @doc """
-  Validate the concurrency config
+  Validate the idempotency settings
+  """
+  def validate_idempotency(fnopts, config) do
+    # NOTE: nothing really to validate, just have this for the sake of consistency
+    case fnopts |> Map.get(:idempotency) do
+      nil ->
+        config
+
+      setting ->
+        if !is_binary(setting) do
+          raise Inngest.IdempotencyConfigError, message: "idempotency must be a CEL string"
+        end
+
+        Map.put(config, :idempotency, setting)
+    end
+  end
+
+  @doc """
+  Validate the concurrency settings
   """
   @spec validate_concurrency(t(), map()) :: map()
   def validate_concurrency(fnopts, config) do

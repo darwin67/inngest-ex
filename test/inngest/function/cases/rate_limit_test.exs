@@ -7,7 +7,7 @@ defmodule Inngest.Function.Cases.RateLimitTest do
   @default_sleep 10_000
 
   @tag :integration
-  test "should only run 2 out of 10" do
+  test "should <= 2 out of 10" do
     event_ids = Enum.map(1..10, fn _ -> send_test_event("test/plug.ratelimit") end)
 
     Process.sleep(@default_sleep)
@@ -25,6 +25,8 @@ defmodule Inngest.Function.Cases.RateLimitTest do
                      "run_id" => run_id
                    }
                  ] = data
+
+          run_id
         else
           nil
         end
