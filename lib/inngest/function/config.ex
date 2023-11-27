@@ -197,9 +197,7 @@ defmodule Inngest.FnOpts do
           timeout: binary() | nil
         }
 
-  @doc """
-  Validate the debounce settings
-  """
+  @doc false
   @spec validate_debounce(t(), map()) :: map()
   def validate_debounce(fnopts, config) do
     case fnopts |> Map.get(:debounce) do
@@ -229,9 +227,8 @@ defmodule Inngest.FnOpts do
     end
   end
 
-  @doc """
-  Validate the priority settings
-  """
+  @doc false
+  @spec validate_priority(t(), map()) :: map()
   def validate_priority(fnopts, config) do
     case fnopts |> Map.get(:priority) do
       nil ->
@@ -251,9 +248,7 @@ defmodule Inngest.FnOpts do
     end
   end
 
-  @doc """
-  Validate the event batch settings
-  """
+  @doc false
   @spec validate_batch_events(t(), map()) :: map()
   # credo:disable-for-next-line
   def validate_batch_events(fnopts, config) do
@@ -300,9 +295,7 @@ defmodule Inngest.FnOpts do
     end
   end
 
-  @doc """
-  Validate the rate limit settings
-  """
+  @doc false
   @spec validate_rate_limit(t(), map()) :: map()
   def validate_rate_limit(fnopts, config) do
     case fnopts |> Map.get(:rate_limit) do
@@ -334,9 +327,8 @@ defmodule Inngest.FnOpts do
     end
   end
 
-  @doc """
-  Validate the idempotency settings
-  """
+  @doc false
+  @spec validate_idempotency(t(), map()) :: map()
   def validate_idempotency(fnopts, config) do
     # NOTE: nothing really to validate, just have this for the sake of consistency
     case fnopts |> Map.get(:idempotency) do
@@ -352,9 +344,7 @@ defmodule Inngest.FnOpts do
     end
   end
 
-  @doc """
-  Validate the concurrency settings
-  """
+  @doc false
   @spec validate_concurrency(t(), map()) :: map()
   def validate_concurrency(fnopts, config) do
     case fnopts |> Map.get(:concurrency) do
@@ -392,9 +382,7 @@ defmodule Inngest.FnOpts do
     end
   end
 
-  @doc """
-  Validate the cancellation trigger settings
-  """
+  @doc false
   @spec validate_cancel_on(t(), map()) :: map()
   def validate_cancel_on(fnopts, config) do
     case fnopts |> Map.get(:cancel_on) do
