@@ -57,6 +57,36 @@ defmodule Inngest.FnOptsTest do
     end
   end
 
+  describe "validate_priority/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "FooBar",
+      priority: %{run: "event.data.priority"}
+    }
+
+    test "should succeed with valid config" do
+      assert %{
+               priority: %{run: "event.data.priority"}
+             } = FnOpts.validate_priority(@fn_opts, @config)
+    end
+
+    test "should raise with invalid config" do
+      opts = %{@fn_opts | priority: "hello"}
+
+      assert_raise Inngest.PriorityConfigError, "invalid priority config: 'hello'", fn ->
+        FnOpts.validate_priority(opts, @config)
+      end
+    end
+
+    test "should raise if priority run is not a string" do
+      opts = update_at(@fn_opts, [:priority, :run], 10)
+
+      assert_raise Inngest.PriorityConfigError, "invalid priority run: '10'", fn ->
+        FnOpts.validate_priority(opts, @config)
+      end
+    end
+  end
+
   describe "validate_batch_events/2" do
     @fn_opts %FnOpts{
       id: "foobar",

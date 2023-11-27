@@ -166,6 +166,7 @@ defmodule Inngest.Function do
             }
           }
           |> maybe_debounce()
+          |> maybe_priority()
           |> maybe_batch_events()
           |> maybe_rate_limit()
           |> maybe_idempotency()
@@ -178,6 +179,9 @@ defmodule Inngest.Function do
 
       defp maybe_debounce(config),
         do: fn_opts() |> Inngest.FnOpts.validate_debounce(config)
+
+      defp maybe_priority(config),
+        do: fn_opts() |> Inngest.FnOpts.validate_priority(config)
 
       defp maybe_batch_events(config),
         do: fn_opts() |> Inngest.FnOpts.validate_batch_events(config)
