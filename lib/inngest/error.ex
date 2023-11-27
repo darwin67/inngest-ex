@@ -25,3 +25,7 @@ end
 defmodule Inngest.IdempotencyConfigError do
   defexception [:message]
 end
+
+defmodule Inngest.CancelConfigError do
+  defexception [:message]
+end

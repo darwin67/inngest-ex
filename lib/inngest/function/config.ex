@@ -11,6 +11,7 @@ defmodule Inngest.FnOpts do
     :rate_limit,
     :idempotency,
     :concurrency,
+    :cancel_on,
     retries: 3
   ]
 
@@ -24,7 +25,8 @@ defmodule Inngest.FnOpts do
           batch_events: batch_events() | nil,
           rate_limit: rate_limit() | nil,
           idempotency: idempotency() | nil,
-          concurrency: concurrency() | nil
+          concurrency: concurrency() | nil,
+          cancel_on: cancel_on() | nil
         }
 
   @type debounce() :: %{
@@ -45,10 +47,7 @@ defmodule Inngest.FnOpts do
 
   @type idempotency() :: binary()
 
-  @type concurrency() ::
-          number()
-          | concurrency_option()
-          | list(concurrency_option())
+  @type concurrency() :: number() | concurrency_option() | list(concurrency_option())
 
   @type concurrency_option() :: %{
           limit: number(),
@@ -56,6 +55,15 @@ defmodule Inngest.FnOpts do
           scope: binary() | nil
         }
   @concurrency_scopes ["fn", "env", "account"]
+
+  @type cancel_on() :: cancel_on() | list(cancel_on())
+
+  @type cancel_option() :: %{
+          event: binary(),
+          match: binary() | nil,
+          if: binary() | nil,
+          timeout: binary() | nil
+        }
 
   @doc """
   Validate the debounce settings
@@ -213,6 +221,53 @@ defmodule Inngest.FnOpts do
     if !is_nil(scope) && !Enum.member?(@concurrency_scopes, scope) do
       raise Inngest.ConcurrencyConfigError,
         message: "invalid scope '#{scope}', needs to be \"fn\"|\"env\"|\"account\""
+    end
+  end
+
+  @doc """
+  Validate the cancellation trigger settings
+  """
+  @spec validate_cancel_on(t(), map()) :: map()
+  def validate_cancel_on(fnopts, config) do
+    case fnopts |> Map.get(:cancel_on) do
+      nil ->
+        config
+
+      %{} = settings ->
+        validate_cancel_on(settings)
+        Map.put(config, :cancel, [settings])
+
+      [_ | _] = settings ->
+        if Enum.count(settings) > 5 do
+          raise Inngest.CancelConfigError,
+            message: "cannot have more than 5 cancellation triggers"
+        end
+
+        Enum.each(settings, &validate_cancel_on/1)
+        Map.put(config, :cancel, settings)
+
+      rest ->
+        raise Inngest.CancelConfigError, message: "invalid cancellation config: '#{rest}'"
+    end
+  end
+
+  defp validate_cancel_on(%{} = settings) do
+    event = Map.get(settings, :event)
+    timeout = Map.get(settings, :timeout)
+
+    if is_nil(event) do
+      raise Inngest.CancelConfigError, message: "'event' must be set for cancel_on"
+    end
+
+    if !is_nil(timeout) do
+      # credo:disable-for-next-line
+      case Util.parse_duration(timeout) do
+        {:error, error} ->
+          raise Inngest.CancelConfigError, message: error
+
+        {:ok, _} ->
+          nil
+      end
     end
   end
 end

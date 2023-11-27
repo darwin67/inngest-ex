@@ -257,4 +257,87 @@ defmodule Inngest.FnOptsTest do
                    end
     end
   end
+
+  describe "validate_cancel_on/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "Foobar",
+      cancel_on: %{
+        event: "test/cancel"
+      }
+    }
+
+    test "should succeed with single setting" do
+      assert %{
+               cancel: [
+                 %{event: "test/cancel"}
+               ]
+             } = FnOpts.validate_cancel_on(@fn_opts, @config)
+    end
+
+    test "should succeed with list of cancels" do
+      cancel = [
+        %{event: "test/cancel"},
+        %{event: "helloworld"}
+      ]
+
+      opts = %{@fn_opts | cancel_on: cancel}
+
+      assert %{
+               cancel: [
+                 %{event: "test/cancel"},
+                 %{event: "helloworld"}
+               ]
+             } = FnOpts.validate_cancel_on(opts, @config)
+    end
+
+    test "should raise if event is missing" do
+      opts = %{@fn_opts | cancel_on: %{}}
+
+      assert_raise Inngest.CancelConfigError,
+                   "'event' must be set for cancel_on",
+                   fn ->
+                     FnOpts.validate_cancel_on(opts, @config)
+                   end
+    end
+
+    test "should raise if timeout is invalid duration" do
+      opts = %{@fn_opts | cancel_on: %{event: "test/cancel", timeout: "hello"}}
+
+      assert_raise Inngest.CancelConfigError,
+                   "invalid duration: 'hello'",
+                   fn ->
+                     FnOpts.validate_cancel_on(opts, @config)
+                   end
+    end
+
+    test "should raise if there are > 5 cancellation triggers" do
+      cancel = [
+        %{event: "test/cancel"},
+        %{event: "helloworld"},
+        %{event: "foobar"},
+        %{event: "yolo"},
+        %{event: "inngest"},
+        %{event: "something"}
+      ]
+
+      opts = %{@fn_opts | cancel_on: cancel}
+
+      assert_raise Inngest.CancelConfigError,
+                   "cannot have more than 5 cancellation triggers",
+                   fn ->
+                     FnOpts.validate_cancel_on(opts, @config)
+                   end
+    end
+
+    test "should raise with invalid config" do
+      opts = %{@fn_opts | cancel_on: "hello"}
+
+      assert_raise Inngest.CancelConfigError,
+                   "invalid cancellation config: 'hello'",
+                   fn ->
+                     FnOpts.validate_cancel_on(opts, @config)
+                   end
+    end
+  end
 end

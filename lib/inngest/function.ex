@@ -170,6 +170,7 @@ defmodule Inngest.Function do
           |> maybe_rate_limit()
           |> maybe_idempotency()
           |> maybe_concurrency()
+          |> maybe_cancel_on()
         ] ++ handler
       end
 
@@ -189,6 +190,9 @@ defmodule Inngest.Function do
 
       defp maybe_concurrency(config),
         do: fn_opts() |> Inngest.FnOpts.validate_concurrency(config)
+
+      defp maybe_cancel_on(config),
+        do: fn_opts() |> Inngest.FnOpts.validate_cancel_on(config)
 
       defp fn_opts() do
         case __MODULE__.__info__(:attributes) |> Keyword.get(:func) |> List.first() do
