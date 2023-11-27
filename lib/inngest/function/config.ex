@@ -223,4 +223,36 @@ defmodule Inngest.FnOpts do
         message: "invalid scope '#{scope}', needs to be \"fn\"|\"env\"|\"account\""
     end
   end
+
+  @doc """
+  Validate the cancellation trigger settings
+  """
+  @spec validate_cancel_on(t(), map()) :: map()
+  def validate_cancel_on(fnopts, config) do
+    case fnopts |> Map.get(:cancel_on) do
+      nil ->
+        config
+
+      %{} = settings ->
+        event = Map.get(settings, :event)
+        timeout = Map.get(settings, :timeout)
+
+        if is_nil(event) do
+          raise Inngest.CancelConfigError, message: "'event' must be set for cancel_on"
+        end
+
+        if !is_nil(timeout) do
+          # credo:disable-for-next-line
+          case Util.parse_duration(timeout) do
+            {:error, error} ->
+              raise Inngest.CancelConfigError, message: error
+
+            {:ok, _} ->
+              nil
+          end
+        end
+
+        Map.put(config, :cancel, settings)
+    end
+  end
 end
