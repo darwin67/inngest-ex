@@ -126,6 +126,7 @@ defmodule Inngest.FnOpts do
   Validate the event batch settings
   """
   @spec validate_batch_events(t(), map()) :: map()
+  # credo:disable-for-next-line
   def validate_batch_events(fnopts, config) do
     case fnopts |> Map.get(:batch_events) do
       nil ->
@@ -138,6 +139,19 @@ defmodule Inngest.FnOpts do
         if is_nil(max_size) || is_nil(timeout) do
           raise Inngest.BatchEventConfigError,
             message: "'max_size' and 'timeout' must be set for batch_events"
+        end
+
+        rate_limit = Map.get(fnopts, :rate_limit)
+        cancel_on = Map.get(fnopts, :cancel_on)
+
+        if !is_nil(rate_limit) do
+          raise Inngest.BatchEventConfigError,
+            message: "'rate_limit' cannot be used with event_batches"
+        end
+
+        if !is_nil(cancel_on) do
+          raise Inngest.BatchEventConfigError,
+            message: "'cancel_on' cannot be used with event_batches"
         end
 
         case Util.parse_duration(timeout) do
