@@ -34,7 +34,7 @@ defmodule Inngest.FnOptsTest do
       opts = drop_at(@fn_opts, [:debounce, :period])
 
       assert_raise Inngest.DebounceConfigError,
-                   "a 'period' must be set for debounce",
+                   "'period' must be set for debounce",
                    fn ->
                      FnOpts.validate_debounce(opts, @config)
                    end
@@ -80,7 +80,7 @@ defmodule Inngest.FnOptsTest do
       opts = drop_at(@fn_opts, [:batch_events, :max_size])
 
       assert_raise Inngest.BatchEventConfigError,
-                   "'max_size' must be set for batch_events",
+                   "'max_size' and 'timeout' must be set for batch_events",
                    fn ->
                      FnOpts.validate_batch_events(opts, @config)
                    end
@@ -90,7 +90,7 @@ defmodule Inngest.FnOptsTest do
       opts = drop_at(@fn_opts, [:batch_events, :timeout])
 
       assert_raise Inngest.BatchEventConfigError,
-                   "'timeout' must be set for batch_events",
+                   "'max_size' and 'timeout' must be set for batch_events",
                    fn ->
                      FnOpts.validate_batch_events(opts, @config)
                    end
@@ -134,6 +134,26 @@ defmodule Inngest.FnOptsTest do
                  period: "5s"
                }
              } = FnOpts.validate_rate_limit(@fn_opts, @config)
+    end
+
+    test "should raise when limit is missing" do
+      opts = drop_at(@fn_opts, [:rate_limit, :limit])
+
+      assert_raise Inngest.RateLimitConfigError,
+                   "'limit' and 'period' must be set for rate_limit",
+                   fn ->
+                     FnOpts.validate_rate_limit(opts, @config)
+                   end
+    end
+
+    test "should raise when period is missing" do
+      opts = drop_at(@fn_opts, [:rate_limit, :period])
+
+      assert_raise Inngest.RateLimitConfigError,
+                   "'limit' and 'period' must be set for rate_limit",
+                   fn ->
+                     FnOpts.validate_rate_limit(opts, @config)
+                   end
     end
   end
 end

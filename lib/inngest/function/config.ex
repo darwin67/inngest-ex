@@ -52,7 +52,7 @@ defmodule Inngest.FnOpts do
         period = Map.get(debounce, :period)
 
         if is_nil(period) do
-          raise Inngest.DebounceConfigError, message: "a 'period' must be set for debounce"
+          raise Inngest.DebounceConfigError, message: "'period' must be set for debounce"
         end
 
         case Util.parse_duration(period) do
@@ -84,14 +84,9 @@ defmodule Inngest.FnOpts do
         max_size = Map.get(batch, :max_size)
         timeout = Map.get(batch, :timeout)
 
-        if is_nil(max_size) do
+        if is_nil(max_size) || is_nil(timeout) do
           raise Inngest.BatchEventConfigError,
-            message: "'max_size' must be set for batch_events"
-        end
-
-        if is_nil(timeout) do
-          raise Inngest.BatchEventConfigError,
-            message: "'timeout' must be set for batch_events"
+            message: "'max_size' and 'timeout' must be set for batch_events"
         end
 
         case Util.parse_duration(timeout) do
@@ -123,6 +118,11 @@ defmodule Inngest.FnOpts do
       rate_limit ->
         limit = Map.get(rate_limit, :limit)
         period = Map.get(rate_limit, :period)
+
+        if is_nil(limit) || is_nil(period) do
+          raise Inngest.RateLimitConfigError,
+            message: "'limit' and 'period' must be set for rate_limit"
+        end
 
         Map.put(config, :rateLimit, rate_limit)
     end
