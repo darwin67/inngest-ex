@@ -245,6 +245,9 @@ defmodule Inngest.FnOpts do
 
         Enum.each(settings, &validate_cancel_on/1)
         Map.put(config, :cancel, settings)
+
+      invalid ->
+        raise Inngest.CancelConfigError, message: "invalid cancellation config: '#{invalid}'"
     end
   end
 

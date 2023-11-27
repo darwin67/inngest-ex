@@ -329,5 +329,15 @@ defmodule Inngest.FnOptsTest do
                      FnOpts.validate_cancel_on(opts, @config)
                    end
     end
+
+    test "should raise with invalid config" do
+      opts = %{@fn_opts | cancel_on: "hello"}
+
+      assert_raise Inngest.CancelConfigError,
+                   "invalid cancellation config: 'hello'",
+                   fn ->
+                     FnOpts.validate_cancel_on(opts, @config)
+                   end
+    end
   end
 end
