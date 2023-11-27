@@ -155,5 +155,15 @@ defmodule Inngest.FnOptsTest do
                      FnOpts.validate_rate_limit(opts, @config)
                    end
     end
+
+    test "should raise if timeout is out of range" do
+      opts = update_at(@fn_opts, [:rate_limit, :period], "2m")
+
+      assert_raise Inngest.RateLimitConfigError,
+                   "'period' duration set to '2m', needs to be 1s - 60s",
+                   fn ->
+                     FnOpts.validate_rate_limit(opts, @config)
+                   end
+    end
   end
 end

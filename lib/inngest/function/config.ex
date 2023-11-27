@@ -124,6 +124,18 @@ defmodule Inngest.FnOpts do
             message: "'limit' and 'period' must be set for rate_limit"
         end
 
+        case Util.parse_duration(period) do
+          {:error, error} ->
+            raise Inngest.RateLimitConfigError, message: error
+
+          {:ok, seconds} ->
+            # credo:disable-for-next-line
+            if seconds < 1 || seconds > 60 do
+              raise Inngest.RateLimitConfigError,
+                message: "'period' duration set to '#{period}', needs to be 1s - 60s"
+            end
+        end
+
         Map.put(config, :rateLimit, rate_limit)
     end
   end
