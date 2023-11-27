@@ -29,3 +29,7 @@ end
 defmodule Inngest.CancelConfigError do
   defexception [:message]
 end
+
+defmodule Inngest.PriorityConfigError do
+  defexception [:message]
+end

@@ -7,6 +7,7 @@ defmodule Inngest.FnOpts do
     :id,
     :name,
     :debounce,
+    :priority,
     :batch_events,
     :rate_limit,
     :idempotency,
@@ -22,6 +23,7 @@ defmodule Inngest.FnOpts do
           name: binary(),
           retries: number() | nil,
           debounce: debounce() | nil,
+          priority: priority() | nil,
           batch_events: batch_events() | nil,
           rate_limit: rate_limit() | nil,
           idempotency: idempotency() | nil,
@@ -32,6 +34,10 @@ defmodule Inngest.FnOpts do
   @type debounce() :: %{
           key: binary() | nil,
           period: binary()
+        }
+
+  @type priority() :: %{
+          run: binary() | nil
         }
 
   @type batch_events() :: %{
@@ -94,6 +100,25 @@ defmodule Inngest.FnOpts do
         end
 
         Map.put(config, :debounce, debounce)
+    end
+  end
+
+  def validate_priority(fnopts, config) do
+    case fnopts |> Map.get(:priority) do
+      nil ->
+        config
+
+      %{} = priority ->
+        run = Map.get(priority, :run)
+
+        if !is_nil(run) && !is_binary(run) do
+          raise Inngest.PriorityConfigError, message: "invalid priority run: '#{run}'"
+        end
+
+        Map.put(config, :priority, priority)
+
+      rest ->
+        raise Inngest.PriorityConfigError, message: "invalid priority config: '#{rest}'"
     end
   end
 
