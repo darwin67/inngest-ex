@@ -176,6 +176,14 @@ defmodule Inngest.FnOptsTest do
       }
     }
 
+    test "should succeed with just number" do
+      opts = %{@fn_opts | concurrency: 10}
+
+      assert %{
+               concurrency: 10
+             } = FnOpts.validate_concurrency(opts, @config)
+    end
+
     test "should succeed with valid settings" do
       assert %{
                concurrency: %{
@@ -210,6 +218,16 @@ defmodule Inngest.FnOptsTest do
 
       assert_raise Inngest.ConcurrencyConfigError,
                    "invalid scope 'hello', needs to be \"fn\"|\"env\"|\"account\"",
+                   fn ->
+                     FnOpts.validate_concurrency(opts, @config)
+                   end
+    end
+
+    test "should raise if provided invalid setting" do
+      opts = %{@fn_opts | concurrency: "foobar"}
+
+      assert_raise Inngest.ConcurrencyConfigError,
+                   "invalid concurrency setting",
                    fn ->
                      FnOpts.validate_concurrency(opts, @config)
                    end

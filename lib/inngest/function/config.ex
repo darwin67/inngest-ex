@@ -171,8 +171,12 @@ defmodule Inngest.FnOpts do
         Enum.each(settings, &validate_concurrency/1)
         Map.put(config, :concurrency, settings)
 
-      _ ->
-        raise Inngest.ConcurrencyConfigError, message: "invalid concurrency setting"
+      setting ->
+        if is_number(setting) do
+          Map.put(config, :concurrency, setting)
+        else
+          raise Inngest.ConcurrencyConfigError, message: "invalid concurrency setting"
+        end
     end
   end
 
@@ -189,7 +193,4 @@ defmodule Inngest.FnOpts do
         message: "invalid scope '#{scope}', needs to be \"fn\"|\"env\"|\"account\""
     end
   end
-
-  defp validate_concurrency(_),
-    do: raise(Inngest.ConcurrencyConfigError, message: "invalid concurrency setting")
 end
