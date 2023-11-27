@@ -20,7 +20,7 @@ defmodule Inngest.Function.Cases.IdempotencyTest do
         if Enum.count(data) == 1 do
           assert [
                    %{
-                     "output" => "Rate Limited",
+                     "output" => "Done",
                      "status" => "Completed",
                      "run_id" => run_id
                    }
