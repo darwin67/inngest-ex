@@ -14,6 +14,7 @@ This is the README for `main` branch, which is for pre `0.2.0` release.
   </p>
   <p>
     <a href="https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml"><img src="https://github.com/darwin67/ex-inngest/actions/workflows/ci.yml/badge.svg"></a>
+    <a href="https://codecov.io/gh/inngest/ex_inngest" ><img src="https://codecov.io/gh/inngest/ex_inngest/graph/badge.svg?token=t7231eD24T"/></a>
     <a href="https://hex.pm/packages/inngest"><img src="https://img.shields.io/hexpm/v/inngest.svg" /></a>
     <a href="https://hexdocs.pm/inngest/"><img src="https://img.shields.io/badge/hex-docs-lightgreen.svg" /></a>
     <br/>

@@ -9,6 +9,7 @@ defmodule Inngest.FnOpts do
     :debounce,
     :batch_events,
     :rate_limit,
+    :concurrency,
     retries: 3
   ]
 
@@ -20,7 +21,8 @@ defmodule Inngest.FnOpts do
           retries: number() | nil,
           debounce: debounce() | nil,
           batch_events: batch_events() | nil,
-          rate_limit: rate_limit() | nil
+          rate_limit: rate_limit() | nil,
+          concurrency: concurrency() | nil
         }
 
   @type debounce() :: %{
@@ -38,6 +40,18 @@ defmodule Inngest.FnOpts do
           period: binary(),
           key: binary() | nil
         }
+
+  @type concurrency() ::
+          number()
+          | concurrency_option()
+          | list(concurrency_option())
+
+  @type concurrency_option() :: %{
+          limit: number(),
+          key: binary() | nil,
+          scope: binary() | nil
+        }
+  @concurrency_scopes ["fn", "env", "account"]
 
   @doc """
   Validate the debounce configuration
@@ -137,6 +151,46 @@ defmodule Inngest.FnOpts do
         end
 
         Map.put(config, :rateLimit, rate_limit)
+    end
+  end
+
+  @doc """
+  Validate the concurrency config
+  """
+  @spec validate_concurrency(t(), map()) :: map()
+  def validate_concurrency(fnopts, config) do
+    case fnopts |> Map.get(:concurrency) do
+      nil ->
+        config
+
+      %{} = setting ->
+        validate_concurrency(setting)
+        Map.put(config, :concurrency, setting)
+
+      [_ | _] = settings ->
+        Enum.each(settings, &validate_concurrency/1)
+        Map.put(config, :concurrency, settings)
+
+      setting ->
+        if is_number(setting) do
+          Map.put(config, :concurrency, setting)
+        else
+          raise Inngest.ConcurrencyConfigError, message: "invalid concurrency setting"
+        end
+    end
+  end
+
+  defp validate_concurrency(%{} = setting) do
+    limit = Map.get(setting, :limit)
+    scope = Map.get(setting, :scope)
+
+    if is_nil(limit) do
+      raise Inngest.ConcurrencyConfigError, message: "'limit' must be set for concurrency"
+    end
+
+    if !is_nil(scope) && !Enum.member?(@concurrency_scopes, scope) do
+      raise Inngest.ConcurrencyConfigError,
+        message: "invalid scope '#{scope}', needs to be \"fn\"|\"env\"|\"account\""
     end
   end
 end
