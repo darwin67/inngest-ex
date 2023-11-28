@@ -61,9 +61,6 @@ defmodule Inngest.MixProject do
             Inngest.Router.Plug,
             Inngest.Signature
           ],
-          Config: [
-            Inngest.Config
-          ],
           Helper: [
             Inngest.CacheBodyReader
           ]

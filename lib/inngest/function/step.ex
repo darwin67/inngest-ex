@@ -1,7 +1,5 @@
 defmodule Inngest.Function.Step do
-  @moduledoc """
-    A struct representing a function step
-  """
+  @moduledoc false
 
   @derive Jason.Encoder
   defstruct [

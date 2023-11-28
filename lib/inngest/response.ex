@@ -1,7 +1,5 @@
 defmodule Inngest.SdkResponse do
-  @moduledoc """
-  Represents an SDK response to the executor when ran
-  """
+  @moduledoc false
 
   defstruct [
     :status,

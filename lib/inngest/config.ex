@@ -1,11 +1,11 @@
 defmodule Inngest.Config do
-  @moduledoc """
-  Configuration settings for Inngest. Order of configuration to be read:
+  @moduledoc false
 
-  1. Environment variables
-  2. Application configs
-  3. Default values
-  """
+  # Configuration settings for Inngest. Order of configuration to be read:
+  # 1. Environment variables
+  # 2. Application configs
+  # 3. Default values
+
   @event_url "https://inn.gs"
   @inngest_url "https://app.inngest.com"
   @api_url "https://api.inngest.com"

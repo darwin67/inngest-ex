@@ -21,23 +21,13 @@ defmodule Inngest.Function do
 
   ## Function Options
 
-  The `Inngest.FnOpts` accepts the following attributes.
-
-  #### `id` - `string` (required)
-
-  A unique identifier for your function to override the default name.
-  Also known in technical terms, a `slug`.
-
-  #### `name` - `string` (required)
-
-  A unique name for your function. This will be used to create a unique
-  slug id by default if `id` is not provided.
-
+  Assign `Inngest.FnOpts` to `@func` to configure the function. See `Inngest.FnOpts`
+  to see what options are available.
 
   ## Trigger
 
-  A trigger is exactly what the name says. It's the thing that triggers a function
-  to run. One of the following is required, and they're mutually exclusive.
+  A trigger is causes a function to run. One of the following is required, and
+  they're mutually exclusive.
 
   #### `event` - `string` and/or `expression` - `string`
 
@@ -72,7 +62,9 @@ defmodule Inngest.Function do
   @callback trigger() :: Trigger.t()
 
   @doc """
-  The method to be called when the Inngest function starts execution
+  The method to be called when the Inngest function starts execution.
+
+  Only this method needs to be provided.
   """
   @callback exec(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
 
@@ -215,6 +207,7 @@ defmodule Inngest.Function do
     end
   end
 
+  @doc false
   @spec validate_datetime(any()) :: {:ok, binary()} | {:error, binary()}
   def validate_datetime(%DateTime{} = datetime),
     do: Timex.format(datetime, "{YYYY}-{0M}-{0D}T{h24}:{m}:{s}Z")

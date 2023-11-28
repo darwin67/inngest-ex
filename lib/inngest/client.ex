@@ -36,9 +36,8 @@ defmodule Inngest.Client do
     end
   end
 
-  @doc """
-  Retrieves the registration information from the Dev server.
-  """
+  # Retrieves the registration information from the Dev server.
+  @doc false
   def dev_info() do
     client = httpclient(:inngest)
 
@@ -51,9 +50,8 @@ defmodule Inngest.Client do
     end
   end
 
-  @doc """
-  Returns an HTTP client for making requests against Inngest.
-  """
+  # Returns an HTTP client for making requests against Inngest.
+  @doc false
   @spec httpclient(atom(), Keyword.t()) :: Tesla.Client.t()
   def httpclient(type, opts \\ [])
 

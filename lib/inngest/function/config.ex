@@ -1,6 +1,8 @@
 defmodule Inngest.FnOpts do
   @moduledoc """
-  Function configuration options
+  Function configuration options.
+
+  See the typespec for all available options.
   """
 
   defstruct [
@@ -124,6 +126,9 @@ defmodule Inngest.FnOpts do
   * Rate limit per customer id: `event.data.customer_id`
   * Rate limit per account and email address: `event.data.account_id + "-" + event.user.email`
 
+  ### Note
+
+  This option cannot be used with `cancel_on` and `rate_limit`.
   """
   @type rate_limit() ::
           %{
