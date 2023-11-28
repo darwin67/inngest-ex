@@ -7,7 +7,7 @@ in `mix.exs`:
 # mix.exs
 def deps do
   [
-    {:inngest, "~> 0.1"}
+    {:inngest, "~> 0.2"}
   ]
 end
 ```
@@ -21,10 +21,11 @@ Then run `mix deps.get` to download the package.
 The Elixir SDK currently uses `Tesla` for handling HTTP requests. While this might
 not be ideal for some folks, it's the only option that can swap out the underlying HTTP
 libraries while still providing a similar interface.
+And it was the easiest to get something out quickly while still providing that portability.
 
-Until there's either a standard `Protocol` defined for handling HTTP calls or HTTP libraries
-actually being standardized, or a better way of abstracting the HTTP interfaces away, `Tesla`
-will likely be here to stay.
+We will be looking into removing this dependency completely in the future with
+[`Mint`](https://hexdocs.pm/mint/api-reference.html) or just pure
+[`:httpc`](https://www.erlang.org/doc/man/httpc.html).
 
 ### Tesla adapters
 
