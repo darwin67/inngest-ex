@@ -17,6 +17,16 @@ defmodule Inngest.Function do
         def exec(ctx, input) do
           {:ok, "hello world"}
         end
+
+        # Optional handler to handle failures when the function fails
+        # after all retries are exhausted.
+        def handle_failure(ctx, %{step: step} = _args) do
+          _ = step.run(ctx, "handle-failure", fn ->
+            "Do something here"
+          end)
+
+          {:ok, "error handled"}
+        end
       end
 
   ## Function Options
