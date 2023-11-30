@@ -191,7 +191,7 @@ defmodule Inngest.FnOpts do
   **timeout** - `string` optional
 
   The amount of time to wait to receive the cancelling event.
-  e.g. `"30m"`, `"3h"`, or `2d`
+  e.g. `30m`, `3h`, or `2d`
   """
   @type cancel_on() :: cancel_option() | list(cancel_option()) | nil
 
