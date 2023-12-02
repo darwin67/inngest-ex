@@ -5,9 +5,9 @@ defmodule Inngest.EventTest do
 
   describe "from/1" do
     @data %{
-      name: "test/hello",
-      data: %{"foo" => "bar"},
-      ts: 1_701_317_479_000
+      "name" => "test/hello",
+      "data" => %{"foo" => "bar"},
+      "ts" => 1_701_317_479_000
     }
 
     test "construct an Event object from a map" do
@@ -25,7 +25,7 @@ defmodule Inngest.EventTest do
       assert %Event{
                id: "",
                name: nil,
-               data: nil,
+               data: %{},
                ts: nil,
                datetime: nil,
                v: nil

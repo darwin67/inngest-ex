@@ -37,11 +37,11 @@ defmodule Inngest.Event do
 
   defstruct [
     :name,
-    :data,
     :ts,
     :datetime,
     :v,
-    id: ""
+    id: "",
+    data: %{}
   ]
 
   @type t() :: %__MODULE__{
@@ -58,9 +58,11 @@ defmodule Inngest.Event do
   """
   @spec from(map()) :: t()
   def from(%{} = data) do
+    newmap = for {key, val} <- data, into: %{}, do: {String.to_existing_atom(key), val}
+
     newmap =
-      case data |> Map.get(:ts, 0) |> DateTime.from_unix(:millisecond) do
-        {:ok, datetime} -> data |> Map.put(:datetime, datetime)
+      case timestamp(newmap) |> DateTime.from_unix(:millisecond) do
+        {:ok, datetime} -> Map.put(newmap, :datetime, datetime)
         _ -> data
       end
 
@@ -68,6 +70,14 @@ defmodule Inngest.Event do
   end
 
   def from(_), do: %__MODULE__{}
+
+  defp timestamp(data) do
+    cond do
+      !is_nil(Map.get(data, :ts)) -> Map.get(data, :ts)
+      !is_nil(Map.get(data, "ts")) -> Map.get(data, "ts")
+      true -> 0
+    end
+  end
 end
 
 defimpl Jason.Encoder, for: Inngest.Event do
