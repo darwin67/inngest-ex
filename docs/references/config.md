@@ -26,7 +26,7 @@ config :inngest, app_name: "MyApp"
 
 ### App Host
 
-Default value: "http://127.0.0.1:4000"
+Default value: `"http://127.0.0.1:4000"`
 
 The app host to be used when deployed.
 

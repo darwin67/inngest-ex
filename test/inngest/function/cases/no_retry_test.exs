@@ -16,7 +16,7 @@ defmodule Inngest.Function.Cases.NoRetryTest do
               "data" => [
                 %{
                   "output" => %{
-                    "error" => "invalid status code: 400",
+                    "error" => "NonRetriableError",
                     "message" => stacktrace,
                     "name" => "Error"
                   },

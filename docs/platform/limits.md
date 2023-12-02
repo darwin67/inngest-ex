@@ -1,5 +1,7 @@
 # Usage Limits
 
-Check **[here][inngest]** to see how to understand usage limits.
+We have some usage limits on the Cloud to provide a stable system.
+
+Check **[here][inngest]** for more details.
 
 [inngest]: https://www.inngest.com/docs/usage-limits/inngest?elixir-sdk

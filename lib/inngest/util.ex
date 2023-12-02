@@ -1,7 +1,5 @@
 defmodule Inngest.Util do
-  @moduledoc """
-  Utility functions
-  """
+  @moduledoc false
 
   @doc """
   Parse string duration that Inngest understands into seconds

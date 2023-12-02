@@ -1,7 +1,5 @@
 defmodule Inngest.Headers do
-  @moduledoc """
-  Header values used by the SDK
-  """
+  @moduledoc false
 
   def env, do: "x-inngest-env"
   # def framework, do: "x-inngest-framework"

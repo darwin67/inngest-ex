@@ -1,5 +1,7 @@
 defmodule Inngest.Function.Input do
-  @moduledoc false
+  @moduledoc """
+  Input provides the events, and step tools for an Inngest function
+  """
 
   defstruct [
     :event,
@@ -20,7 +22,9 @@ defmodule Inngest.Function.Input do
 end
 
 defmodule Inngest.Function.Context do
-  @moduledoc false
+  @moduledoc """
+  Context to be passed to steps in functions.
+  """
 
   defstruct [
     :attempt,
