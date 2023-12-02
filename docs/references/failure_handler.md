@@ -1,5 +1,7 @@
 # Handling failures
 
+### Failure event
+
 When a function fails, either after exhausting all the retries, or simply
 utilizing `Inngest.NonRetriableError`, it will emit an event called
 `inngest/function.failed`.
@@ -30,7 +32,12 @@ The structure of the event will look something like the following.
 }
 ```
 
-You can add a method in your `Inngest.Function` module to handle the failure event.
+See our [documentation](https://www.inngest.com/docs/reference/functions/handling-failures#the-inngest-function-failed-event)
+for more details about the `inngest/function.failed` event.
+
+### Handling the failure event
+
+To handle the error event, you can add a method in your `Inngest.Function` module to handle the failure event.
 
 ```
 defmodule MyApp.Inngest.SomeJob do
