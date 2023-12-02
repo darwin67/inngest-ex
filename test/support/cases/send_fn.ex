@@ -2,7 +2,6 @@ defmodule Inngest.Test.Case.SendFn do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "send-fn", name: "Send Function"}
   @trigger %Trigger{event: "test/plug.send"}

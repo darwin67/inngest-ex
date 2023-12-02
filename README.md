@@ -56,7 +56,6 @@ macro.
 ``` elixir
 defmodule MyApp.AwesomeFunction do
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "awesome-fn", name: "Awesome Function"} # The id and name of the function
   @trigger %Trigger{event: "func/awesome"} # The event this function will react to
@@ -81,7 +80,6 @@ look at a more complicated version. Which should provide you an idea what is cap
 ``` elixir
 defmodule MyApp.AwesomeFunction do
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "awesome-fn", name: "Awesome Function"} # The id and name of the function
   @trigger %Trigger{event: "func/awesome"} # The event this function will react to

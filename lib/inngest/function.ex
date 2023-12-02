@@ -80,8 +80,7 @@ defmodule Inngest.Function do
 
   defmacro __using__(_opts) do
     quote location: :keep do
-      alias Inngest.{Client, Trigger}
-      alias Inngest.Function.Step
+      alias Inngest.{Client, FnOpts, Trigger}
 
       Enum.each(
         [:func, :trigger],
@@ -132,7 +131,7 @@ defmodule Inngest.Function do
                   }
                 ],
                 steps: %{
-                  step: %Step{
+                  step: %Inngest.Function.Step{
                     id: :step,
                     name: "step",
                     runtime: %{
@@ -156,7 +155,7 @@ defmodule Inngest.Function do
             name: name(),
             triggers: [trigger()],
             steps: %{
-              step: %Step{
+              step: %Inngest.Function.Step{
                 id: :step,
                 name: "step",
                 runtime: %{

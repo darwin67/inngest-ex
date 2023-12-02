@@ -2,7 +2,6 @@ defmodule Inngest.Test.Case.ConcurrencyFn do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{
     id: "concurrency-fn",
