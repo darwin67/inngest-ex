@@ -1,6 +1,8 @@
 defmodule Inngest.Function.UnhashedOp do
   @moduledoc false
 
+  alias Inngest.Function.Context
+
   defstruct [:id, :op, pos: 0, opts: %{}]
 
   @type t() :: %__MODULE__{
@@ -10,9 +12,26 @@ defmodule Inngest.Function.UnhashedOp do
           opts: map()
         }
 
+  # TODO: try using ETS tables
+  # probably need to be on function starts
+  @spec new(Context.t(), t()) :: t()
+  def new(%{steps: steps} = ctx, %{id: id, pos: pos} = op) do
+    id = if pos > 0, do: "#{id}:#{pos}", else: id
+    hash = :crypto.hash(:sha, id) |> Base.encode16()
+
+    case Map.get(steps, hash) do
+      nil -> op
+      _ -> new(ctx, %{op | pos: pos + 1})
+    end
+  end
+
   @spec hash(t()) :: binary()
-  def hash(%{id: id} = _op) do
+  def hash(%{id: id, pos: 0} = _op) do
     :crypto.hash(:sha, id) |> Base.encode16()
+  end
+
+  def hash(%{id: id, pos: pos} = _op) do
+    :crypto.hash(:sha, "#{id}:#{pos}") |> Base.encode16()
   end
 end
 
