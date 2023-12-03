@@ -9,7 +9,7 @@ defmodule Inngest.StepTool do
 
   @spec run(Context.t(), id(), fun()) :: any()
   def run(%{steps: steps} = _ctx, step_id, func) do
-    op = %UnhashedOp{name: step_id, op: "Step"}
+    op = %UnhashedOp{id: step_id, op: "Step"}
     hashed_id = UnhashedOp.hash(op)
 
     # check for hash
@@ -35,7 +35,7 @@ defmodule Inngest.StepTool do
 
   @spec sleep(Context.t(), id(), binary()) :: nil
   def sleep(%{steps: steps} = _ctx, step_id, duration) do
-    op = %UnhashedOp{name: step_id, op: "Sleep"}
+    op = %UnhashedOp{id: step_id, op: "Sleep"}
     hashed_id = UnhashedOp.hash(op)
 
     if Map.has_key?(steps, hashed_id) do
@@ -53,7 +53,7 @@ defmodule Inngest.StepTool do
 
   @spec sleep_until(Context.t(), id(), datetime()) :: nil
   def sleep_until(%{steps: steps} = _ctx, step_id, time) do
-    op = %UnhashedOp{name: step_id, op: "Sleep"}
+    op = %UnhashedOp{id: step_id, op: "Sleep"}
     hashed_id = UnhashedOp.hash(op)
 
     if Map.has_key?(steps, hashed_id) do
@@ -76,7 +76,7 @@ defmodule Inngest.StepTool do
 
   @spec wait_for_event(Context.t(), id(), map()) :: map()
   def wait_for_event(%{steps: steps} = _ctx, step_id, opts) do
-    op = %UnhashedOp{name: step_id, op: "WaitForEvent"}
+    op = %UnhashedOp{id: step_id, op: "WaitForEvent"}
     hashed_id = UnhashedOp.hash(op)
 
     if steps |> Map.has_key?(hashed_id) do
@@ -118,7 +118,7 @@ defmodule Inngest.StepTool do
   end
 
   def send_event(%{steps: steps} = _ctx, step_id, events) do
-    op = %UnhashedOp{name: step_id, op: "Step"}
+    op = %UnhashedOp{id: step_id, op: "Step"}
     hashed_id = UnhashedOp.hash(op)
 
     case Map.get(steps, hashed_id) do

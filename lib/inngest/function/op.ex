@@ -1,11 +1,10 @@
 defmodule Inngest.Function.UnhashedOp do
   @moduledoc false
 
-  defstruct [:id, :name, :op, pos: 0, opts: %{}]
+  defstruct [:id, :op, pos: 0, opts: %{}]
 
   @type t() :: %__MODULE__{
           id: binary(),
-          name: binary(),
           op: binary(),
           pos: number(),
           opts: map()
