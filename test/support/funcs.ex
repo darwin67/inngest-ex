@@ -2,7 +2,6 @@ defmodule Inngest.TestEventFn do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "test-event", name: "App / Email: Awesome Event Func"}
   @trigger %Trigger{event: "my/awesome.event"}
@@ -91,7 +90,6 @@ defmodule Inngest.TestCronFn do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "test-cron", name: "Awesome Cron Func"}
   @trigger %Trigger{cron: "TZ=America/Los_Angeles * * * * *"}

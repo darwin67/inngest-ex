@@ -2,7 +2,7 @@ defmodule Inngest.Test.Case.RetriableError do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger, RetryAfterError}
+  alias Inngest.RetryAfterError
 
   @func %FnOpts{id: "retriable-fn", name: "Retriable Function", retries: 2}
   @trigger %Trigger{event: "test/plug.retriable"}

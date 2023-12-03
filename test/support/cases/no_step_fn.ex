@@ -2,7 +2,6 @@ defmodule Inngest.Test.Case.NoStepFn do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "no-step-fn", name: "No Step Function"}
   @trigger %Trigger{event: "test/plug.no-step"}

@@ -42,7 +42,6 @@ To handle the error event, you can add a method in your `Inngest.Function` modul
 ```
 defmodule MyApp.Inngest.SomeJob do
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "my-func", name: "some job"}
   @trigger %Trigger{event: "job/foobar"}

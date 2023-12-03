@@ -2,7 +2,6 @@ defmodule Inngest.Test.Case.SleepFn do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "sleep-fn", name: "Sleep Function"}
   @trigger %Trigger{event: "test/plug.sleep"}

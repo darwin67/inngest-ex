@@ -2,7 +2,6 @@ defmodule Inngest.Test.Case.BatchFn do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{
     id: "batch-fn",

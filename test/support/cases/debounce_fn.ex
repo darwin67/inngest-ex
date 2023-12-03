@@ -2,7 +2,6 @@ defmodule Inngest.Test.Case.DebounceFn do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{
     id: "debounce-fn",
@@ -25,7 +24,6 @@ defmodule Inngest.Test.Case.DebounceWithKeyFn do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{
     id: "debounce-fn-with-key",

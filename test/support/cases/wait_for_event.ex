@@ -2,7 +2,6 @@ defmodule Inngest.Test.Case.WaitForEventFn do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "wait-for-event-fn", name: "Wait for Event Function"}
   @trigger %Trigger{event: "test/plug.wait-for-event"}

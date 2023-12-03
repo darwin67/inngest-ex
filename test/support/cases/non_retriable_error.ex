@@ -2,7 +2,6 @@ defmodule Inngest.Test.Case.NonRetriableError do
   @moduledoc false
 
   use Inngest.Function
-  alias Inngest.{FnOpts, Trigger}
 
   @func %FnOpts{id: "non-retry-fn", name: "Non Retriable Function"}
   @trigger %Trigger{event: "test/plug.no-retry"}
