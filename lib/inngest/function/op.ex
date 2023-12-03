@@ -11,9 +11,8 @@ defmodule Inngest.Function.UnhashedOp do
         }
 
   @spec hash(t()) :: binary()
-  def hash(unhashedop) do
-    data = Map.from_struct(unhashedop) |> Jason.encode!()
-    :crypto.hash(:sha, data) |> Base.encode16()
+  def hash(%{id: id} = _op) do
+    :crypto.hash(:sha, id) |> Base.encode16()
   end
 end
 
