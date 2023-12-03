@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### Bug Fixes
+
+- Fix: add additional restrictions when using batching (#72)
+
 ### Documentation
 
 - Docs: Update docs to prepare for 0.2 release (#62)
@@ -18,6 +22,9 @@ All notable changes to this project will be documented in this file.
 - Feat: support batching (#66)
 - Feat: rate limit support (#67)
 - Feat: concurrency support (#68)
+- Feat: idempotency support (#69)
+- Feat: cancel on support (#70)
+- Feat: priority support (#71)
 
 ### Miscellaneous Tasks
 
