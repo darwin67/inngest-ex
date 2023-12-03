@@ -51,10 +51,8 @@ end
 
 defimpl Jason.Encoder, for: Inngest.Function.GeneratorOpCode do
   def encode(value, opts) do
-    value =
-      value
-      |> Map.put(:displayName, Map.get(value, :display_name))
-
-    Jason.Encode.map(value, opts)
+    value
+    |> Map.put(:displayName, Map.get(value, :display_name))
+    |> Jason.Encode.map(opts)
   end
 end
