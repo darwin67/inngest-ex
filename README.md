@@ -1,7 +1,3 @@
-## Notice
-
-This is the README for `main` branch, which is for pre `0.2.0` release.
-
 <!-- MDOC ! -->
 
 <div align="center">
@@ -41,7 +37,7 @@ to your list of dependencies in `mix.exs`
 # mix.exs
 def deps do
   [
-    {:inngest, git: "https://github.com/inngest/ex_inngest.git", branch: "main"}
+    {:inngest, "~> 0.2"}
   ]
 end
 ```

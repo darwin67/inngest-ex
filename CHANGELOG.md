@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.2.0] - 2023-12-04
 
 ### Bug Fixes
 
@@ -31,6 +31,7 @@ All notable changes to this project will be documented in this file.
 - Chore: update ci.yml
 - Chore: Clean up (#60)
 - Chore: Integration tests (#61)
+- Chore: update hashing method for steps (#75)
 
 ## [0.1.9] - 2023-08-01
 
