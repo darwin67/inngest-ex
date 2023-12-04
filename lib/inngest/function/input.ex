@@ -29,14 +29,15 @@ defmodule Inngest.Function.Context do
   defstruct [
     :attempt,
     :run_id,
-    :stack,
+    # ETS table
+    :index,
     steps: %{}
   ]
 
   @type t() :: %__MODULE__{
           attempt: number(),
           run_id: binary(),
-          stack: map(),
+          index: :ets.tid(),
           steps: map()
         }
 end
