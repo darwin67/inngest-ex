@@ -54,7 +54,7 @@ defmodule Inngest.Function do
   Optional timezone prefix, e.g. `TZ=Europe/Paris 0 12 * * 5`.
   """
   alias Inngest.{Config, Trigger}
-  alias Inngest.Function.{Context, Input, Step}
+  alias Inngest.Function.{Context, Input}
 
   @doc """
   Returns the function's human-readable ID, such as "sign-up-flow"
