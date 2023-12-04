@@ -77,6 +77,7 @@ defmodule Inngest.Router.Invoke do
     conn
     |> put_resp_content_type(@content_type)
     |> put_resp_header(Headers.sdk_version(), Config.sdk_version())
+    |> put_resp_header(Headers.req_version(), Config.req_version())
     |> SdkResponse.maybe_retry_header(resp)
     |> send_resp(resp.status, resp.body)
     |> halt()

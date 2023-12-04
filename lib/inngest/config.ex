@@ -144,4 +144,7 @@ defmodule Inngest.Config do
 
   @spec sdk_version() :: binary()
   def sdk_version(), do: "elixir:v#{version()}"
+
+  @spec req_version() :: number()
+  def req_version(), do: "1"
 end
