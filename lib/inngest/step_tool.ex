@@ -8,8 +8,8 @@ defmodule Inngest.StepTool do
   @type datetime() :: binary() | DateTime.t() | Date.t() | NaiveDateTime.t()
 
   @spec run(Context.t(), id(), fun()) :: any()
-  def run(%{steps: steps} = _ctx, step_id, func) do
-    op = %UnhashedOp{id: step_id, op: "Step"}
+  def run(%{steps: steps} = ctx, step_id, func) do
+    op = UnhashedOp.new(ctx, "Step", step_id) |> IO.inspect()
     hashed_id = UnhashedOp.hash(op)
 
     # check for hash

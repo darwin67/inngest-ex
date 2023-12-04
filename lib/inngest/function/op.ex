@@ -12,26 +12,30 @@ defmodule Inngest.Function.UnhashedOp do
           opts: map()
         }
 
-  # TODO: try using ETS tables
-  # probably need to be on function starts
-  @spec new(Context.t(), t()) :: t()
-  def new(%{steps: steps} = ctx, %{id: id, pos: pos} = op) do
-    id = if pos > 0, do: "#{id}:#{pos}", else: id
-    hash = :crypto.hash(:sha, id) |> Base.encode16()
+  @doc """
+  Generate a new unhashed op to represent a step
+  """
+  @spec new(Context.t(), binary(), binary(), map()) :: t()
+  def new(%{steps: _steps, index: table} = _ctx, op, id, opts \\ %{}) do
+    idx =
+      case :ets.lookup(table, id) do
+        [] ->
+          :ets.insert(table, {id, 0})
+          0
 
-    case Map.get(steps, hash) do
-      nil -> op
-      _ -> new(ctx, %{op | pos: pos + 1})
-    end
+        [{_id, n}] ->
+          n = n + 1
+          :ets.insert(table, {id, n})
+          n
+      end
+
+    %__MODULE__{id: id, op: op, pos: idx, opts: opts}
   end
 
   @spec hash(t()) :: binary()
-  def hash(%{id: id, pos: 0} = _op) do
-    :crypto.hash(:sha, id) |> Base.encode16()
-  end
-
   def hash(%{id: id, pos: pos} = _op) do
-    :crypto.hash(:sha, "#{id}:#{pos}") |> Base.encode16()
+    key = if pos > 0, do: "#{id}:#{pos}", else: id
+    :crypto.hash(:sha, key) |> Base.encode16()
   end
 end
 
