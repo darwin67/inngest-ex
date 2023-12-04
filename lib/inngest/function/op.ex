@@ -16,7 +16,7 @@ defmodule Inngest.Function.UnhashedOp do
   Generate a new unhashed op to represent a step
   """
   @spec new(Context.t(), binary(), binary(), map()) :: t()
-  def new(%{steps: _steps, index: table} = _ctx, op, id, opts \\ %{}) do
+  def new(%{index: table} = _ctx, op, id, opts \\ %{}) do
     idx =
       case :ets.lookup(table, id) do
         [] ->
