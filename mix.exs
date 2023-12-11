@@ -74,7 +74,7 @@ defmodule Inngest.MixProject do
       maintainers: ["Inngest Engineering<eng@inngest.com>"],
       licenses: ["GPL-3.0-or-later"],
       links: %{github: "https://github.com/inngest/ex_inngest"},
-      files: ~w(lib mix.exs README.md LICENSE VERSION CHANGELOG.md)
+      files: ~w(lib mix.exs README.md LICENSE.md VERSION CHANGELOG.md)
     ]
   end
 
