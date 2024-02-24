@@ -22,7 +22,7 @@ jobs:
         # NOTE: best effort coverage
         # https://hexdocs.pm/elixir/compatibility-and-deprecations.html#compatibility-between-elixir-and-erlang-otp
         elixir: ["1.15", "1.16"]
-        otp: ["24.3", "25.3", "26.2"]
+        otp: ["24.3", "25.3"]
 
     steps:
       - uses: actions/checkout@v3
