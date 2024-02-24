@@ -4,7 +4,7 @@ defmodule Inngest.Function.Cases.RetriableTest do
   alias Inngest.Test.DevServer
   import Inngest.Test.Helper
 
-  @default_sleep 10_000
+  @default_sleep 20_000
   @event_name "test/plug.retriable"
 
   @tag :integration
