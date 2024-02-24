@@ -17,10 +17,7 @@ defmodule Inngest.Function.Cases.RetriableTest do
               "data" => [
                 %{
                   "run_id" => _run_id,
-                  "output" => %{
-                    "error" => "invalid status code: 500",
-                    "message" => stacktrace
-                  },
+                  "output" => stacktrace,
                   "status" => "Failed"
                 }
               ]
