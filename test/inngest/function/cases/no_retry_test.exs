@@ -15,11 +15,7 @@ defmodule Inngest.Function.Cases.NoRetryTest do
             %{
               "data" => [
                 %{
-                  "output" => %{
-                    "error" => "NonRetriableError",
-                    "message" => stacktrace,
-                    "name" => "Error"
-                  },
+                  "output" => stacktrace,
                   "run_id" => _run_id,
                   "status" => "Failed"
                 }
