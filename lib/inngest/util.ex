@@ -27,4 +27,15 @@ defmodule Inngest.Util do
   def day_in_seconds(), do: 60 * 60 * 24
   def hour_in_seconds(), do: 60 * 60
   def minute_in_seconds(), do: 60
+
+  def slugify(text) when is_binary(text) do
+    text
+    |> String.downcase()
+    |> String.trim()
+    |> String.normalize(:nfd)
+    |> String.replace(~r/[^a-z0-9\s-]/u, "  ")
+    |> String.replace(~r/[\s-]+/, "-", global: true)
+  end
+
+  def slugify(_), do: ""
 end

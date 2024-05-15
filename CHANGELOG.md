@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2024-05-15
+
+### Bug Fixes
+
+- Fix: remove test application from mod
+
+### Miscellaneous Tasks
+
+- Chore: update license to Apache2 (#76)
+- Chore: make sure slug is compatible with the latest spec
+
 ## [0.2.0] - 2023-12-04
 
 ### Bug Fixes

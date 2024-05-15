@@ -91,8 +91,8 @@ defmodule Inngest.Function do
 
       @impl true
       def slug() do
-        fn_opts()
-        |> Map.get(:id)
+        fnid = fn_opts() |> Map.get(:id)
+        Inngest.Util.slugify(Config.app_name() <> "-" <> fnid)
       end
 
       @impl true

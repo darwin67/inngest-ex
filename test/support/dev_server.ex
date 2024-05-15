@@ -49,6 +49,7 @@ defmodule Inngest.Test.DevServer do
   defp client() do
     middleware = [
       {Tesla.Middleware.BaseUrl, @base_url},
+      {Tesla.Middleware.Headers, [{"cache-control", "no-cache"}]},
       Tesla.Middleware.JSON
     ]
 
