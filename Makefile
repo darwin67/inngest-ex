@@ -44,6 +44,10 @@ docs:
 
 .PHONY: changelog
 changelog:
+	git cliff -o CHANGELOG.md
+
+.PHONY: bump
+bump:
 	git cliff --bump -o CHANGELOG.md
 
 .PHONY: inngest-dev
