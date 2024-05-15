@@ -27,7 +27,7 @@ defmodule Inngest.Function.Cases.RetriableTest do
 
     {:ok, %{"data" => events}} = DevServer.list_events()
 
-    assert %{"id" => failed_id} =
+    assert %{"internal_id" => failed_id} =
              events
              |> Enum.find(fn evt ->
                Map.get(evt, "name") == "inngest/function.failed" &&
