@@ -7,7 +7,7 @@ defmodule Inngest.FunctionTest do
 
   describe "slug/0" do
     test "return name of function as slug" do
-      assert "test-event" == TestEventFn.slug()
+      assert "inngestapp-test-event" == TestEventFn.slug()
     end
   end
 
@@ -31,7 +31,7 @@ defmodule Inngest.FunctionTest do
     test "event function should return approprivate map" do
       assert [
                %{
-                 id: "test-event",
+                 id: "inngestapp-test-event",
                  name: "App / Email: Awesome Event Func",
                  triggers: [
                    %Trigger{event: "my/awesome.event"}
@@ -56,7 +56,7 @@ defmodule Inngest.FunctionTest do
     test "cron function should return appropriate map" do
       assert [
                %{
-                 id: "test-cron",
+                 id: "inngestapp-test-cron",
                  name: "Awesome Cron Func",
                  triggers: [
                    %Trigger{cron: "TZ=America/Los_Angeles * * * * *"}
