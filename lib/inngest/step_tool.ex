@@ -151,6 +151,15 @@ defmodule Inngest.StepTool do
           opts: generator_otps
         })
 
+      %{
+        "error" => %{
+          "name" => "InngestInvokeTimeoutError",
+          "error" => message,
+          "message" => _
+        }
+      } ->
+        raise Inngest.NonRetriableError, message: message
+
       # return value if found
       val ->
         val
