@@ -14,7 +14,7 @@ defmodule Inngest.Test.Case.InvokeCallerFn do
       step.invoke(ctx, "caller", %{
         function: Inngest.Test.Case.InvokedFn,
         data: %{yolo: true},
-        timeout: "5m"
+        timeout: "10s"
       })
 
     {:ok, res}
