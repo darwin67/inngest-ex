@@ -130,19 +130,17 @@ defmodule Inngest.StepTool do
         v = Map.get(opts, :v)
 
         generator_otps =
-          cond do
-            Map.has_key?(opts, :timeout) ->
-              %{
-                function_id: func.slug(),
-                payload: %{data: data, v: v},
-                timeout: timeout
-              }
-
-            true ->
-              %{
-                function_id: func.slug(),
-                payload: %{data: data, v: v}
-              }
+          if Map.has_key?(opts, :timeout) do
+            %{
+              function_id: func.slug(),
+              payload: %{data: data, v: v},
+              timeout: timeout
+            }
+          else
+            %{
+              function_id: func.slug(),
+              payload: %{data: data, v: v}
+            }
           end
 
         throw(%GeneratorOpCode{
