@@ -11,7 +11,7 @@ defmodule Inngest.Test.Case.InvokeCallerFn do
     _ = step.run(ctx, "step-1", fn -> %{hello: "world"} end)
 
     res =
-      step.invoke(ctx, %{
+      step.invoke(ctx, "caller", %{
         function: Inngest.Test.Case.InvokedFn,
         data: %{yolo: true},
         timeout: "5m"

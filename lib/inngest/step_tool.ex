@@ -117,6 +117,48 @@ defmodule Inngest.StepTool do
     end
   end
 
+  @spec invoke(Context.t(), binary(), map()) :: map()
+  def invoke(%{steps: steps} = ctx, step_id, opts) do
+    op = UnhashedOp.new(ctx, "InvokeFunction", step_id, opts)
+    hashed_id = UnhashedOp.hash(op)
+
+    case Map.get(steps, hashed_id) do
+      nil ->
+        func = Map.get(opts, :function)
+        data = Map.get(opts, :data)
+        timeout = Map.get(opts, :timeout)
+        v = Map.get(opts, :v)
+
+        generator_otps =
+          cond do
+            Map.has_key?(opts, :timeout) ->
+              %{
+                function_id: func.slug(),
+                payload: %{data: data, v: v},
+                timeout: timeout
+              }
+
+            true ->
+              %{
+                function_id: func.slug(),
+                payload: %{data: data, v: v}
+              }
+          end
+
+        throw(%GeneratorOpCode{
+          id: hashed_id,
+          name: step_id,
+          display_name: step_id,
+          op: op.op,
+          opts: generator_otps
+        })
+
+      # return value if found
+      val ->
+        val
+    end
+  end
+
   def send_event(%{steps: steps} = ctx, step_id, events) do
     op = UnhashedOp.new(ctx, "Step", step_id)
     hashed_id = UnhashedOp.hash(op)
