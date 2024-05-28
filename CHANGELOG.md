@@ -4,9 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### Features
+
+- Feat: Add support for invoke
+
 ### Miscellaneous Tasks
 
-- Chore: replace nix shell with flake
+- Chore: replace nix shell with flake (#81)
 
 ## [0.2.1] - 2024-05-15
 
