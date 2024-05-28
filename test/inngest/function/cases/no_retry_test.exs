@@ -15,13 +15,17 @@ defmodule Inngest.Function.Cases.NoRetryTest do
             %{
               "data" => [
                 %{
-                  "output" => stacktrace,
+                  "output" => %{
+                    "message" => message,
+                    "name" => "Elixir.Inngest.NonRetriableError",
+                    "stack" => _
+                  },
                   "run_id" => _run_id,
                   "status" => "Failed"
                 }
               ]
             }} = DevServer.run_ids(event_id)
 
-    assert stacktrace =~ "not retrying!"
+    assert message == "not retrying!"
   end
 end

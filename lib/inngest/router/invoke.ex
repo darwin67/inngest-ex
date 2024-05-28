@@ -97,7 +97,7 @@ defmodule Inngest.Router.Invoke do
       retry in Inngest.RetryAfterError ->
         delay = Map.get(retry, :seconds)
 
-        SdkResponse.from_result({:error, retry.message},
+        SdkResponse.from_result({:error, retry},
           retry: delay,
           stacktrace: __STACKTRACE__
         )

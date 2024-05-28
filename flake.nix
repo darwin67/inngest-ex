@@ -14,6 +14,7 @@
           nativeBuildInputs = with pkgs; [
             elixir
             erlang_27
+            nodejs_18 # need this to install inngest-cli for now
 
             # LSPs
             elixir-ls

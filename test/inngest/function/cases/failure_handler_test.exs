@@ -17,13 +17,17 @@ defmodule Inngest.Function.Cases.RetriableTest do
               "data" => [
                 %{
                   "run_id" => _run_id,
-                  "output" => stacktrace,
+                  "output" => %{
+                    "message" => message,
+                    "name" => "Elixir.Inngest.RetryAfterError",
+                    "stack" => _
+                  },
                   "status" => "Failed"
                 }
               ]
             }} = DevServer.run_ids(event_id)
 
-    assert stacktrace =~ "YOLO!!!"
+    assert message == "YOLO!!!"
 
     {:ok, %{"data" => events}} = DevServer.list_events()
 
