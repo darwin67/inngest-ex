@@ -54,7 +54,8 @@ defmodule Inngest.SdkResponse do
     status = if retry, do: 500, else: 400
 
     encoded =
-      case Exception.format(:error, error, stacktrace) |> Jason.encode() do
+      case %Inngest.Error{error: error, stack: stacktrace}
+           |> Jason.encode() do
         {:ok, encoded} -> encoded
         {:error, _} -> "Failed to encode error: #{error}"
       end

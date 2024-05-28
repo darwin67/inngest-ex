@@ -1,3 +1,22 @@
+defmodule Inngest.Error do
+  @moduledoc """
+  A generic Inngest Error.
+  Used to format errors into a structure that can be parsed by the UI
+  """
+
+  defstruct [:error, stack: nil]
+end
+
+defimpl Jason.Encoder, for: Inngest.Error do
+  def encode(value, opts) do
+    error = Map.get(value, :error)
+    stacktrace = Exception.format(:error, error, Map.get(value, :stack))
+
+    %{name: error.__struct__, message: error.message, stack: stacktrace}
+    |> Jason.Encode.map(opts)
+  end
+end
+
 defmodule Inngest.NonRetriableError do
   @moduledoc """
   Error signaling to not retry
