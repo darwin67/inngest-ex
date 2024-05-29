@@ -12,23 +12,34 @@ defmodule Inngest.Middleware do
           | [opts]
           | map()
 
-  @callback init(opts) :: opts
+  @type input_args :: %{
+          ctx: %{event: map(), run_id: binary()},
+          steps: map()
+        }
 
-  @callback transform_input(map(), opts) :: map()
+  @type input_ret :: %{
+          ctx: any(),
+          steps: map()
+        }
 
-  @callback before_memoization(map(), opts) :: map()
+  @type output_args :: %{
+          result: any(),
+          step: any() | nil
+        }
 
-  @callback after_memoization(map(), opts) :: map()
+  @type output_ret :: %{
+          result: %{data: any()}
+        }
 
-  @callback before_execution(map(), opts) :: map()
+  @callback name() :: binary()
 
-  @callback after_execution(map(), opts) :: map()
+  @callback init() :: opts
 
-  @callback transform_output(map(), opts) :: map()
+  @callback transform_input(input_args, opts) :: map()
 
-  @callback before_response(map(), opts) :: map()
+  @callback before_execution(opts) :: :ok
 
-  @callback before_send_events(map(), opts) :: map()
+  @callback after_execution(opts) :: :ok
 
-  @callback after_send_events(map(), opts) :: map()
+  @callback transform_output(output_args, opts) :: output_ret
 end
