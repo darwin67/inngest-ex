@@ -27,8 +27,6 @@ defmodule Inngest.Function.Context do
   """
 
   defstruct [
-    :attempt,
-    :run_id,
     :middleware,
     # ETS table
     :index,
@@ -36,8 +34,6 @@ defmodule Inngest.Function.Context do
   ]
 
   @type t() :: %__MODULE__{
-          attempt: number(),
-          run_id: binary(),
           index: :ets.tid(),
           steps: map(),
           middleware: map()

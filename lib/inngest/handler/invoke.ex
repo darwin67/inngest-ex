@@ -54,9 +54,7 @@ defmodule Inngest.Router.Invoke do
         {mid.name(), %{opts: opts, mid: mid}}
       end)
 
-    ctx = %Inngest.Function.Context{
-      attempt: Map.get(ctx, "attempt", 0),
-      run_id: Map.get(ctx, "run_id"),
+    fnctx = %Inngest.Function.Context{
       steps: Map.get(params, "steps"),
       middleware: middleware,
       index: :ets.new(:index, [:set, :private])
@@ -73,12 +71,12 @@ defmodule Inngest.Router.Invoke do
     resp =
       case Config.is_dev() do
         true ->
-          invoke(func, ctx, input)
+          invoke(func, fnctx, input)
 
         false ->
           with sig <- conn |> Plug.Conn.get_req_header(Headers.signature()) |> List.first(),
                true <- Signature.signing_key_valid?(sig, Config.signing_key(), body) do
-            invoke(func, ctx, input)
+            invoke(func, fnctx, input)
           else
             _ ->
               SdkResponse.from_result({:error, "unable to verify signature"}, retry: false)
