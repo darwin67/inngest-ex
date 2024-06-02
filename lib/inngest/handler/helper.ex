@@ -12,6 +12,15 @@ defmodule Inngest.Router.Helper do
     end
   end
 
+  def load_middleware(params) do
+    if Config.path_runtime_eval() do
+      %{middleware: middleware} = load_middleware_from_path(params)
+      middleware
+    else
+      Map.get(params, :middleware, [])
+    end
+  end
+
   @spec load_functions_from_path(map()) :: map()
   def load_functions_from_path(%{path: paths} = kv) when is_list(paths) do
     modules =
@@ -20,6 +29,28 @@ defmodule Inngest.Router.Helper do
       |> List.flatten()
       |> Stream.filter(&(!File.dir?(&1)))
       |> Enum.uniq()
+      |> extract_modules()
+
+    Map.put(kv, :funcs, modules)
+  end
+
+  def load_functions_from_path(%{functions: funcs} = kv) when is_list(funcs) do
+    modules =
+      funcs
+      |> Enum.map(&Path.wildcard/1)
+      |> List.flatten()
+      |> Stream.filter(&(!File.dir?(&1)))
+      |> Enum.uniq()
+      |> extract_modules()
+
+    Map.put(kv, :funcs, modules)
+  end
+
+  def load_functions_from_path(%{functions: funcs} = kv) when is_binary(funcs) do
+    modules =
+      funcs
+      |> Path.wildcard()
+      |> Enum.filter(&(!File.dir?(&1)))
       |> extract_modules()
 
     Map.put(kv, :funcs, modules)
@@ -36,6 +67,22 @@ defmodule Inngest.Router.Helper do
   end
 
   def load_functions_from_path(kv), do: kv
+
+  @spec load_middleware_from_path(map()) :: map()
+  def load_middleware_from_path(%{middleware: middleware} = kv) when is_list(middleware) do
+    # modules =
+    #   middleware
+    #   |> IO.inspect()
+    #   |> Enum.map(&Path.wildcard/1)
+    #   |> List.flatten()
+    #   |> Stream.filter(&(!File.dir?(&1)))
+    #   |> Enum.uniq()
+    #   |> extract_modules()
+
+    Map.put(kv, :middleware, middleware)
+  end
+
+  def load_middleware_from_path(kv), do: kv
 
   defp extract_modules(files) do
     files

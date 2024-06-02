@@ -22,6 +22,7 @@ defmodule Inngest.Router.Plug do
       end
       |> Enum.into(%{})
       |> Inngest.Router.Helper.load_functions_from_path()
+      |> Inngest.Router.Helper.load_middleware_from_path()
       |> Map.put(:framework, @framework)
       |> Macro.escape()
 
