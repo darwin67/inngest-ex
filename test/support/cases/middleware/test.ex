@@ -4,7 +4,7 @@ defmodule Inngest.Test.Case.Middleware.Test do
   @behaviour Inngest.Middleware
 
   @impl true
-  def init(), do: []
+  def init(_), do: []
 
   @impl true
   def name(), do: "test"

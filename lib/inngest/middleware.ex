@@ -33,9 +33,12 @@ defmodule Inngest.Middleware do
 
   @callback name() :: binary()
 
-  @callback init() :: opts
+  # NOTE: what to make available on init?
+  @callback init(opts) :: opts
 
   @callback transform_input(input_args, opts) :: input_ret
+
+  @callback transform_output(output_args, opts) :: output_ret
 
   @callback before_memoization(opts) :: :ok
 
@@ -45,5 +48,10 @@ defmodule Inngest.Middleware do
 
   @callback after_execution(opts) :: :ok
 
-  @callback transform_output(output_args, opts) :: output_ret
+  @optional_callbacks transform_input: 2,
+                      transform_output: 2,
+                      before_memoization: 1,
+                      after_memoization: 1,
+                      before_execution: 1,
+                      after_execution: 1
 end
