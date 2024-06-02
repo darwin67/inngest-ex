@@ -25,6 +25,28 @@ defmodule Inngest.Router.Helper do
     Map.put(kv, :funcs, modules)
   end
 
+  def load_functions_from_path(%{functions: funcs} = kv) when is_list(funcs) do
+    modules =
+      funcs
+      |> Enum.map(&Path.wildcard/1)
+      |> List.flatten()
+      |> Stream.filter(&(!File.dir?(&1)))
+      |> Enum.uniq()
+      |> extract_modules()
+
+    Map.put(kv, :funcs, modules)
+  end
+
+  def load_functions_from_path(%{functions: funcs} = kv) when is_binary(funcs) do
+    modules =
+      funcs
+      |> Path.wildcard()
+      |> Enum.filter(&(!File.dir?(&1)))
+      |> extract_modules()
+
+    Map.put(kv, :funcs, modules)
+  end
+
   def load_functions_from_path(%{path: path} = kv) when is_binary(path) do
     modules =
       path
