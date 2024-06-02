@@ -25,7 +25,12 @@ defmodule Inngest.Test.PlugRouter do
     |> send_resp(200, data)
   end
 
-  inngest("/api/inngest", path: "test/support/cases/*")
+  inngest("/api/inngest",
+    functions: "test/support/cases/*",
+    middleware: [
+      Inngest.Test.Case.Middleware.Test
+    ]
+  )
 
   match _ do
     send_resp(conn, 404, "oops\n")
