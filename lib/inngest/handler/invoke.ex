@@ -45,10 +45,20 @@ defmodule Inngest.Router.Invoke do
         Enum.member?(func.slugs(), fn_slug)
       end)
 
+    # Initialize middlewares
+    middleware =
+      params
+      |> load_middleware()
+      |> Enum.into(%{}, fn mid ->
+        opts = mid.init()
+        {mid.name(), %{opts: opts, mid: mid}}
+      end)
+
     ctx = %Inngest.Function.Context{
       attempt: Map.get(ctx, "attempt", 0),
       run_id: Map.get(ctx, "run_id"),
       steps: Map.get(params, "steps"),
+      middleware: middleware,
       index: :ets.new(:index, [:set, :private])
     }
 
