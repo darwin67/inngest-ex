@@ -12,6 +12,12 @@ defmodule Inngest.Middleware do
           | [opts]
           | map()
 
+  @type init_args :: %{
+          input: Inngest.Function.Input,
+          func: Inngest.Function,
+          steps: list(map())
+        }
+
   @type input_args :: %{
           ctx: Inngest.Function.Input,
           steps: list(map())
@@ -34,7 +40,7 @@ defmodule Inngest.Middleware do
   @callback name() :: binary()
 
   # NOTE: what to make available on init?
-  @callback init(opts) :: opts
+  @callback init(init_args) :: opts
 
   @callback transform_input(input_args, opts) :: input_ret
 

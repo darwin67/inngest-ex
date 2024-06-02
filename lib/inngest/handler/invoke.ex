@@ -38,6 +38,27 @@ defmodule Inngest.Router.Invoke do
          %{private: %{raw_body: [body]}} = conn,
          %{"event" => event, "events" => events, "ctx" => ctx, "fnId" => fn_slug} = params
        ) do
+    input = %Inngest.Function.Input{
+      attempt: Map.get(ctx, "attempt", 0),
+      event: Inngest.Event.from(event),
+      events: Enum.map(events, &Inngest.Event.from/1),
+      run_id: Map.get(ctx, "run_id"),
+      step: Inngest.StepTool
+    }
+
+    # prepare steps to be passed into middlewares
+    steps =
+      case get_in(params, ["ctx", "stack", "stack"]) do
+        nil ->
+          []
+
+        stack ->
+          Enum.into(stack, [], fn hash ->
+            data = get_in(params, ["steps", hash])
+            %{id: hash, data: data}
+          end)
+      end
+
     func =
       params
       |> load_functions()
@@ -50,22 +71,25 @@ defmodule Inngest.Router.Invoke do
       params
       |> load_middleware()
       |> Enum.into(%{}, fn mid ->
-        opts = mid.init()
+        arg = %{input: input, func: func, steps: steps}
+        opts = mid.init(arg)
         {mid.name(), %{opts: opts, mid: mid}}
       end)
 
+    # Transform inputs
+    steps =
+      steps
+      # TODO: Apply each middleware to the step data
+      # |> Stream.map(fn step ->
+      # end)
+      |> Enum.into(%{}, fn %{id: id, data: data} ->
+        {id, data}
+      end)
+
     fnctx = %Inngest.Function.Context{
-      steps: Map.get(params, "steps"),
+      steps: steps,
       middleware: middleware,
       index: :ets.new(:index, [:set, :private])
-    }
-
-    input = %Inngest.Function.Input{
-      attempt: Map.get(ctx, "attempt", 0),
-      event: Inngest.Event.from(event),
-      events: Enum.map(events, &Inngest.Event.from/1),
-      run_id: Map.get(ctx, "run_id"),
-      step: Inngest.StepTool
     }
 
     resp =
