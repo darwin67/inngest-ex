@@ -40,7 +40,7 @@ clean:
 
 .PHONY: docs
 docs:
-	mix docs --open
+	mix docs -f html --open
 
 .PHONY: changelog
 changelog:
