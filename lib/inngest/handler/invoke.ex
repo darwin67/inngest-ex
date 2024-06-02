@@ -53,6 +53,7 @@ defmodule Inngest.Router.Invoke do
     }
 
     input = %Inngest.Function.Input{
+      attempt: Map.get(ctx, "attempt", 0),
       event: Inngest.Event.from(event),
       events: Enum.map(events, &Inngest.Event.from/1),
       run_id: Map.get(ctx, "run_id"),

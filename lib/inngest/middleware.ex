@@ -13,18 +13,18 @@ defmodule Inngest.Middleware do
           | map()
 
   @type input_args :: %{
-          ctx: %{event: map(), run_id: binary()},
-          steps: map()
+          ctx: Inngest.Function.Input,
+          steps: list(map())
         }
 
   @type input_ret :: %{
-          ctx: any(),
-          steps: map()
+          ctx: Inngest.Function.Input,
+          steps: list(map())
         }
 
   @type output_args :: %{
-          result: any(),
-          step: any() | nil
+          result: %{data: any()},
+          step: Inngest.GeneratorOpCode.t() | nil
         }
 
   @type output_ret :: %{
@@ -35,7 +35,11 @@ defmodule Inngest.Middleware do
 
   @callback init() :: opts
 
-  @callback transform_input(input_args, opts) :: map()
+  @callback transform_input(input_args, opts) :: input_ret
+
+  @callback before_memoization(opts) :: :ok
+
+  @callback after_memoization(opts) :: :ok
 
   @callback before_execution(opts) :: :ok
 
