@@ -7,8 +7,6 @@ on:
 
 env:
   MIX_ENV: test
-  ELIXIR_VERSION: &elixir_version "1.20"
-  OTP_VERSION: &otp_version "28.0"
 
 permissions:
   pull-requests: read
@@ -16,60 +14,37 @@ permissions:
 
 jobs:
   test:
-    name: Unit Test (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
+    name: Unit Test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # https://hexdocs.pm/elixir/compatibility-and-deprecations.html#compatibility-between-elixir-and-erlang-otp
-          - elixir: "1.17"
-            otp: "27.3"
-          - elixir: "1.18"
-            otp: "27.3"
-          - elixir: "1.19"
-            otp: "28.0"
-          - elixir: *elixir_version
-            otp: *otp_version
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Elixir
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: ${{ matrix.otp }}
-          elixir-version: ${{ matrix.elixir }}
+      - uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Initialize Nix dev shell
+        run: nix develop -c true
 
       - name: Dependency cache
         uses: actions/cache@v3
         with:
           path: |
             deps
-            # _build
-          key: mix-test-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+            _build
+          key: mix-test-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
           restore-keys: |
-            mix-test-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
-            mix-test-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
+            mix-test-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
+            mix-test-${{ runner.os }}-
             mix-test-
 
       - name: Install dependencies
-        run: make deps
+        run: nix develop -c make deps
 
       - name: Build
-        run: make build
+        run: nix develop -c make build
 
-      - name: Run unit tests with coverage
-        run: mix coveralls.json
-        env:
-          MIX_ENV: test
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          UNIT: "true"
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Run unit tests
+        run: nix develop -c make unit-test
 
   e2e:
     name: E2E Test
@@ -112,11 +87,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Elixir
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: ${{ env.OTP_VERSION }}
-          elixir-version: ${{ env.ELIXIR_VERSION }}
+      - uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Initialize Nix dev shell
+        run: nix develop -c true
 
       - name: Dependency cache
         uses: actions/cache@v3
@@ -124,17 +98,17 @@ jobs:
           path: |
             deps
             _build
-          key: mix-fmt-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+          key: mix-fmt-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
           restore-keys: |
-            mix-fmt-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+            mix-fmt-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
             mix-fmt-${{ runner.os }}-
             mix-fmt-
 
       - name: Install dependencies
-        run: make deps
+        run: nix develop -c make deps
 
       - name: Run Formatter
-        run: make fmt
+        run: nix develop -c make fmt
 
   linter:
     name: Linter
@@ -143,11 +117,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Elixir
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: ${{ env.OTP_VERSION }}
-          elixir-version: ${{ env.ELIXIR_VERSION }}
+      - uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Initialize Nix dev shell
+        run: nix develop -c true
 
       - name: Dependency cache
         uses: actions/cache@v3
@@ -155,17 +128,17 @@ jobs:
           path: |
             deps
             _build
-          key: mix-lint-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+          key: mix-lint-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
           restore-keys: |
-            mix-lint-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+            mix-lint-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
             mix-lint-${{ runner.os }}-
             mix-lint-
 
       - name: Install dependencies
-        run: make deps
+        run: nix develop -c make deps
 
       - name: Run Linter
-        run: make lint
+        run: nix develop -c make lint
 
   dialyzer:
     name: Dialyzer
@@ -176,11 +149,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Elixir
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: ${{ env.OTP_VERSION }}
-          elixir-version: ${{ env.ELIXIR_VERSION }}
+      - uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Initialize Nix dev shell
+        run: nix develop -c true
 
       - name: Dependency cache
         uses: actions/cache@v3
@@ -188,14 +160,14 @@ jobs:
           path: |
             deps
             _build
-          key: mix-dialyzer-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+          key: mix-dialyzer-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
           restore-keys: |
-            mix-dialyzer-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+            mix-dialyzer-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
             mix-dialyzer-${{ runner.os }}-
             mix-dialyzer-
 
       - name: Install dependencies
-        run: make deps
+        run: nix develop -c make deps
 
       - name: Run Dialyzer
-        run: make dialyzer
+        run: nix develop -c make dialyzer
