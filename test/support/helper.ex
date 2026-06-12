@@ -2,6 +2,8 @@ defmodule Inngest.Test.Helper do
   @moduledoc false
 
   alias Inngest
+  @send_retries 50
+  @send_retry_interval 100
 
   @spec send_test_event(binary()) :: binary()
   def send_test_event(event) do
@@ -9,7 +11,7 @@ defmodule Inngest.Test.Helper do
      %{
        "ids" => [event_id],
        "status" => 200
-     }} = Inngest.send(%Inngest.Event{name: event, data: %{}})
+     }} = send_event(%Inngest.Event{name: event, data: %{}})
 
     event_id
   end
@@ -20,8 +22,23 @@ defmodule Inngest.Test.Helper do
      %{
        "ids" => [event_id],
        "status" => 200
-     }} = Inngest.send(%Inngest.Event{name: event, data: data})
+     }} = send_event(%Inngest.Event{name: event, data: data})
 
     event_id
+  end
+
+  defp send_event(event, retries \\ @send_retries)
+
+  defp send_event(event, 0), do: Inngest.send(event)
+
+  defp send_event(event, retries) do
+    case Inngest.send(event) do
+      {:error, _} ->
+        Process.sleep(@send_retry_interval)
+        send_event(event, retries - 1)
+
+      result ->
+        result
+    end
   end
 end
