@@ -1,20 +1,18 @@
-name: Convention Commit
+---
+name: Conventional Commits
 
-on:
+"on":
   pull_request:
-
-permissions:
-  pull-requests: read
-  statuses: write
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
-  lint:
-    name: Validate PR title
+  validate-pr-title:
+    name: Validate title
     runs-on: ubuntu-latest
-    if: ${{ ! contains(github.head_ref, 'release/') }}
     steps:
-      - uses: amannn/action-semantic-pull-request@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: PR Conventional Commit Validation
+        uses: ytanikin/pr-conventional-commits@1.5.2
         with:
-          wip: true
+          task_types: >-
+            ["feat","fix","doc","docs","test","ci","refactor","perf","chore",
+            "revert","style","security"]
