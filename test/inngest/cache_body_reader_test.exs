@@ -1,6 +1,7 @@
 defmodule Inngest.CacheBodyReaderTest do
   use ExUnit.Case, async: true
-  use Plug.Test
+  import Plug.Conn
+  import Plug.Test
 
   alias Inngest.CacheBodyReader
 
@@ -11,7 +12,7 @@ defmodule Inngest.CacheBodyReaderTest do
 
     conn =
       conn(:post, "/api/inngest", raw)
-      |> Plug.Conn.put_req_header("content-type", "application/json")
+      |> put_req_header("content-type", "application/json")
 
     %{conn: conn, raw: raw}
   end

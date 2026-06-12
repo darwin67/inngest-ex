@@ -108,6 +108,7 @@ defmodule Inngest.MixProject do
       {:dotenv, "~> 3.0", only: [:dev]},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:castore, "~> 1.0", only: :test},
       {:excoveralls, "~> 0.10", only: :test}
     ]
   end

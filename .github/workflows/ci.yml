@@ -31,7 +31,7 @@ jobs:
             otp: "28.0"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6.0.3
 
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
@@ -40,7 +40,7 @@ jobs:
           elixir-version: ${{ matrix.elixir }}
 
       - name: Dependency cache
-        uses: actions/cache@v3
+        uses: actions/cache@v5.0.5
         with:
           path: |
             deps
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6.0.3
 
       - uses: DeterminateSystems/nix-installer-action@v22
 
@@ -82,7 +82,7 @@ jobs:
         run: nix develop -c true
 
       - name: Dependency cache
-        uses: actions/cache@v3
+        uses: actions/cache@v5.0.5
         with:
           path: |
             deps
@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6.0.3
 
       - uses: DeterminateSystems/nix-installer-action@v22
 
@@ -116,7 +116,7 @@ jobs:
         run: nix develop -c true
 
       - name: Dependency cache
-        uses: actions/cache@v3
+        uses: actions/cache@v5.0.5
         with:
           path: |
             deps
@@ -138,7 +138,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6.0.3
 
       - uses: DeterminateSystems/nix-installer-action@v22
 
@@ -146,7 +146,7 @@ jobs:
         run: nix develop -c true
 
       - name: Dependency cache
-        uses: actions/cache@v3
+        uses: actions/cache@v5.0.5
         with:
           path: |
             deps
@@ -170,7 +170,7 @@ jobs:
       MIX_ENV: dev
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6.0.3
 
       - uses: DeterminateSystems/nix-installer-action@v22
 
@@ -178,7 +178,7 @@ jobs:
         run: nix develop -c true
 
       - name: Dependency cache
-        uses: actions/cache@v3
+        uses: actions/cache@v5.0.5
         with:
           path: |
             deps
