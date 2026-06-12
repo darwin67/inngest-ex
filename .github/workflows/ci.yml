@@ -14,37 +14,60 @@ permissions:
 
 jobs:
   test:
-    name: Unit Test
+    name: Unit Test (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # https://hexdocs.pm/elixir/compatibility-and-deprecations.html#compatibility-between-elixir-and-erlang-otp
+          - elixir: "1.17"
+            otp: "27.3"
+          - elixir: "1.18"
+            otp: "27.3"
+          - elixir: "1.19"
+            otp: "28.0"
+          - elixir: "1.20"
+            otp: "28.0"
 
     steps:
       - uses: actions/checkout@v3
 
-      - uses: DeterminateSystems/nix-installer-action@v22
-
-      - name: Initialize Nix dev shell
-        run: nix develop -c true
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
 
       - name: Dependency cache
         uses: actions/cache@v3
         with:
           path: |
             deps
-            _build
-          key: mix-test-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
+            # _build
+          key: mix-test-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            mix-test-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
-            mix-test-${{ runner.os }}-
+            mix-test-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
+            mix-test-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
             mix-test-
 
       - name: Install dependencies
-        run: nix develop -c make deps
+        run: make deps
 
       - name: Build
-        run: nix develop -c make build
+        run: make build
 
-      - name: Run unit tests
-        run: nix develop -c make unit-test
+      - name: Run unit tests with coverage
+        run: mix coveralls.json
+        env:
+          MIX_ENV: test
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UNIT: "true"
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   e2e:
     name: E2E Test
