@@ -1,9 +1,13 @@
 ---
 name: Conventional Commits
 
-"on":
+on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   validate-pr-title:
@@ -14,5 +18,4 @@ jobs:
         uses: ytanikin/pr-conventional-commits@1.5.2
         with:
           task_types: >-
-            ["feat","fix","doc","docs","test","ci","refactor","perf","chore",
-            "revert","style","security"]
+            ["feat","fix","doc","docs","test","ci","refactor","perf","chore","revert","style","security"]
