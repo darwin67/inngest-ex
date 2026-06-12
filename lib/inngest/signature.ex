@@ -43,12 +43,10 @@ defmodule Inngest.Signature do
 
   def sign(unix_ts, signing_key, body)
       when is_binary(unix_ts) and is_binary(signing_key) and is_binary(body) do
-    with key <- normalize_key(signing_key),
-         sig <- :crypto.mac(:hmac, :sha256, key, body <> unix_ts) |> Base.encode16(case: :lower) do
-      "t=#{unix_ts}&s=#{sig}"
-    else
-      _ -> ""
-    end
+    key = normalize_key(signing_key)
+    sig = :crypto.mac(:hmac, :sha256, key, body <> unix_ts) |> Base.encode16(case: :lower)
+
+    "t=#{unix_ts}&s=#{sig}"
   end
 
   def sign(unix_ts, signing_key, body)

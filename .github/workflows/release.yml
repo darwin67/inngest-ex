@@ -1,62 +1,102 @@
+---
 name: Release
 
-on:
+"on":
   push:
     tags:
-      - "v*.*.*"
+      - 'v*.*.*'
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  changelog:
-    name: Create Release
+  release:
+    name: Publish package and GitHub release
     runs-on: ubuntu-latest
-    outputs:
-      release_body: ${{ steps.git-cliff.outputs.content }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: Checkout tagged commit
+        uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
+          ref: ${{ github.ref }}
 
-      - name: Generate release docs
-        uses: orhun/git-cliff-action@v2
-        id: git-cliff
-        with:
-          config: cliff.toml
-          args: -vv --latest --strip all
-        env:
-          OUTPUT: CHANGES.md
+      - uses: DeterminateSystems/nix-installer-action@v22
 
-      - name: Generate a changelog
-        uses: orhun/git-cliff-action@v2
-        id: git-cliff-change
-        with:
-          config: cliff.toml
-        env:
-          OUTPUT: CHANGELOG.md
+      - name: Initialize Nix dev shell
+        run: nix develop -c true
 
-      - name: Read release
-        id: read_release
-        shell: bash
+      - name: Validate tag matches package version
+        id: version
         run: |
-          r=$(cat CHANGES.md)
-          r="${r//'%'/'%25'}"     # Multiline escape sequences for %
-          r="${r//$'\n'/'%0A'}"   # Multiline escape sequences for '\n'
-          r="${r//$'\r'/'%0D'}"   # Multiline escape sequences for '\r'
-          echo "RELEASE_BODY=$r" >> $GITHUB_OUTPUT
+          tag_version="${GITHUB_REF_NAME#v}"
+          package_version="$(
+            sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n 1
+          )"
 
-      # - name: Publish to Hex.pm
-      #   uses: erlangpack/github-action@v3
-      #   env:
-      #     HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+          if [ -z "${package_version}" ]; then
+            echo "Failed to read version from mix.exs"
+            exit 1
+          fi
 
-      - name: Create release
-        uses: svenstaro/upload-release-action@v2
+          if [ "${tag_version}" != "${package_version}" ]; then
+            echo \
+              "Tag ${GITHUB_REF_NAME} does not match mix.exs ${package_version}"
+            exit 1
+          fi
+
+          echo "package_version=${package_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether package version already exists on Hex.pm
+        id: hex
+        env:
+          PACKAGE_VERSION: ${{ steps.version.outputs.package_version }}
+        run: |
+          hex_release_url="https://hex.pm/api/packages/inngest/releases/${PACKAGE_VERSION}"
+          status="$(
+            curl -fsS \
+              -o /tmp/inngest-hex-release.json \
+              -w '%{http_code}' \
+              "${hex_release_url}" || true
+          )"
+
+          if [ "${status}" = "200" ]; then
+            echo "skip_publish=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${status}" = "404" ]; then
+            echo "skip_publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Unexpected Hex.pm response for ${PACKAGE_VERSION}: ${status}"
+          exit 1
+
+      - name: Publish package to Hex.pm
+        if: steps.hex.outputs.skip_publish != 'true'
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+        run: |
+          nix develop -c mix local.hex --force
+          nix develop -c mix deps.get
+          nix develop -c mix hex.publish --yes
+
+      - name: Generate release notes
+        uses: orhun/git-cliff-action@v4
+        id: release-notes
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: CHANGES.md
-          tag: ${{ github.ref }}
-          body: |
-            ${{ steps.read_release.outputs.RELEASE_BODY }}
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: RELEASE_NOTES.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          body: ${{ steps.release-notes.outputs.content }}

@@ -133,8 +133,8 @@ defmodule Inngest.Config do
     end
   end
 
-  @spec is_dev() :: boolean()
-  def is_dev(), do: env() == :dev
+  @spec dev?() :: boolean()
+  def dev?(), do: env() == :dev
 
   @spec path_runtime_eval() :: boolean()
   def path_runtime_eval(), do: Application.get_env(:inngest, :path_runtime_eval, false)

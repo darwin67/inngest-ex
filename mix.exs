@@ -1,7 +1,7 @@
 defmodule Inngest.MixProject do
   use Mix.Project
 
-  @version File.read!("VERSION") |> String.trim()
+  @version "0.2.1"
 
   def project do
     [
@@ -74,7 +74,7 @@ defmodule Inngest.MixProject do
       maintainers: ["Darwin Wu <darwin@inngest.com>"],
       licenses: ["Apache-2.0"],
       links: %{github: "https://github.com/darwin67/inngest-ex"},
-      files: ~w(lib mix.exs README.md LICENSE.md VERSION CHANGELOG.md)
+      files: ~w(lib mix.exs README.md LICENSE.md CHANGELOG.md)
     ]
   end
 
@@ -108,6 +108,7 @@ defmodule Inngest.MixProject do
       {:dotenv, "~> 3.0", only: [:dev]},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:castore, "~> 1.0", only: :test},
       {:excoveralls, "~> 0.10", only: :test}
     ]
   end

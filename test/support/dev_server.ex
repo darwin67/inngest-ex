@@ -4,6 +4,11 @@ defmodule Inngest.Test.DevServer do
   use GenServer
 
   @base_url "http://127.0.0.1:8288"
+  @app_url "http://127.0.0.1:4000/api/inngest"
+  @startup_retries 100
+  @startup_interval 100
+  @discovery_interval 2_000
+  @log_limit 20
 
   def start_link(arg) do
     GenServer.start_link(__MODULE__, arg, name: __MODULE__)
@@ -13,36 +18,55 @@ defmodule Inngest.Test.DevServer do
   def init(_) do
     Process.flag(:trap_exit, true)
 
-    task =
-      Task.async(fn ->
-        System.cmd(
-          "inngest-cli",
-          ["dev", "-u", "http://127.0.0.1:4000/api/inngest"],
-          stderr_to_stdout: true
-        )
-      end)
+    port =
+      Port.open({:spawn_executable, executable()}, [
+        :binary,
+        :exit_status,
+        {:args, ["dev", "-u", @app_url]},
+        :stderr_to_stdout
+      ])
 
-    {:ok, task.pid}
+    wait_until_ready()
+    Process.sleep(@discovery_interval)
+
+    {:ok, %{port: port, logs: []}}
   end
 
   @impl true
-  def handle_info(_, _), do: {:noreply, nil}
+  def handle_info({_port, {:data, data}}, state) do
+    {:noreply, %{state | logs: keep_logs(state.logs, data)}}
+  end
+
+  @impl true
+  def handle_info({_port, {:exit_status, 0}}, state), do: {:noreply, state}
+
+  @impl true
+  def handle_info({_port, {:exit_status, status}}, state) do
+    {:stop, {:inngest_cli_exit, status, Enum.join(state.logs)}, state}
+  end
+
+  @impl true
+  def terminate(_reason, %{port: port}) when is_port(port) do
+    if Port.info(port), do: Port.close(port)
+  end
+
+  def terminate(_reason, _state), do: :ok
 
   def run_ids(event_id) do
     client()
-    |> Tesla.get("/v1/events/#{event_id}/runs")
+    |> Tesla.get("/v1/events/#{event_id}/runs", query: cache_bust())
     |> parse_resp()
   end
 
   def fn_run(run_id) do
     client()
-    |> Tesla.get("/v1/runs/#{run_id}")
+    |> Tesla.get("/v1/runs/#{run_id}", query: cache_bust())
     |> parse_resp()
   end
 
   def list_events() do
     client()
-    |> Tesla.get("/v1/events")
+    |> Tesla.get("/v1/events", query: cache_bust())
     |> parse_resp()
   end
 
@@ -54,6 +78,43 @@ defmodule Inngest.Test.DevServer do
     ]
 
     Tesla.client(middleware)
+  end
+
+  defp executable do
+    System.find_executable("inngest-cli") ||
+      System.find_executable("inngest") ||
+      raise "inngest-cli executable is required for integration tests"
+  end
+
+  defp wait_until_ready(retries \\ @startup_retries)
+
+  defp wait_until_ready(0), do: raise("inngest-cli dev server did not start")
+
+  defp wait_until_ready(retries) do
+    case Tesla.get(client(), "/v1/events") do
+      {:ok, %Tesla.Env{status: 200}} ->
+        :ok
+
+      _ ->
+        retry_wait(retries)
+    end
+  rescue
+    _ -> retry_wait(retries)
+  end
+
+  defp retry_wait(retries) do
+    Process.sleep(@startup_interval)
+    wait_until_ready(retries - 1)
+  end
+
+  defp cache_bust do
+    [{"t", System.unique_integer([:positive])}]
+  end
+
+  defp keep_logs(logs, data) do
+    logs
+    |> Kernel.++([data])
+    |> Enum.take(-@log_limit)
   end
 
   defp parse_resp(result) do

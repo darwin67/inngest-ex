@@ -60,7 +60,7 @@ defmodule Inngest.Router.Invoke do
     }
 
     resp =
-      case Config.is_dev() do
+      case Config.dev?() do
         true ->
           invoke(func, ctx, input)
 
@@ -85,7 +85,7 @@ defmodule Inngest.Router.Invoke do
 
   defp invoke(func, ctx, input) do
     try do
-      if is_failure?(input) do
+      if failure?(input) do
         func.handle_failure(ctx, input) |> SdkResponse.from_result([])
       else
         func.exec(ctx, input) |> SdkResponse.from_result([])
@@ -147,6 +147,6 @@ defmodule Inngest.Router.Invoke do
     end
   end
 
-  defp is_failure?(%{event: %{name: "inngest/function.failed"}} = _input), do: true
-  defp is_failure?(_), do: false
+  defp failure?(%{event: %{name: "inngest/function.failed"}} = _input), do: true
+  defp failure?(_), do: false
 end

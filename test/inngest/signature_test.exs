@@ -13,29 +13,11 @@ defmodule Inngest.SignatureTest do
   end
 
   describe "signing_key_valid?/4" do
-    @sig "t=1689920619&s=31df77f5b1b029de4bfce3a77e0517aa4ce0f5e2195a6467fc126a489ca2330b"
-    @event %{
-      id: "",
-      name: "inngest/scheduled.timer",
-      data: %{},
-      user: %{},
-      ts: 1_674_082_830_001,
-      v: "1"
-    }
-    @body %{
-      ctx: %{
-        fn_id: "local-testing-local-cron",
-        run_id: "01GQ3HTEZ01M7R8Z9PR1DMHDN1",
-        step_id: "step"
-      },
-      event: @event,
-      events: [@event],
-      steps: %{},
-      use_api: false
-    }
+    @sig "t=1689920619&s=db3352ded9110df7c6961e1c223e6691dbdb1115ac7ef94ee7bba217fac93d04"
+    @body ~s({"events":[{"data":{},"id":"","name":"inngest/scheduled.timer","user":{},"v":"1","ts":1674082830001}],"event":{"data":{},"id":"","name":"inngest/scheduled.timer","user":{},"v":"1","ts":1674082830001},"ctx":{"fn_id":"local-testing-local-cron","run_id":"01GQ3HTEZ01M7R8Z9PR1DMHDN1","step_id":"step"},"steps":{},"use_api":false})
 
     setup do
-      %{body: Jason.encode!(@body)}
+      %{body: @body}
     end
 
     test "should return true if signature is valid", %{body: body} do

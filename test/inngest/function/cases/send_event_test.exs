@@ -24,7 +24,7 @@ defmodule Inngest.Function.Cases.SendEventTest do
               ]
             }} = DevServer.run_ids(event_id)
 
-    assert Enum.count(event_ids) > 0
+    refute Enum.empty?(event_ids)
     assert is_list(event_ids)
   end
 end

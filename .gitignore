@@ -30,6 +30,7 @@ inngest-*.tar
 
 # direnv / nix-shell
 /.direnv/
+/.nix/
 
 # dotenv
 .env

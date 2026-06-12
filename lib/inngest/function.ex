@@ -245,9 +245,6 @@ defmodule Inngest.Function do
     else
       {:ok, _val} ->
         {:ok, datetime}
-
-      _ ->
-        {:error, "Unknown result"}
     end
   end
 

@@ -18,6 +18,10 @@ unit-test:
 test:
 	MIX_ENV=test mix test
 
+.PHONY: test-e2e
+test-e2e:
+	MIX_ENV=test mix test --only integration --max-cases 1
+
 .PHONY: test-cover
 test-cover:
 	MIX_ENV=test mix coveralls
