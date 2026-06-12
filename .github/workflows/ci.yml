@@ -7,6 +7,8 @@ on:
 
 env:
   MIX_ENV: test
+  ELIXIR_VERSION: &elixir_version "1.20"
+  OTP_VERSION: &otp_version "28.0"
 
 permissions:
   pull-requests: read
@@ -27,8 +29,8 @@ jobs:
             otp: "27.3"
           - elixir: "1.19"
             otp: "28.0"
-          - elixir: "1.20"
-            otp: "28.0"
+          - elixir: *elixir_version
+            otp: *otp_version
 
     steps:
       - uses: actions/checkout@v3
@@ -113,8 +115,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "28.0"
-          elixir-version: "1.20"
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Dependency cache
         uses: actions/cache@v3
@@ -144,8 +146,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "28.0"
-          elixir-version: "1.20"
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Dependency cache
         uses: actions/cache@v3
@@ -177,8 +179,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "28.0"
-          elixir-version: "1.20"
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Dependency cache
         uses: actions/cache@v3
