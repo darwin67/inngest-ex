@@ -14,15 +14,21 @@ permissions:
 
 jobs:
   test:
-    name: Test (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
+    name: Unit Test (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # NOTE: best effort coverage
-        # https://hexdocs.pm/elixir/compatibility-and-deprecations.html#compatibility-between-elixir-and-erlang-otp
-        elixir: ["1.15", "1.16"]
-        otp: ["24.3", "25.3"]
+        include:
+          # https://hexdocs.pm/elixir/compatibility-and-deprecations.html#compatibility-between-elixir-and-erlang-otp
+          - elixir: "1.17"
+            otp: "27.3"
+          - elixir: "1.18"
+            otp: "27.3"
+          - elixir: "1.19"
+            otp: "28.0"
+          - elixir: "1.20"
+            otp: "28.0"
 
     steps:
       - uses: actions/checkout@v3
@@ -32,16 +38,6 @@ jobs:
         with:
           otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
-
-      - name: Set Node.js 20.x
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20.x
-
-      - name: Install inngest-cli
-        run: |
-          npm i -g inngest-cli
-          inngest-cli version
 
       - name: Dependency cache
         uses: actions/cache@v3
@@ -61,8 +57,8 @@ jobs:
       - name: Build
         run: make build
 
-      - name: Run tests with coverage
-        run: mix coveralls.json
+      - name: Run unit tests with coverage
+        run: UNIT=true mix coveralls.json
         env:
           MIX_ENV: test
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -71,6 +67,40 @@ jobs:
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  e2e:
+    name: E2E Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Initialize Nix dev shell
+        run: nix develop -c true
+
+      - name: Dependency cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .nix
+          key: mix-e2e-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
+          restore-keys: |
+            mix-e2e-${{ runner.os }}-${{ hashFiles('**/mix.lock', 'flake.lock') }}
+            mix-e2e-${{ runner.os }}-
+            mix-e2e-
+
+      - name: Install dependencies
+        run: nix develop -c make deps
+
+      - name: Build
+        run: nix develop -c make build
+
+      - name: Run e2e tests
+        run: nix develop -c make test-e2e
 
   formatter:
     name: Formatter
@@ -82,8 +112,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: 25.3
-          elixir-version: 1.14.4
+          otp-version: 28.0
+          elixir-version: 1.20
 
       - name: Dependency cache
         uses: actions/cache@v3
@@ -113,8 +143,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: 25.3
-          elixir-version: 1.14.4
+          otp-version: 28.0
+          elixir-version: 1.20
 
       - name: Dependency cache
         uses: actions/cache@v3
@@ -146,8 +176,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: 25.3
-          elixir-version: 1.14.4
+          otp-version: 28.0
+          elixir-version: 1.20
 
       - name: Dependency cache
         uses: actions/cache@v3
