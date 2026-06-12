@@ -58,10 +58,11 @@ jobs:
         run: make build
 
       - name: Run unit tests with coverage
-        run: UNIT=true mix coveralls.json
+        run: mix coveralls.json
         env:
           MIX_ENV: test
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UNIT: "true"
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
