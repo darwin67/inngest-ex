@@ -113,8 +113,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: 28.0
-          elixir-version: 1.20
+          otp-version: "28.0"
+          elixir-version: "1.20"
 
       - name: Dependency cache
         uses: actions/cache@v3
@@ -144,8 +144,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: 28.0
-          elixir-version: 1.20
+          otp-version: "28.0"
+          elixir-version: "1.20"
 
       - name: Dependency cache
         uses: actions/cache@v3
@@ -177,8 +177,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: 28.0
-          elixir-version: 1.20
+          otp-version: "28.0"
+          elixir-version: "1.20"
 
       - name: Dependency cache
         uses: actions/cache@v3
