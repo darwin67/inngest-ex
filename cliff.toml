@@ -20,9 +20,11 @@ body = """
     ## [unreleased]
 {% endif %}\
 {% for group, commits in commits | group_by(attribute="group") %}
-    ### {{ group | upper_first }}
+    ### {{ group | striptags | trim | upper_first }}
     {% for commit in commits %}
-        - {% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message | upper_first }}\
+        - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
+            {% if commit.breaking %}[**breaking**] {% endif %}\
+            {{ commit.message | upper_first }}\
     {% endfor %}
 {% endfor %}\n
 """
@@ -35,11 +37,11 @@ footer = """
 
 [git]
 # parse the commits based on https://www.conventionalcommits.org
-conventional_commits = false
+conventional_commits = true
 # filter out the commits that are not conventional
 filter_unconventional = true
 # process each line of a commit as an individual commit
-split_commits = true
+split_commits = false
 # regex for preprocessing the commit messages
 commit_preprocessors = [
   # { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/orhun/git-cliff/issues/${2}))"}, # replace issue numbers
@@ -56,7 +58,10 @@ commit_parsers = [
   { message = "^test", group = "Testing" },
   { message = "^chore\\(release\\): prepare for", skip = true },
   { message = "^chore\\(release\\): v", skip = true },
-  { message = "^chore", group = "Miscellaneous Tasks" },
+  { message = "^chore\\(deps.*\\)", skip = true },
+  { message = "^chore\\(pr\\)", skip = true },
+  { message = "^chore\\(pull\\)", skip = true },
+  { message = "^chore|^ci", group = "Miscellaneous Tasks" },
   { message = "^revert", group = "Reverts" },
   { message = "^security", group = "Security" },
   { body = ".*security", group = "Security" },
@@ -65,8 +70,8 @@ commit_parsers = [
 protect_breaking_commits = false
 # filter out the commits that are not matched by commit parsers
 filter_commits = false
-# glob pattern for matching git tags
-tag_pattern = "v[0-9]*"
+# regex for matching git tags
+tag_pattern = "v[0-9].*"
 # regex for skipping tags
 skip_tags = "v0.1.0-beta.1"
 # regex for ignoring tags
@@ -77,3 +82,4 @@ topo_order = false
 sort_commits = "oldest"
 # limit the number of commits included in the changelog.
 # limit_commits = 42
+recurse_submodules = false
