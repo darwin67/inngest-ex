@@ -47,8 +47,8 @@ has the right owner from the start.
 - Let routers accept ~client: MyApp.Inngest~ and derive functions,
   registration payloads, introspection metadata, and future middleware from that
   client.
-- Preserve existing application config and router ~funcs:~/~path:~ behavior as
-  a compatibility path while the client API becomes the preferred public API.
+- Replace existing application config and router ~funcs:~/~path:~ setup with the
+  first-class client API as the required public setup path.
 
 ** Implementation Guide
 
@@ -58,18 +58,27 @@ focused test that fails for the desired behavior, implement the smallest change,
 and leave the targeted test green. Do not end a phase with intentionally failing
 tests.
 
-** Open Questions
+** Decisions
 
-- [ ] Decide whether the client public API should be macro-backed modules only,
-  structs only, or macro-backed modules that expose a runtime struct.
-- [ ] Decide whether existing global configuration remains fully supported or is
-  deprecated after the client API is introduced.
-- [ ] Decide how client configuration and environment variables compose when
-  both are present.
-- [ ] Decide whether routers should require ~client:~ long term or keep
-  ~funcs:~/~path:~ permanently.
-- [ ] Decide whether direct event sending should prefer
-  ~MyApp.Inngest.send/1~ or ~Inngest.Client.send(client, events)~.
+- The public client API will be macro-backed modules that expose a runtime
+  ~%Inngest.Client{}~ struct through ~client/0~. User code should normally use
+  ~use Inngest.Client~, while routers and internals operate on the runtime
+  struct.
+- The first-class client API is a breaking replacement for the old global
+  application configuration as the primary setup path. Because the package is
+  pre-v1, this plan does not need to preserve the old setup indefinitely.
+- Explicit first-class client configuration takes precedence over SDK
+  environment variables. Environment variables fill missing client config and
+  remain the recommended source for secrets and deploy-specific values. Defaults
+  apply only after both explicit client config and environment variables are
+  absent. User-facing docs should recommend omitting secrets from client modules
+  and loading keys from runtime environment variables instead.
+- Plug and Phoenix routers will require ~client:~ as the public setup API.
+  Existing ~funcs:~ and ~path:~ router setup will be removed as public API in
+  this breaking pre-v1 plan.
+- Direct event sending should document ~MyApp.Inngest.send/1~ as the primary
+  user-facing API. ~Inngest.Client.send/2~ should remain available for runtime
+  ~%Inngest.Client{}~ structs used by routers, internals, and tests.
 
 ** Phase 1: Client API And Configuration Ownership
 
@@ -88,8 +97,7 @@ tests.
   list and client app identity.
 - [ ] Update registration payload generation to accept client context.
 - [ ] Add tests that call requests load functions from ~client:~.
-- [ ] Update Plug and Phoenix routers to accept ~client:~ while preserving
-  existing ~funcs:~/~path:~ compatibility.
+- [ ] Update Plug and Phoenix routers to require ~client:~.
 - [ ] Add tests that introspection reflects the selected client.
 - [ ] Update introspection to use client-owned app identity, function count,
   framework metadata, and future capability metadata.
@@ -97,11 +105,10 @@ tests.
 ** Phase 3: Event Sending And Compatibility
 
 - [ ] Add tests for client-owned event sending defaults and headers.
-- [ ] Implement client-aware event sending while keeping current
-  ~Inngest.Client.send/2~ behavior as a compatibility wrapper.
-- [ ] Add regression tests for existing global config, router ~funcs:~, and
-  router ~path:~ usage.
-- [ ] Document any compatibility warnings or intentional deprecations.
+- [ ] Implement client-aware event sending.
+- [ ] Remove or rewrite tests that depend on old global config, router
+  ~funcs:~, and router ~path:~ setup.
+- [ ] Document the breaking migration from global setup to first-class clients.
 - [ ] Ensure Plan 5 middleware can attach client-level middleware to the new
   client owner.
 
