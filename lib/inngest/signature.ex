@@ -15,7 +15,7 @@ defmodule Inngest.Signature do
     end
   end
 
-  @spec signing_key_valid?(binary(), binary(), binary(), keyword()) :: boolean()
+  @spec signing_key_valid?(binary(), binary() | [binary()], binary(), keyword()) :: boolean()
   def signing_key_valid?(sig, key, body, opts \\ [])
 
   def signing_key_valid?(sig, keys, body, opts)

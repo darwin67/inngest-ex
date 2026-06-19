@@ -104,7 +104,7 @@ defmodule Inngest.Client do
         maybe_retry_with_fallback(resp, key_kind, type, method, path, payload, opts)
 
       :error ->
-        {:error, "missing signing key"}
+        request_without_signing_key(type, method, path, payload, opts)
     end
   end
 
@@ -148,6 +148,14 @@ defmodule Inngest.Client do
   defp maybe_retry_with_fallback(resp, _key_kind, _type, _method, _path, _payload, _opts),
     do: resp
 
+  defp request_without_signing_key(type, method, path, payload, opts) do
+    if Config.dev?() do
+      do_request(type, method, path, payload, opts)
+    else
+      {:error, "missing signing key"}
+    end
+  end
+
   defp mark_fallback_on_success({:ok, %Tesla.Env{status: status}} = resp)
        when status in 200..299 do
     :persistent_term.put(@fallback_signing_key, true)
@@ -166,9 +174,9 @@ defmodule Inngest.Client do
   end
 
   defp maybe_env_header(headers) do
-    case Config.env() do
+    case Config.inngest_env() do
       nil -> headers
-      env -> headers ++ [{Headers.env(), to_string(env)}]
+      env -> headers ++ [{Headers.env(), env}]
     end
   end
 

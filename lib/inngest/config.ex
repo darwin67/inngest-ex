@@ -67,6 +67,19 @@ defmodule Inngest.Config do
   end
 
   @doc """
+  Returns the Inngest environment header value.
+  """
+  @spec inngest_env() :: binary() | nil
+  def inngest_env() do
+    with nil <- System.get_env("INNGEST_ENV"),
+         nil <- Application.get_env(:inngest, :inngest_env) do
+      nil
+    else
+      env -> to_string(env)
+    end
+  end
+
+  @doc """
   Returns the base url for accessing the event API.
   This is where the events are sent to.
   """

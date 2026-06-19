@@ -26,6 +26,7 @@ defmodule Inngest.ConfigTest do
     env
     event_key
     event_url
+    inngest_env
     register_url
     serve_origin
     serve_path
@@ -98,6 +99,18 @@ defmodule Inngest.ConfigTest do
       assert Config.signing_key() == "env-signing-key"
       assert Config.signing_key_fallback() == "env-fallback-key"
       assert Config.env() == "env-name"
+      assert Config.inngest_env() == "env-name"
+    end
+
+    test "Inngest env header value does not use legacy mode config" do
+      Application.put_env(:inngest, :env, :dev)
+
+      assert Config.env() == :dev
+      assert Config.inngest_env() == nil
+
+      Application.put_env(:inngest, :inngest_env, "app-env")
+
+      assert Config.inngest_env() == "app-env"
     end
   end
 

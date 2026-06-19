@@ -6,8 +6,8 @@ defmodule Inngest.ClientTest do
   @signing_key "signkey-test-8ee2262a15e8d3c42d6a840db7af3de2aab08ef632b32a37a687f24b34dba3ff"
   @fallback_signing_key "signkey-fallback-746573742d66616c6c6261636b2d7369676e696e672d6b657921"
 
-  @env_vars ~w(INNGEST_API_BASE_URL INNGEST_ENV INNGEST_SIGNING_KEY INNGEST_SIGNING_KEY_FALLBACK)
-  @config_keys ~w(env signing_key signing_key_fallback)a
+  @env_vars ~w(INNGEST_API_BASE_URL INNGEST_DEV INNGEST_ENV INNGEST_SIGNING_KEY INNGEST_SIGNING_KEY_FALLBACK)
+  @config_keys ~w(env inngest_env signing_key signing_key_fallback)a
 
   setup do
     env = Map.new(@env_vars, &{&1, System.get_env(&1)})
@@ -69,6 +69,22 @@ defmodule Inngest.ClientTest do
       refute Enum.any?(headers, fn {name, _value} -> name == Headers.env() end)
     end
 
+    test "does not treat legacy app env mode as the environment header" do
+      Application.put_env(:inngest, :env, :dev)
+
+      headers = Client.headers(:event)
+
+      refute Enum.any?(headers, fn {name, _value} -> name == Headers.env() end)
+    end
+
+    test "adds environment header from application env header config" do
+      Application.put_env(:inngest, :inngest_env, "app-env")
+
+      headers = Client.headers(:event)
+
+      assert {Headers.env(), "app-env"} in headers
+    end
+
     test "caller-provided headers override default headers" do
       headers = Client.headers(:event, headers: [{Headers.req_version(), "custom"}])
 
@@ -80,6 +96,20 @@ defmodule Inngest.ClientTest do
   describe "authenticated API requests" do
     test "returns an error when no usable signing key is configured" do
       assert {:error, "missing signing key"} = Client.get(:api, "/v0/runs/run/actions")
+    end
+
+    test "allows unsigned API requests in dev mode" do
+      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      System.put_env("INNGEST_DEV", "1")
+      System.put_env("INNGEST_API_BASE_URL", "https://api.example")
+
+      Tesla.Mock.mock(fn %{headers: headers} ->
+        refute List.keyfind(headers, "authorization", 0)
+
+        %Tesla.Env{status: 200, body: %{"ok" => true}}
+      end)
+
+      assert {:ok, %Tesla.Env{status: 200}} = Client.get(:api, "/v0/runs/run/actions")
     end
 
     test "retries with fallback signing key and sticks after a successful fallback request" do
