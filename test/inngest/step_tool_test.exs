@@ -66,12 +66,11 @@ defmodule Inngest.StepToolTest do
           }
         )
 
-      assert StepTool.run(ctx, "first", fn -> flunk("step body should not run") end,
-               keys: :atoms
-             ) == %{
-               :"string-key" => "kept",
-               foo: [%{bar: "baz"}]
-             }
+      assert StepTool.run(ctx, "first", fn -> flunk("step body should not run") end, keys: :atoms) ==
+               %{
+                 :"string-key" => "kept",
+                 foo: [%{bar: "baz"}]
+               }
     end
 
     test "raises a clear error when atom key conversion would create an atom" do
@@ -79,9 +78,7 @@ defmodule Inngest.StepToolTest do
       ctx = ctx(steps: %{hash("first") => %{"data" => %{unknown_key => "bar"}}})
 
       assert_raise Inngest.StepError, ~r/cannot convert memoized step key/, fn ->
-        StepTool.run(ctx, "first", fn -> flunk("step body should not run") end,
-          keys: :atoms
-        )
+        StepTool.run(ctx, "first", fn -> flunk("step body should not run") end, keys: :atoms)
       end
     end
 

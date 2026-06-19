@@ -6,9 +6,13 @@ defmodule Inngest.StepTool do
 
   @type id() :: binary()
   @type datetime() :: binary() | DateTime.t() | Date.t() | NaiveDateTime.t()
+  @type run_opt() :: {:keys, :strings | :atoms}
 
   @spec run(Context.t(), id(), fun()) :: any()
-  def run(%{steps: steps} = ctx, step_id, func) do
+  def run(ctx, step_id, func), do: run(ctx, step_id, func, [])
+
+  @spec run(Context.t(), id(), fun(), [run_opt()]) :: any()
+  def run(%{steps: steps} = ctx, step_id, func, opts) do
     op = UnhashedOp.new(ctx, "Step", step_id)
     hashed_id = UnhashedOp.hash(op)
 
@@ -16,7 +20,7 @@ defmodule Inngest.StepTool do
     # either execute immediately, plan, or produce StepNotFound for targets.
     case Map.get(steps, hashed_id) do
       nil -> report_run_step(ctx, hashed_id, step_id, func)
-      val -> memoized_result!(ctx, hashed_id, val)
+      val -> memoized_result!(ctx, hashed_id, val, opts)
     end
   end
 
@@ -238,27 +242,59 @@ defmodule Inngest.StepTool do
       })
   end
 
-  defp memoized_result!(ctx, hashed_id, value) do
+  defp memoized_result!(ctx, hashed_id, value, opts \\ []) do
     # For targeted execution, a memoized step is only safe to replay when it is
     # the target itself or appears in the executor-provided sequential stack.
     if memoized_step_allowed?(ctx, hashed_id) do
-      unwrap_memoized_result!(value)
+      unwrap_memoized_result!(value, opts)
     else
       step_not_found!(ctx)
     end
   end
 
-  defp unwrap_memoized_result!(%{"data" => value}), do: value
-  defp unwrap_memoized_result!(%{data: value}), do: value
+  defp unwrap_memoized_result!(%{"data" => value}, opts), do: decode_memoized_data!(value, opts)
+  defp unwrap_memoized_result!(%{data: value}, opts), do: decode_memoized_data!(value, opts)
 
   # Failed memoized actions are represented as data from the executor, then
   # raised locally so normal function error handling can serialize the failure.
-  defp unwrap_memoized_result!(%{"error" => error}), do: raise(Inngest.StepError, error)
-  defp unwrap_memoized_result!(%{error: error}), do: raise(Inngest.StepError, error)
+  defp unwrap_memoized_result!(%{"error" => error}, _opts), do: raise(Inngest.StepError, error)
+  defp unwrap_memoized_result!(%{error: error}, _opts), do: raise(Inngest.StepError, error)
 
-  defp unwrap_memoized_result!(value) do
+  defp unwrap_memoized_result!(value, _opts) do
     raise Inngest.StepError, "invalid memoized step data: #{inspect(value)}"
   end
+
+  defp decode_memoized_data!(value, opts) do
+    case Keyword.get(opts, :keys, :strings) do
+      :strings -> value
+      :atoms -> existing_atomize_keys!(value)
+      keys -> raise Inngest.StepError, "invalid memoized step key mode: #{inspect(keys)}"
+    end
+  end
+
+  defp existing_atomize_keys!(value) when is_list(value) do
+    Enum.map(value, &existing_atomize_keys!/1)
+  end
+
+  defp existing_atomize_keys!(value) when is_map(value) do
+    Map.new(value, fn {key, val} ->
+      {existing_atom_key!(key), existing_atomize_keys!(val)}
+    end)
+  end
+
+  defp existing_atomize_keys!(value), do: value
+
+  defp existing_atom_key!(key) when is_atom(key), do: key
+
+  defp existing_atom_key!(key) when is_binary(key) do
+    String.to_existing_atom(key)
+  rescue
+    ArgumentError ->
+      raise Inngest.StepError,
+            "cannot convert memoized step key #{inspect(key)} to an existing atom"
+  end
+
+  defp existing_atom_key!(key), do: key
 
   defp maybe_step_not_found!(ctx, hashed_id) do
     if targeted_execution?(ctx) and not targeted_step?(ctx, hashed_id) do
