@@ -20,13 +20,17 @@ focused test that fails for the desired spec behavior, implement the smallest
 change, and leave the targeted test green. Do not end a phase with intentionally
 failing tests.
 
+** Decisions
+
+- Support both ~INNGEST_DEV~ and existing ~:env, :dev~. ~INNGEST_DEV~ takes precedence over application config when present.
+- Use ~inngest-ex:v<version>~ as the canonical ~X-Inngest-Sdk~ value.
+- Make the breaking change to use spec-aligned ~INNGEST_SERVE_ORIGIN~ instead of preserving ~INNGEST_APP_HOST~ as an alias.
+- Missing signing keys do not fail during config access. Cloud-mode request handling and outbound API calls fail when a signing key is required but unavailable.
+- Fallback signing key usage is sticky for outbound signing-key-authenticated API calls after the fallback succeeds once. Inbound request verification remains stateless and accepts either current or fallback key.
+
 ** Open Questions
 
-- [ ] Decide whether ~INNGEST_DEV~ should fully replace ~:env, :dev~ or remain an additional supported switch.
-- [ ] Decide the canonical SDK header name: ~inngest-ex~, ~ex-inngest~, or ~darwin67/inngest-ex~.
-- [ ] Decide whether ~INNGEST_APP_HOST~ remains as a deprecated alias for ~INNGEST_SERVE_ORIGIN~.
-- [ ] Decide whether missing signing keys in cloud mode fail during config access or only while handling signed requests.
-- [ ] Decide whether fallback signing key usage should become sticky after a successful outbound retry.
+None.
 
 ** Phase 1: Core Implementation
 
