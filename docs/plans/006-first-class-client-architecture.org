@@ -106,10 +106,10 @@ tests.
 
 - [X] Add tests for client-owned event sending defaults and headers.
 - [X] Implement client-aware event sending.
-- [ ] Remove or rewrite tests that depend on old global config, router
+- [X] Remove or rewrite tests that depend on old global config, router
   ~funcs:~, and router ~path:~ setup.
-- [ ] Document the breaking migration from global setup to first-class clients.
-- [ ] Ensure Plan 5 middleware can attach client-level middleware to the new
+- [X] Document the breaking migration from global setup to first-class clients.
+- [X] Ensure Plan 5 middleware can attach client-level middleware to the new
   client owner.
 
 ** Phase 4: Verification And Documentation
@@ -119,6 +119,6 @@ tests.
   event-send tests.
 - [ ] Run ~make lint~.
 - [ ] Run ~make unit-test~ if the touched surface is broad.
-- [ ] Document the first-class client API in user-facing docs.
-- [ ] Update middleware planning notes to reference the client architecture
+- [X] Document the first-class client API in user-facing docs.
+- [X] Update middleware planning notes to reference the client architecture
   dependency.

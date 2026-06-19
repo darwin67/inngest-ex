@@ -4,7 +4,16 @@ See `Inngest.Event` for reference.
 
 ## Sending events
 
-Use `Inngest.Client.send/1` or you can send it to Dev server via `curl`:
+Use your first-class client module to send events:
+
+```elixir
+MyApp.Inngest.send(%Inngest.Event{
+  name: "test/event",
+  data: %{hello: "world"}
+})
+```
+
+You can also send an event to the Dev Server via `curl`:
 
 ```bash
 curl -X POST 'http://127.0.0.1:8288/e/test' \

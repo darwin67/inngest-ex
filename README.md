@@ -68,6 +68,24 @@ end
 And just like that, you have an Inngest function that will react to an event called `func/awesome`.
 `Inngest.Function.exec/2` will then be called by the SDK to run and execute the logic.
 
+Create a first-class client module to own your app ID and served functions:
+
+``` elixir
+defmodule MyApp.Inngest do
+  use Inngest.Client,
+    id: "my-app",
+    funcs: [
+      MyApp.AwesomeFunction
+    ]
+end
+```
+
+Then mount that client in your Plug or Phoenix router:
+
+``` elixir
+inngest("/api/inngest", client: MyApp.Inngest)
+```
+
 #### Advanced
 
 The above example will be no different from other background processing libraries, so let's take a

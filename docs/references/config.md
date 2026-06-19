@@ -1,113 +1,61 @@
 # Configuration
 
-There are a couple of configurations you should be aware of before deploying.
+Configure an Inngest app by defining a first-class client module:
 
-- [App Name](#app-name)
-- [App Host](#app-host)
-- [Env](#env)
-- [Event Key](#event-key)
-- [Signing Key](#signing-key)
-- [Inngest Env](#inngest-env)
-
-### App Name
-
-Default value: `InngestApp`.
-
-The app name to be registered with Inngest.
-
-#### Environment variable
-
-`INNGEST_APP_NAME`
-
-#### Config
-``` elixir
-config :inngest, app_name: "MyApp"
+```elixir
+defmodule MyApp.Inngest do
+  use Inngest.Client,
+    id: "my-app",
+    funcs: [
+      MyApp.Functions.SendEmail,
+      MyApp.Functions.SyncUser
+    ]
+end
 ```
 
-### App Host
+Pass that client to your Plug or Phoenix router:
 
-Default value: `"http://127.0.0.1:4000"`
-
-The app host to be used when deployed.
-
-#### Environment variable
-
-`INNGEST_APP_HOST`
-
-#### Config
-``` elixir
-config :inngest, app_host: "https://myapp.com"
+```elixir
+inngest("/api/inngest", client: MyApp.Inngest)
 ```
 
-### Env
+## Client Options
 
-Default value: `nil`
+| Option                 | Description                                      |
+|------------------------|--------------------------------------------------|
+| `id`                   | Required app identifier used for registration.   |
+| `funcs`                | Function modules served by this client.          |
+| `mode`                 | `:cloud` or `:dev`.                              |
+| `env`                  | Inngest environment header value.                |
+| `event_key`            | Event key used for sending events.               |
+| `signing_key`          | Signing key used for request/API authentication. |
+| `signing_key_fallback` | Fallback signing key.                            |
+| `api_url`              | REST API origin.                                 |
+| `event_url`            | Event API origin.                                |
+| `register_url`         | Registration API origin.                         |
+| `inngest_url`          | Dev server metadata origin.                      |
+| `serve_origin`         | Public origin serving the Inngest endpoint.      |
+| `serve_path`           | Public path serving the Inngest endpoint.        |
 
-This value determines the environment the app is on, and decides if your app
-should connect to the Dev server or Inngest Cloud.
+Explicit client options take precedence over SDK environment variables. Environment
+variables fill missing client options, and defaults apply after both are absent.
 
-#### Environment variable
+## Environment Variables
 
-`INNGEST_ENV`
+Use environment variables for secrets and deploy-specific values:
 
-#### Config
+| Variable                       | Used For                            |
+|--------------------------------|-------------------------------------|
+| `INNGEST_EVENT_KEY`            | Event sending key.                  |
+| `INNGEST_SIGNING_KEY`          | Primary signing key.                |
+| `INNGEST_SIGNING_KEY_FALLBACK` | Fallback signing key.               |
+| `INNGEST_ENV`                  | Inngest environment header value.   |
+| `INNGEST_DEV`                  | Enables dev mode or dev origin.     |
+| `INNGEST_API_BASE_URL`         | REST API origin.                    |
+| `INNGEST_EVENT_API_BASE_URL`   | Event API origin.                   |
+| `INNGEST_BASE_URL`             | Shared API/event origin fallback.   |
+| `INNGEST_SERVE_ORIGIN`         | Public origin for served functions. |
+| `INNGEST_SERVE_PATH`           | Public path for served functions.   |
 
-``` elixir
-config :inngest, env: :dev
-```
-
-#### NOTE
-
-Make sure to set the value to `:dev` when you're developing locally.
-Otherwise it won't connect to the Dev Server and try to connect to Inngest Cloud
-instead.
-
-### Event Key
-
-Default value: `nil`
-
-The key used for sending events. It's not required for the Dev Server but required
-for Inngest Cloud.
-
-#### Environment variable
-
-`INNGEST_EVENT_KEY`
-
-#### Config
-
-``` elixir
-config :inngest, event_key: "key"
-```
-
-### Signing Key
-
-Default value: `nil`
-
-The key used for verifying request signatures from the executor to your app, when
-triggering function runs.
-
-It's not required for the Dev Server but required for Inngest Cloud.
-
-#### Environment variable
-
-`INNGEST_SIGNING_KEY`
-
-#### Config
-
-``` elixir
-config :inngest, signing_key: "key"
-```
-
-### Path runtime evaluation
-
-Default value: `false`
-
-When [passing a `path` to `inngest`](serve-api.html) macro in your router, this enables the functions
-to be evaluated during runtime instead of compile time, which is the default.
-
-This exists for the sore purpose of easing development feedback, and should not be
-used for non development workloads.
-
-``` elixir
-config :inngest, path_runtime_eval: true
-```
+Avoid committing `event_key` or signing keys into client modules. Prefer runtime
+environment variables for those values.
