@@ -79,6 +79,7 @@ defmodule Inngest.Function do
   @callback exec(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
 
   defmacro __using__(_opts) do
+    # credo:disable-for-next-line Credo.Check.Refactor.LongQuoteBlocks
     quote location: :keep do
       alias Inngest.{Client, FnOpts, Trigger}
 
