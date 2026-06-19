@@ -104,8 +104,8 @@ tests.
 
 ** Phase 3: Event Sending And Compatibility
 
-- [ ] Add tests for client-owned event sending defaults and headers.
-- [ ] Implement client-aware event sending.
+- [X] Add tests for client-owned event sending defaults and headers.
+- [X] Implement client-aware event sending.
 - [ ] Remove or rewrite tests that depend on old global config, router
   ~funcs:~, and router ~path:~ setup.
 - [ ] Document the breaking migration from global setup to first-class clients.

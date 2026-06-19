@@ -1,7 +1,7 @@
 defmodule Inngest.ClientTest do
   use ExUnit.Case, async: false
 
-  alias Inngest.{Client, Config, Headers, Signature}
+  alias Inngest.{Client, Config, Event, Headers, Signature}
 
   @signing_key "signkey-test-8ee2262a15e8d3c42d6a840db7af3de2aab08ef632b32a37a687f24b34dba3ff"
   @fallback_signing_key "signkey-fallback-746573742d66616c6c6261636b2d7369676e696e672d6b657921"
@@ -187,6 +187,50 @@ defmodule Inngest.ClientTest do
       assert second.id == "second-client"
       assert second.funcs == [SecondFunction]
       assert second.env == "second-env"
+    end
+  end
+
+  describe "client-owned event sending" do
+    test "macro-backed client modules expose send/1" do
+      Application.put_env(:tesla, :adapter, Tesla.Mock)
+
+      Tesla.Mock.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
+        assert url == "https://client-events.example/e/client-event-key"
+        [event] = Jason.decode!(body)
+        assert event["name"] == "test/client.send"
+        assert event["data"] == %{"ok" => true}
+        assert {Headers.env(), "client-env"} in headers
+
+        %Tesla.Env{status: 200, body: %{"ids" => ["event-id"], "status" => 200}}
+      end)
+
+      assert {:ok, %{"ids" => ["event-id"], "status" => 200}} =
+               FirstClient.send(%Event{name: "test/client.send", data: %{ok: true}})
+    end
+
+    test "runtime client structs can send events directly" do
+      Application.put_env(:tesla, :adapter, Tesla.Mock)
+
+      client =
+        Client.new(
+          id: "send-client",
+          event_url: "https://events.example",
+          event_key: "send-key",
+          env: "send-env"
+        )
+
+      Tesla.Mock.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
+        assert url == "https://events.example/e/send-key"
+        [event] = Jason.decode!(body)
+        assert event["name"] == "test/runtime.send"
+        assert event["data"] == %{}
+        assert {Headers.env(), "send-env"} in headers
+
+        %Tesla.Env{status: 200, body: ~s({"ids":["runtime-id"],"status":200})}
+      end)
+
+      assert {:ok, %{"ids" => ["runtime-id"], "status" => 200}} =
+               Client.send(client, %Event{name: "test/runtime.send"})
     end
   end
 

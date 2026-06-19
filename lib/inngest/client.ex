@@ -56,6 +56,11 @@ defmodule Inngest.Client do
       def client() do
         Inngest.Client.new(@inngest_client_opts)
       end
+
+      @spec send(Inngest.Event.t() | list(Inngest.Event.t())) :: {:ok, map()} | {:error, binary()}
+      def send(payload) do
+        Inngest.Client.send(client(), payload)
+      end
     end
   end
 
@@ -98,20 +103,40 @@ defmodule Inngest.Client do
   @doc """
   Send one or a batch of events to Inngest
   """
+  @spec send(t(), Event.t() | list(Event.t())) :: {:ok, map()} | {:error, binary()}
+  def send(payload, opts \\ [])
+
+  def send(%__MODULE__{} = client, payload) do
+    payload = List.wrap(payload)
+
+    case client
+         |> client(:event, [])
+         |> Tesla.post("/e/#{client.event_key}", payload) do
+      {:ok, %Tesla.Env{status: 200, body: resp}} ->
+        decode_send_response(resp)
+
+      {:ok, %Tesla.Env{status: 400}} ->
+        {:error, "invalid event data"}
+
+      {:ok, %Tesla.Env{status: 401}} ->
+        {:error, "unknown ingest key"}
+
+      {:ok, %Tesla.Env{status: 403}} ->
+        {:error, "this ingest key is not authorized to send this event"}
+
+      _ ->
+        {:error, "unknown error"}
+    end
+  end
+
   @spec send(Event.t() | list(Event.t()), Keyword.t()) :: {:ok, map()} | {:error, binary()}
-  def send(payload, opts \\ []) do
+  def send(payload, opts) when not is_struct(payload, __MODULE__) do
     event_key = Config.event_key()
     client = httpclient(:event, opts)
 
     case Tesla.post(client, "/e/#{event_key}", payload) do
       {:ok, %Tesla.Env{status: 200, body: resp}} ->
-        # NOTE: because resp headers currently says text/plain
-        # so http client won't automatically decode it as json
-        if is_binary(resp) do
-          Jason.decode(resp)
-        else
-          {:ok, resp}
-        end
+        decode_send_response(resp)
 
       {:ok, %Tesla.Env{status: 400}} ->
         {:error, "invalid event data"}
@@ -208,6 +233,10 @@ defmodule Inngest.Client do
 
     Tesla.client(middleware)
   end
+
+  # Inngest may return send responses as parsed JSON or text/plain JSON.
+  defp decode_send_response(resp) when is_binary(resp), do: Jason.decode(resp)
+  defp decode_send_response(resp), do: {:ok, resp}
 
   defp request(%__MODULE__{} = client, type, method, path, payload, opts)
        when type in [:api, :register] do
