@@ -59,14 +59,14 @@ failing tests.
 
 ** Phase 1: Call Request Implementation
 
-- [ ] Normalize call request parsing around ~ctx.use_api~ instead of top-level ~use_api~.
-- [ ] Fetch full batch events from ~/v0/runs/:run_id/batch~ when ~ctx.use_api~ is true.
-- [ ] Use the first fetched batch event as ~event~ when full batch events replace the request payload.
-- [ ] Fetch full memoized step data from ~/v0/runs/:run_id/actions~ when ~ctx.use_api~ is true.
-- [ ] Return ~500~ when required full payload fetches fail.
-- [ ] Return ~500~ when ~fnId~ does not match a registered function.
-- [ ] Expose ~event~, ~events~, ~run_id~, ~attempt~, and ~step~ to function input.
-- [ ] Add context fields for ~disable_immediate_execution~ and ~stack~.
+- [X] Normalize call request parsing around ~ctx.use_api~ instead of top-level ~use_api~.
+- [X] Fetch full batch events from ~/v0/runs/:run_id/batch~ when ~ctx.use_api~ is true.
+- [X] Use the first fetched batch event as ~event~ when full batch events replace the request payload.
+- [X] Fetch full memoized step data from ~/v0/runs/:run_id/actions~ when ~ctx.use_api~ is true.
+- [X] Return ~500~ when required full payload fetches fail.
+- [X] Return ~500~ when ~fnId~ does not match a registered function.
+- [X] Expose ~event~, ~events~, ~run_id~, ~attempt~, and ~step~ to function input.
+- [X] Add context fields for ~disable_immediate_execution~ and ~stack~.
 
 ** Phase 2: Step Execution And Memoization
 

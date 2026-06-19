@@ -11,30 +11,19 @@ defmodule Inngest.Router.Invoke do
   def init(opts), do: opts
 
   @spec call(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def call(
-        %{params: %{"use_api" => use_api, "ctx" => %{"run_id" => run_id}} = params} = conn,
-        opts
-      ) do
-    with true <- use_api,
-         retrieve_steps <- Task.async(fn -> fn_run_steps(run_id) end),
-         retrieve_batch <- Task.async(fn -> fn_run_batch(run_id) end),
-         {:ok, step_data} <- Task.await(retrieve_steps),
-         {:ok, batch_data} <- Task.await(retrieve_batch) do
-      params =
-        Map.merge(params, %{
-          "step" => step_data,
-          "events" => batch_data
-        })
+  def call(%{params: params} = conn, opts) do
+    case maybe_retrieve_full_payload(params) do
+      {:ok, params} ->
+        exec(conn, Map.merge(opts, params))
 
-      exec(conn, Map.merge(opts, params))
-    else
-      _ -> exec(conn, Map.merge(opts, params))
+      {:error, error} ->
+        send_error(conn, error)
     end
   end
 
   defp exec(
          %{private: %{raw_body: [body]}} = conn,
-         %{"event" => event, "events" => events, "ctx" => ctx, "fnId" => fn_slug} = params
+         %{"event" => event, "events" => events, "ctx" => request_ctx, "fnId" => fn_slug} = params
        ) do
     func =
       params
@@ -43,9 +32,16 @@ defmodule Inngest.Router.Invoke do
         Enum.member?(func.slugs(), fn_slug)
       end)
 
+    if is_nil(func) do
+      raise RuntimeError, "function not found: #{fn_slug}"
+    end
+
     ctx = %Inngest.Function.Context{
-      attempt: Map.get(ctx, "attempt", 0),
-      run_id: Map.get(ctx, "run_id"),
+      attempt: Map.get(request_ctx, "attempt", 0),
+      run_id: Map.get(request_ctx, "run_id"),
+      disable_immediate_execution: Map.get(request_ctx, "disable_immediate_execution", false),
+      stack: Map.get(request_ctx, "stack"),
+      target_step_id: Map.get(params, "stepId", "step"),
       steps: Map.get(params, "steps"),
       index: :ets.new(:index, [:set, :private])
     }
@@ -53,7 +49,8 @@ defmodule Inngest.Router.Invoke do
     input = %Inngest.Function.Input{
       event: Inngest.Event.from(event),
       events: Enum.map(events, &Inngest.Event.from/1),
-      run_id: Map.get(ctx, "run_id"),
+      run_id: Map.get(request_ctx, "run_id"),
+      attempt: Map.get(request_ctx, "attempt", 0),
       step: Inngest.StepTool
     }
 
@@ -81,6 +78,9 @@ defmodule Inngest.Router.Invoke do
     |> SdkResponse.maybe_retry_header(resp)
     |> send_resp(resp.status, resp.body)
     |> halt()
+  rescue
+    error ->
+      send_error(conn, error, __STACKTRACE__)
   end
 
   defp invoke(func, ctx, input) do
@@ -119,6 +119,26 @@ defmodule Inngest.Router.Invoke do
   defp fn_run_steps(run_id), do: fn_run_data("/v0/runs/#{run_id}/actions")
   defp fn_run_batch(run_id), do: fn_run_data("/v0/runs/#{run_id}/batch")
 
+  defp maybe_retrieve_full_payload(%{"ctx" => %{"use_api" => true, "run_id" => run_id}} = params) do
+    retrieve_steps = Task.async(fn -> fn_run_steps(run_id) end)
+    retrieve_batch = Task.async(fn -> fn_run_batch(run_id) end)
+
+    with {:ok, step_data} <- Task.await(retrieve_steps),
+         {:ok, batch_data} <- Task.await(retrieve_batch) do
+      {:ok,
+       Map.merge(params, %{
+         "event" => List.first(batch_data, Map.get(params, "event")),
+         "events" => batch_data,
+         "steps" => step_data
+       })}
+    else
+      {:error, error} ->
+        {:error, RuntimeError.exception("failed to retrieve full payload: #{inspect(error)}")}
+    end
+  end
+
+  defp maybe_retrieve_full_payload(params), do: {:ok, params}
+
   defp fn_run_data(path) do
     case Client.get(:api, path) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
@@ -126,6 +146,7 @@ defmodule Inngest.Router.Invoke do
         result =
           case body do
             _ = %{} -> body
+            _ when is_list(body) -> body
             _ -> Jason.decode!(body)
           end
 
@@ -137,6 +158,18 @@ defmodule Inngest.Router.Invoke do
       {:error, error} ->
         {:error, error}
     end
+  end
+
+  defp send_error(conn, error, stacktrace \\ []) do
+    resp = SdkResponse.from_result({:error, error}, stacktrace: stacktrace)
+
+    conn
+    |> put_resp_content_type(@content_type)
+    |> put_resp_header(Headers.sdk_version(), Config.sdk_version())
+    |> put_resp_header(Headers.req_version(), Config.req_version())
+    |> SdkResponse.maybe_retry_header(resp)
+    |> send_resp(resp.status, resp.body)
+    |> halt()
   end
 
   defp failure?(%{event: %{name: "inngest/function.failed"}} = _input), do: true
