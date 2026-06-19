@@ -32,7 +32,6 @@ defmodule Inngest.MixProject do
         main: "Inngest",
         authors: ["Darwin Wu <darwin@inngest.com>"],
         # source_ref: "v#{@version}",
-        assets: "docs/assets",
         logo: "docs/assets/logo.png",
         extras:
           ["CHANGELOG.md", "docs/**/*.md"]
