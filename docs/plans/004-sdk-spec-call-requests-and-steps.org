@@ -20,14 +20,37 @@ focused test that fails for the desired spec behavior, implement the smallest
 change, and leave the targeted test green. Do not end a phase with intentionally
 failing tests.
 
-** Open Questions
+** Decisions
 
-- [ ] Decide whether to make a hard break to spec memoized step shape or temporarily support old dev-server payloads too.
-- [ ] Decide whether ~step.run~ should immediately execute when allowed or always plan first for simpler determinism.
-- [ ] Decide how long targeted step discovery may run before returning ~StepNotFound~.
-- [ ] Decide whether memoized step errors raise a dedicated ~Inngest.StepError~.
-- [ ] Decide how much ~ctx.stack.stack~ recovery belongs in the first pass.
-- [ ] Decide whether parallelism is explicitly out of scope until stack recovery exists.
+- Plan 4 will hard-break to the spec memoized step action shape. Memoized
+  actions must be handled as ~%{"data" => value}~ or ~%{"error" => error}~,
+  and the SDK will not preserve legacy raw action payload compatibility.
+- ~step.run~ will execute immediately when the step is not memoized and
+  ~ctx.disable_immediate_execution~ is false. When immediate execution is
+  disabled, the SDK will report a planned step instead of running the step body.
+- Targeted ~stepId~ discovery will make one deterministic function traversal
+  with no local retry loop or wall-clock discovery budget. If the requested
+  hashed step ID is not encountered during that traversal, the SDK will return
+  ~StepNotFound~.
+- Memoized step errors will raise a dedicated ~Inngest.StepError~ carrying the
+  original error payload when practical, so remote step failures have a stable
+  SDK exception type.
+- Plan 4 will implement the minimal ~ctx.stack.stack~ recovery needed for
+  sequential targeted ~stepId~ correctness: parse and store ~ctx.stack~, use it
+  to follow executor-provided sequential traversal order, skip/replay prior
+  memoized stack entries, and return ~StepNotFound~ when the target cannot be
+  reached in that traversal.
+- Plan 4 will keep parallel step recovery and execution semantics explicitly
+  out of scope until full stack recovery exists.
+
+** Deferred Scope
+
+- Full out-of-order stack recovery and parallel branch reconstruction are
+  deferred beyond Plan 4.
+- Spec-complete parallel step execution/recovery is deferred beyond Plan 4. Any
+  existing public API that appears to imply parallel execution should remain
+  undocumented or be documented as not spec-complete until stack recovery can
+  reconstruct parallel branches reliably.
 
 ** Phase 1: Call Request Implementation
 
