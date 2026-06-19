@@ -3,7 +3,7 @@ defmodule Inngest.Router.Introspection do
 
   import Plug.Conn
   import Inngest.Router.Helper
-  alias Inngest.{Config, Headers, Signature}
+  alias Inngest.{Headers, Signature}
 
   @content_type "application/json"
   @schema_version "2024-05-24"
@@ -14,19 +14,19 @@ defmodule Inngest.Router.Introspection do
 
   @spec call(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def call(conn, opts) do
-    funcs = load_functions(opts)
+    client = client!(opts)
     framework = Map.get(opts, :framework)
 
     {status, resp} =
-      case authentication(conn) do
+      case authentication(conn, client) do
         :unsigned ->
-          {200, unauthenticated_response(funcs, nil)}
+          {200, unauthenticated_response(client, nil)}
 
         :invalid ->
-          {200, unauthenticated_response(funcs, false)}
+          {200, unauthenticated_response(client, false)}
 
         :valid ->
-          authenticated_response(conn, funcs, framework)
+          authenticated_response(conn, client, framework)
       end
 
     conn
@@ -34,13 +34,13 @@ defmodule Inngest.Router.Introspection do
     |> send_resp(status, Jason.encode!(resp))
   end
 
-  defp authentication(conn) do
+  defp authentication(conn, client) do
     case get_req_header(conn, Headers.signature()) do
       [] ->
         :unsigned
 
       [signature | _] ->
-        keys = [Config.signing_key(), Config.signing_key_fallback()]
+        keys = [client.signing_key, client.signing_key_fallback]
 
         if Signature.signing_key_valid?(signature, keys, raw_body(conn)) do
           :valid
@@ -50,42 +50,42 @@ defmodule Inngest.Router.Introspection do
     end
   end
 
-  defp unauthenticated_response(funcs, authentication_succeeded) do
+  defp unauthenticated_response(client, authentication_succeeded) do
     %{
       authentication_succeeded: authentication_succeeded,
-      function_count: length(funcs),
-      has_event_key: configured?(Config.event_key()),
-      has_signing_key: configured?(Config.signing_key()),
-      has_signing_key_fallback: configured?(Config.signing_key_fallback()),
-      mode: mode(),
+      function_count: length(client.funcs),
+      has_event_key: configured?(client.event_key),
+      has_signing_key: configured?(client.signing_key),
+      has_signing_key_fallback: configured?(client.signing_key_fallback),
+      mode: mode(client),
       schema_version: @schema_version
     }
   end
 
-  defp authenticated_response(conn, funcs, framework) do
-    case app_id() do
+  defp authenticated_response(conn, client, framework) do
+    case app_id(client) do
       {:ok, app_id} ->
         {200,
          %{
-           api_origin: Config.api_url(),
+           api_origin: client.api_url,
            app_id: app_id,
            authentication_succeeded: true,
-           env: Config.inngest_env(),
-           event_api_origin: Config.event_url(),
-           event_key_hash: hash(Config.event_key()),
+           env: client.env,
+           event_api_origin: client.event_url,
+           event_key_hash: hash(client.event_key),
            framework: framework,
-           function_count: length(funcs),
-           has_event_key: configured?(Config.event_key()),
-           has_signing_key: configured?(Config.signing_key()),
-           has_signing_key_fallback: configured?(Config.signing_key_fallback()),
-           mode: mode(),
+           function_count: length(client.funcs),
+           has_event_key: configured?(client.event_key),
+           has_signing_key: configured?(client.signing_key),
+           has_signing_key_fallback: configured?(client.signing_key_fallback),
+           mode: mode(client),
            schema_version: @schema_version,
            sdk_language: @sdk_language,
-           sdk_version: Config.sdk_version(),
-           serve_origin: Config.app_host(),
-           serve_path: Config.serve_path() || conn.request_path,
-           signing_key_fallback_hash: Signature.hashed_signing_key(Config.signing_key_fallback()),
-           signing_key_hash: Signature.hashed_signing_key(Config.signing_key())
+           sdk_version: client.sdk_version,
+           serve_origin: client.serve_origin,
+           serve_path: client.serve_path || conn.request_path,
+           signing_key_fallback_hash: Signature.hashed_signing_key(client.signing_key_fallback),
+           signing_key_hash: Signature.hashed_signing_key(client.signing_key)
          }}
 
       {:error, error} ->
@@ -93,8 +93,8 @@ defmodule Inngest.Router.Introspection do
     end
   end
 
-  defp app_id do
-    case Config.app_name() do
+  defp app_id(client) do
+    case client.id do
       "" -> {:error, "app_id must not be empty"}
       app_id -> {:ok, app_id}
     end
@@ -110,7 +110,7 @@ defmodule Inngest.Router.Introspection do
     end
   end
 
-  defp mode, do: Config.mode() |> Atom.to_string()
+  defp mode(client), do: client.mode |> Atom.to_string()
 
   defp raw_body(%{private: %{raw_body: body}}) when is_list(body), do: Enum.join(body)
   defp raw_body(_conn), do: ""

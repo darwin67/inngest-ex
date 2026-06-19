@@ -97,9 +97,9 @@ tests.
   list and client app identity.
 - [X] Update registration payload generation to accept client context.
 - [X] Add tests that call requests load functions from ~client:~.
-- [ ] Update Plug and Phoenix routers to require ~client:~.
-- [ ] Add tests that introspection reflects the selected client.
-- [ ] Update introspection to use client-owned app identity, function count,
+- [X] Update Plug and Phoenix routers to require ~client:~.
+- [X] Add tests that introspection reflects the selected client.
+- [X] Update introspection to use client-owned app identity, function count,
   framework metadata, and future capability metadata.
 
 ** Phase 3: Event Sending And Compatibility
