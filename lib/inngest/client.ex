@@ -85,6 +85,16 @@ defmodule Inngest.Client do
     }
   end
 
+  @doc false
+  @spec serve_url(t(), binary()) :: binary()
+  def serve_url(%__MODULE__{} = client, request_path) do
+    path = client.serve_path || request_path
+
+    client.serve_origin
+    |> String.trim_trailing("/")
+    |> Kernel.<>(normalize_path(path))
+  end
+
   @doc """
   Send one or a batch of events to Inngest
   """
@@ -142,6 +152,13 @@ defmodule Inngest.Client do
   def httpclient(type, opts), do: client(Config.inngest_url(), type, opts)
 
   @doc false
+  @spec headers(t(), atom(), Keyword.t()) :: [{binary(), binary()}]
+  def headers(%__MODULE__{} = client, type, opts) when is_atom(type) do
+    client
+    |> default_headers(type, opts)
+    |> merge_headers(Keyword.get(opts, :headers, []))
+  end
+
   @spec headers(atom(), Keyword.t()) :: [{binary(), binary()}]
   def headers(type, opts \\ []) do
     type
@@ -151,10 +168,16 @@ defmodule Inngest.Client do
 
   @doc false
   @spec get(atom(), binary(), Keyword.t()) :: {:ok, Tesla.Env.t()} | {:error, term()}
+  def get(%__MODULE__{} = client, type, path, opts),
+    do: request(client, type, :get, path, nil, opts)
+
   def get(type, path, opts \\ []), do: request(type, :get, path, nil, opts)
 
   @doc false
   @spec post(atom(), binary(), term(), Keyword.t()) :: {:ok, Tesla.Env.t()} | {:error, term()}
+  def post(%__MODULE__{} = client, type, path, payload, opts),
+    do: request(client, type, :post, path, payload, opts)
+
   def post(type, path, payload, opts \\ []), do: request(type, :post, path, payload, opts)
 
   @doc false
@@ -164,7 +187,18 @@ defmodule Inngest.Client do
     :ok
   end
 
-  defp client(base_url, type, opts) do
+  defp client(%__MODULE__{} = client, type, opts) do
+    middleware = [
+      {Tesla.Middleware.BaseUrl, client_base_url(client, type)},
+      Tesla.Middleware.JSON
+    ]
+
+    middleware = middleware ++ [{Tesla.Middleware.Headers, headers(client, type, opts)}]
+
+    Tesla.client(middleware)
+  end
+
+  defp client(base_url, type, opts) when is_binary(base_url) do
     middleware = [
       {Tesla.Middleware.BaseUrl, base_url},
       Tesla.Middleware.JSON
@@ -173,6 +207,31 @@ defmodule Inngest.Client do
     middleware = middleware ++ [{Tesla.Middleware.Headers, headers(type, opts)}]
 
     Tesla.client(middleware)
+  end
+
+  defp request(%__MODULE__{} = client, type, method, path, payload, opts)
+       when type in [:api, :register] do
+    case client_initial_signing_key(client) do
+      {:ok, :primary, key} ->
+        resp =
+          do_request(client, type, method, path, payload, Keyword.put(opts, :signing_key, key))
+
+        maybe_retry_with_client_fallback(resp, client, type, method, path, payload, opts)
+
+      {:ok, :fallback, key} ->
+        do_request(client, type, method, path, payload, Keyword.put(opts, :signing_key, key))
+
+      :error ->
+        if client.mode == :dev do
+          do_request(client, type, method, path, payload, opts)
+        else
+          {:error, "missing signing key"}
+        end
+    end
+  end
+
+  defp request(%__MODULE__{} = client, type, method, path, payload, opts) do
+    do_request(client, type, method, path, payload, opts)
   end
 
   defp request(type, method, path, payload, opts) when type in [:api, :register] do
@@ -202,6 +261,40 @@ defmodule Inngest.Client do
     |> httpclient(opts)
     |> Tesla.post(path, payload)
   end
+
+  defp do_request(%__MODULE__{} = client, type, :get, path, _payload, opts) do
+    client
+    |> client(type, opts)
+    |> Tesla.get(path)
+  end
+
+  defp do_request(%__MODULE__{} = client, type, :post, path, payload, opts) do
+    client
+    |> client(type, opts)
+    |> Tesla.post(path, payload)
+  end
+
+  defp maybe_retry_with_client_fallback(
+         {:ok, %Tesla.Env{status: status}} = resp,
+         client,
+         type,
+         method,
+         path,
+         payload,
+         opts
+       )
+       when status in [401, 403] do
+    case usable_signing_key(client.signing_key_fallback) do
+      {:ok, fallback} ->
+        do_request(client, type, method, path, payload, Keyword.put(opts, :signing_key, fallback))
+
+      :error ->
+        resp
+    end
+  end
+
+  defp maybe_retry_with_client_fallback(resp, _client, _type, _method, _path, _payload, _opts),
+    do: resp
 
   defp maybe_retry_with_fallback(
          {:ok, %Tesla.Env{status: status}} = resp,
@@ -270,6 +363,31 @@ defmodule Inngest.Client do
 
   defp maybe_auth_header(headers, _type, _opts), do: headers
 
+  defp default_headers(%__MODULE__{} = client, type, opts) do
+    [
+      {Headers.sdk_version(), client.sdk_version},
+      {Headers.req_version(), client.req_version}
+    ]
+    |> maybe_client_env_header(client)
+    |> maybe_client_auth_header(client, type, opts)
+  end
+
+  defp maybe_client_env_header(headers, %{env: nil}), do: headers
+
+  defp maybe_client_env_header(headers, %{env: env}),
+    do: headers ++ [{Headers.env(), to_string(env)}]
+
+  defp maybe_client_auth_header(headers, client, type, opts) when type in [:api, :register] do
+    signing_key = Keyword.get(opts, :signing_key, client.signing_key)
+
+    case Signature.hashed_signing_key(signing_key) do
+      nil -> headers
+      key -> headers ++ [{"authorization", "Bearer " <> key}]
+    end
+  end
+
+  defp maybe_client_auth_header(headers, _client, _type, _opts), do: headers
+
   defp initial_signing_key() do
     if fallback_signing_key?() do
       Config.signing_key_fallback()
@@ -316,6 +434,26 @@ defmodule Inngest.Client do
       _hashed -> {:ok, key}
     end
   end
+
+  defp client_initial_signing_key(client) do
+    client.signing_key
+    |> usable_signing_key()
+    |> tag_signing_key(:primary)
+    |> client_fallback_to_fallback(client)
+  end
+
+  defp client_fallback_to_fallback({:ok, :primary, _key} = result, _client), do: result
+
+  defp client_fallback_to_fallback(:error, client) do
+    client.signing_key_fallback
+    |> usable_signing_key()
+    |> tag_signing_key(:fallback)
+  end
+
+  defp client_base_url(%__MODULE__{} = client, :event), do: client.event_url
+  defp client_base_url(%__MODULE__{} = client, :register), do: client.register_url
+  defp client_base_url(%__MODULE__{} = client, :api), do: client.api_url
+  defp client_base_url(%__MODULE__{} = client, _type), do: client.inngest_url
 
   defp fallback_signing_key?() do
     :persistent_term.get(@fallback_signing_key, false)
@@ -444,4 +582,10 @@ defmodule Inngest.Client do
     do: name |> Atom.to_string() |> String.downcase()
 
   defp normalize_header(name), do: name |> to_string() |> String.downcase()
+
+  defp normalize_path(path) when is_binary(path) do
+    if String.starts_with?(path, "/"), do: path, else: "/" <> path
+  end
+
+  defp normalize_path(_), do: ""
 end

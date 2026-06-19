@@ -93,9 +93,9 @@ tests.
 
 ** Phase 2: Function Generation And Router Integration
 
-- [ ] Add tests that registration payload generation uses the client function
+- [X] Add tests that registration payload generation uses the client function
   list and client app identity.
-- [ ] Update registration payload generation to accept client context.
+- [X] Update registration payload generation to accept client context.
 - [ ] Add tests that call requests load functions from ~client:~.
 - [ ] Update Plug and Phoenix routers to require ~client:~.
 - [ ] Add tests that introspection reflects the selected client.

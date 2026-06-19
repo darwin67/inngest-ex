@@ -3,6 +3,18 @@ defmodule Inngest.Router.Helper do
 
   alias Inngest.Config
 
+  def client!(%{client: %Inngest.Client{} = client}), do: client
+
+  def client!(%{client: client}) when is_atom(client) do
+    if function_exported?(client, :client, 0) do
+      client.client()
+    else
+      raise ArgumentError, "expected :client to expose client/0"
+    end
+  end
+
+  def client!(_params), do: raise(ArgumentError, "Inngest router requires :client")
+
   def load_functions(params) do
     if Config.path_runtime_eval() do
       %{funcs: funcs} = load_functions_from_path(params)

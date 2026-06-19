@@ -3,7 +3,7 @@ defmodule Inngest.Router.Register do
 
   import Plug.Conn
   import Inngest.Router.Helper
-  alias Inngest.{Client, Config, Headers, Signature}
+  alias Inngest.{Client, Headers, Signature}
 
   @content_type "application/json"
 
@@ -13,22 +13,21 @@ defmodule Inngest.Router.Register do
   @spec call(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def call(conn, opts), do: exec(conn, opts)
 
-  defp exec(
-         %{request_path: path} = conn,
-         %{framework: framework} = params
-       ) do
-    {status, resp} = sync(conn, path, params, framework)
+  defp exec(%{request_path: path} = conn, %{framework: framework} = params) do
+    client = client!(params)
+    {status, resp} = sync(conn, path, client, framework)
 
     conn
     |> put_resp_content_type(@content_type)
     |> send_resp(status, Jason.encode!(resp))
   end
 
-  defp sync(conn, path, params, framework) do
-    with :ok <- verify_signature(conn),
-         {:ok, app_name} <- app_name(),
-         funcs <- params |> load_functions() |> Enum.flat_map(& &1.serve(path)),
-         {:ok, modified} <- register(conn, path, funcs, app_name, framework) do
+  defp sync(conn, path, client, framework) do
+    with :ok <- verify_signature(conn, client),
+         {:ok, app_name} <- app_name(client),
+         serve_url <- Client.serve_url(client, path),
+         funcs <- Enum.flat_map(client.funcs, & &1.serve(path, client.id, serve_url)),
+         {:ok, modified} <- register(conn, funcs, app_name, client, framework, serve_url) do
       {200, %{message: "registered", modified: modified}}
     else
       {:error, :invalid_signature} ->
@@ -39,18 +38,20 @@ defmodule Inngest.Router.Register do
     end
   end
 
-  defp register(conn, path, functions, app_name, framework) do
+  defp register(conn, functions, app_name, client, framework, serve_url) do
     payload = %{
-      url: Config.serve_url(path),
+      url: serve_url,
       v: "0.1",
       deployType: "ping",
-      sdk: Config.sdk_version(),
+      sdk: client.sdk_version,
       framework: framework,
       appName: app_name,
       functions: functions
     }
 
-    case Client.post(:register, register_path(conn), payload, headers: register_headers(conn)) do
+    case Client.post(client, :register, register_path(conn), payload,
+           headers: register_headers(conn)
+         ) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:ok, registration_modified(body)}
 
@@ -68,13 +69,13 @@ defmodule Inngest.Router.Register do
     end
   end
 
-  defp verify_signature(conn) do
+  defp verify_signature(conn, client) do
     case get_req_header(conn, Headers.signature()) do
       [] ->
         :ok
 
       [signature | _] ->
-        keys = [Config.signing_key(), Config.signing_key_fallback()]
+        keys = [client.signing_key, client.signing_key_fallback]
 
         if Signature.signing_key_valid?(signature, keys, raw_body(conn)) do
           :ok
@@ -84,8 +85,8 @@ defmodule Inngest.Router.Register do
     end
   end
 
-  defp app_name() do
-    case Config.app_name() do
+  defp app_name(%Client{} = client) do
+    case client.id do
       name when is_binary(name) and name != "" -> {:ok, name}
       _ -> {:error, "appName must not be empty"}
     end
