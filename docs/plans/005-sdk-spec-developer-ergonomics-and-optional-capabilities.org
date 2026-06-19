@@ -20,13 +20,23 @@ focused test that fails for the desired spec behavior, implement the smallest
 change, and leave the targeted test green. Do not end a phase with intentionally
 failing tests.
 
-** Open Questions
+** Decisions
 
-- [ ] Decide whether middleware is represented by behaviour modules, function callbacks, anonymous functions, or a combination.
-- [ ] Decide whether middleware is configured globally, on a client struct, on function opts, or all three.
-- [ ] Decide whether event-send middleware applies to both ~Inngest.Client.send/2~ and ~step.send_event/3~.
-- [ ] Decide whether Connect, checkpointing, streaming, AI Gateway, Gateway fetch, and in-band sync are all deferred.
-- [ ] Decide whether introspection can advertise ~trust_probe~ after signed introspection works or only after a separate trust probe feature exists.
+- Middleware will be represented by behaviour modules with optional callbacks.
+  Middleware configuration accepts modules and ={module, opts}= tuples so hooks
+  remain named, discoverable, and testable.
+- Middleware can be configured globally through application config and per
+  function through function options. Client-struct middleware is deferred until
+  the SDK exposes a first-class client struct API.
+- Event-send middleware applies to both ~Inngest.Client.send/2~ and
+  ~Inngest.StepTool.send_event/3~ through the same event-send hook path. Durable
+  step memoization stores the result after middleware and event send complete.
+- Connect, checkpointing, streaming, AI Gateway, Gateway fetch, and in-band sync
+  remain deferred in this plan. Plan 5 only documents those boundaries and
+  prevents optional capabilities from being advertised before implementation.
+- Introspection must only advertise ~trust_probe~ after a separate trust probe
+  feature exists. Signed introspection alone is not sufficient to advertise that
+  capability.
 
 ** Phase 1: Middleware Implementation
 
