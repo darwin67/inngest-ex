@@ -29,9 +29,8 @@ defmodule Inngest.Middleware do
   tuple before it is converted into an SDK response. Return the updated result
   tuple, such as `{:ok, output}` or `{:error, reason}`.
 
-  `before_response/4` receives the generated `Inngest.SdkResponse` and can
-  mutate the final response body, status, or retry metadata before the router
-  sends it.
+  `before_response/4` receives the generated SDK response struct and can mutate
+  the final response body, status, or retry metadata before the router sends it.
 
   ## Events And Steps
 
@@ -50,23 +49,89 @@ defmodule Inngest.Middleware do
   @type normalized_entry() :: {module(), opts()}
   @type result() :: {:ok, term()} | {:error, term()}
 
+  @doc """
+  Mutates the function context and input before execution setup continues.
+
+  This is the earliest function lifecycle hook. Use it to normalize incoming
+  event data or add derived values to `Inngest.Function.Context.data` before
+  later middleware or function code runs.
+  """
   @callback transform_input(Context.t(), Input.t(), opts()) ::
               {Context.t(), Input.t()} | {:ok, Context.t(), Input.t()}
+
+  @doc """
+  Runs immediately before the user function is called.
+
+  This hook receives the context and input after `transform_input/3` has
+  completed for all middleware. Use it for request-aware setup, authorization,
+  tenancy, or tracing data that should be available to function code.
+  """
   @callback before_execution(Context.t(), Input.t(), opts()) ::
               {Context.t(), Input.t()} | {:ok, Context.t(), Input.t()}
+
+  @doc """
+  Mutates the raw function result after user code returns.
+
+  Return the updated result tuple directly, such as `{:ok, value}` or
+  `{:error, reason}`. This hook runs before `transform_output/4`.
+  """
   @callback after_execution(Context.t(), Input.t(), result(), opts()) :: result()
+
+  @doc """
+  Mutates the function result before it is converted to an SDK response.
+
+  Use this hook for output normalization or error shaping that should happen
+  before the router serializes the response body and retry metadata.
+  """
   @callback transform_output(Context.t(), Input.t(), result(), opts()) :: result()
-  @callback before_response(Context.t(), Input.t(), Inngest.SdkResponse.t(), opts()) ::
-              Inngest.SdkResponse.t() | {:ok, Inngest.SdkResponse.t()}
+
+  @doc """
+  Mutates the SDK response immediately before the router sends it.
+
+  This hook can adjust the final status, body, or retry metadata after result
+  serialization. Return the response struct directly or `{:ok, response}`.
+  """
+  @callback before_response(Context.t(), Input.t(), term(), opts()) ::
+              term() | {:ok, term()}
+
+  @doc """
+  Mutates outbound events before they are sent to Inngest.
+
+  This hook runs for both `Inngest.Client.send/2` and
+  `Inngest.StepTool.send_event/3`. Return a list of events or
+  `{:ok, events}`.
+  """
   @callback before_send_events([Inngest.Event.t()], term(), opts()) ::
               [Inngest.Event.t()] | {:ok, [Inngest.Event.t()]}
+
+  @doc """
+  Mutates the event-send result after the HTTP request completes.
+
+  Return the updated `Inngest.Client.send/2` result tuple directly. The second
+  argument contains the events after `before_send_events/3` mutations.
+  """
   @callback after_send_events(
               Inngest.Client.send_result(),
               [Inngest.Event.t()],
               term(),
               opts()
             ) :: Inngest.Client.send_result()
+
+  @doc """
+  Mutates a memoized step value immediately after it is unwrapped.
+
+  This hook only runs when the executor has already memoized a step. Use it for
+  compatibility migrations or shared decoding before user code receives replayed
+  step data.
+  """
   @callback after_memoization(Context.t(), binary(), term(), opts()) :: term() | {:ok, term()}
+
+  @doc """
+  Mutates memoized step data before it is returned to user code.
+
+  This hook runs after `after_memoization/4` and receives the hashed step ID and
+  current value. Return the transformed value directly or `{:ok, value}`.
+  """
   @callback transform_step_data(Context.t(), binary(), term(), opts()) :: term() | {:ok, term()}
 
   @optional_callbacks transform_input: 3,

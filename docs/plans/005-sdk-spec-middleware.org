@@ -1,7 +1,7 @@
 #+title: SDK Spec Middleware
 #+author: Darwin D. Wu
 #+date: 2026-06-19
-#+status: Draft
+#+status: Done
 
 * SDK Spec Middleware
 
@@ -46,33 +46,33 @@ failing tests.
 
 ** Phase 1: Middleware Implementation
 
-- [ ] Add tests for client-level middleware declared through ~use Inngest.Client~.
-- [ ] Add client-level middleware registration to ~Inngest.Client.new/1~ and the
+- [X] Add tests for client-level middleware declared through ~use Inngest.Client~.
+- [X] Add client-level middleware registration to ~Inngest.Client.new/1~ and the
   runtime client struct.
-- [ ] Add function-level middleware registration.
-- [ ] Ensure client middleware runs before function middleware.
-- [ ] Ensure middleware runs in registration order.
-- [ ] Add function lifecycle hooks for transform input, before execution, after execution, and transform output.
-- [ ] Consider recommended hooks for after memoization and before response.
-- [ ] Add event send lifecycle hooks for before send events and after send events.
+- [X] Add function-level middleware registration.
+- [X] Ensure client middleware runs before function middleware.
+- [X] Ensure middleware runs in registration order.
+- [X] Add function lifecycle hooks for transform input, before execution, after execution, and transform output.
+- [X] Consider recommended hooks for after memoization and before response.
+- [X] Add event send lifecycle hooks for before send events and after send events.
 
 ** Phase 2: Mutation And Capability Boundaries
 
-- [ ] Allow middleware to add fields to function context.
-- [ ] Allow middleware to access framework/platform request information where available.
-- [ ] Allow middleware to mutate memoized step data before user code sees it.
-- [ ] Allow middleware to mutate output and errors before SDK responses are sent.
-- [ ] Allow middleware to mutate events before sending them to Inngest.
-- [ ] Keep Connect, streaming, checkpointing, AI Gateway, Gateway fetch, and in-band sync as explicit future work unless implemented in this phase.
-- [ ] Ensure introspection capabilities only advertise implemented optional features.
+- [X] Allow middleware to add fields to function context.
+- [X] Allow middleware to access framework/platform request information where available.
+- [X] Allow middleware to mutate memoized step data before user code sees it.
+- [X] Allow middleware to mutate output and errors before SDK responses are sent.
+- [X] Allow middleware to mutate events before sending them to Inngest.
+- [X] Keep Connect, streaming, checkpointing, AI Gateway, Gateway fetch, and in-band sync as explicit future work unless implemented in this phase.
+- [X] Ensure introspection capabilities only advertise implemented optional features.
 
 ** Phase 3: Verification
 
-- [ ] Run ~make fmt~.
-- [ ] Run targeted middleware, client, router, and event send tests.
-- [ ] Run introspection capability tests.
-- [ ] Run ~make test-e2e~ so client-scoped middleware is verified through the
+- [X] Run ~make fmt~.
+- [X] Run targeted middleware, client, router, and event send tests.
+- [X] Run introspection capability tests.
+- [X] Run ~make test-e2e~ so client-scoped middleware is verified through the
   integration router and step event-send path.
-- [ ] Add docs example compile checks or doctests where practical.
-- [ ] Document middleware behavior and ordering.
-- [ ] Document implemented and deferred optional capabilities.
+- [X] Add docs example compile checks or doctests where practical.
+- [X] Document middleware behavior and ordering.
+- [X] Document implemented and deferred optional capabilities.
