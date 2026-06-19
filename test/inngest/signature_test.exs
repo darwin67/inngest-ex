@@ -31,6 +31,17 @@ defmodule Inngest.SignatureTest do
       assert Signature.signing_key_valid?(sig, @fallback_signing_key, body, ignore_ts: true)
     end
 
+    test "should return true when any configured signing key matches", %{body: body} do
+      sig = Signature.sign("1689920619", @fallback_signing_key, body)
+
+      assert Signature.signing_key_valid?(
+               sig,
+               [@signing_key, @fallback_signing_key],
+               body,
+               ignore_ts: true
+             )
+    end
+
     test "should return false for expired signatures", %{body: body} do
       refute Signature.signing_key_valid?(@sig, @signing_key, body)
     end

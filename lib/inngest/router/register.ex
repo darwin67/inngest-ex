@@ -3,11 +3,9 @@ defmodule Inngest.Router.Register do
 
   import Plug.Conn
   import Inngest.Router.Helper
-  alias Inngest.{Config, Headers}
+  alias Inngest.{Client, Config}
 
   @content_type "application/json"
-
-  defdelegate httpclient(type, opts), to: Inngest.Client
 
   @spec init(map()) :: map()
   def init(opts), do: opts
@@ -57,15 +55,7 @@ defmodule Inngest.Router.Register do
       functions: functions
     }
 
-    key = Inngest.Signature.hashed_signing_key(Config.signing_key())
-    headers = if is_nil(key), do: [], else: [authorization: "Bearer " <> key]
-
-    headers =
-      if is_nil(Config.env()),
-        do: headers,
-        else: Keyword.put(headers, String.to_atom(Headers.env()), Config.env())
-
-    case Tesla.post(httpclient(:register, headers: headers), "/fn/register", payload) do
+    case Client.post(:register, "/fn/register", payload) do
       {:ok, %Tesla.Env{status: 200}} ->
         :ok
 
