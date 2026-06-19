@@ -42,7 +42,7 @@ None.
 - [X] Change ~X-Inngest-Req-Version~ from ~1~ to spec-required ~2~.
 - [X] Ensure all SDK responses to call requests include ~X-Inngest-Sdk~ and ~X-Inngest-Req-Version~.
 - [X] Ensure all outbound requests to Inngest include required SDK headers and bearer authorization where required.
-- [ ] Add signature coverage for current key, fallback key, missing key, missing signature, expired timestamp, and invalid signature.
+- [X] Add signature coverage for current key, fallback key, missing key, missing signature, expired timestamp, and invalid signature.
 
 ** Phase 2: Edge Cases And Compatibility
 
