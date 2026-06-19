@@ -34,7 +34,7 @@ None.
 
 ** Phase 1: Core Implementation
 
-- [ ] Add a local SDK spec compliance checklist that maps spec requirements to implementation status.
+- [X] Add a local SDK spec compliance checklist that maps spec requirements to implementation status.
 - [ ] Normalize SDK mode handling around ~cloud~ and ~dev~, defaulting to ~cloud~.
 - [ ] Support required env vars: ~INNGEST_EVENT_KEY~, ~INNGEST_SIGNING_KEY~, ~INNGEST_SIGNING_KEY_FALLBACK~, and ~INNGEST_ENV~.
 - [ ] Support URL and mode env vars: ~INNGEST_DEV~, ~INNGEST_API_BASE_URL~, ~INNGEST_EVENT_API_BASE_URL~, ~INNGEST_BASE_URL~, ~INNGEST_SERVE_ORIGIN~, and ~INNGEST_SERVE_PATH~.
