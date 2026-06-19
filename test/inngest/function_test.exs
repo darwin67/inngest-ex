@@ -1,9 +1,45 @@
 defmodule Inngest.FunctionTest do
   use ExUnit.Case, async: true
 
+  alias Inngest.FnOpts
   alias Inngest.Function
   alias Inngest.Trigger
   alias Inngest.{TestEventFn, TestCronFn}
+
+  defmodule ConfigSurfaceFn do
+    use Inngest.Function
+
+    @func %FnOpts{
+      id: "config-surface",
+      debounce: %{
+        period: "5s",
+        timeout: "30s"
+      },
+      batch_events: %{
+        max_size: 10,
+        timeout: "5s",
+        key: "event.data.account_id"
+      },
+      throttle: %{
+        key: "event.data.account_id",
+        limit: 10,
+        period: "1m",
+        burst: 3
+      },
+      singleton: %{
+        key: "event.data.account_id",
+        mode: "skip"
+      },
+      timeouts: %{
+        start: "1m",
+        finish: "1h"
+      }
+    }
+    @trigger %Trigger{event: "my/config.surface"}
+
+    @impl true
+    def exec(_ctx, _input), do: {:ok, "done"}
+  end
 
   describe "slug/0" do
     test "return name of function as slug" do
@@ -63,6 +99,36 @@ defmodule Inngest.FunctionTest do
                  ]
                }
              ] = TestCronFn.serve("/api/inngest")
+    end
+
+    test "function config surface renders registration options" do
+      assert [
+               %{
+                 batchEvents: %{
+                   maxSize: 10,
+                   timeout: "5s",
+                   key: "event.data.account_id"
+                 },
+                 debounce: %{
+                   period: "5s",
+                   timeout: "30s"
+                 },
+                 throttle: %{
+                   key: "event.data.account_id",
+                   limit: 10,
+                   period: "1m",
+                   burst: 3
+                 },
+                 singleton: %{
+                   key: "event.data.account_id",
+                   mode: "skip"
+                 },
+                 timeouts: %{
+                   start: "1m",
+                   finish: "1h"
+                 }
+               }
+             ] = ConfigSurfaceFn.serve("/api/inngest")
     end
   end
 

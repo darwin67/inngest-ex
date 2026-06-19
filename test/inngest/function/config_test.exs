@@ -21,12 +21,20 @@ defmodule Inngest.FnOptsTest do
       id: "foobar",
       name: "FooBar",
       debounce: %{
-        period: "5s"
+        key: "event.data.account_id",
+        period: "5s",
+        timeout: "30s"
       }
     }
 
     test "should succeed with valid config" do
-      assert %{debounce: %{period: "5s"}} = FnOpts.validate_debounce(@fn_opts, @config)
+      assert %{
+               debounce: %{
+                 key: "event.data.account_id",
+                 period: "5s",
+                 timeout: "30s"
+               }
+             } = FnOpts.validate_debounce(@fn_opts, @config)
     end
 
     ##  configs
@@ -93,7 +101,8 @@ defmodule Inngest.FnOptsTest do
       name: "Foobar",
       batch_events: %{
         max_size: 10,
-        timeout: "5s"
+        timeout: "5s",
+        key: "event.data.account_id"
       }
     }
 
@@ -101,7 +110,8 @@ defmodule Inngest.FnOptsTest do
       assert %{
                batchEvents: %{
                  maxSize: 10,
-                 timeout: "5s"
+                 timeout: "5s",
+                 key: "event.data.account_id"
                }
              } = FnOpts.validate_batch_events(@fn_opts, @config)
     end
@@ -214,6 +224,70 @@ defmodule Inngest.FnOptsTest do
                    fn ->
                      FnOpts.validate_rate_limit(opts, @config)
                    end
+    end
+  end
+
+  describe "validate_throttle/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "Foobar",
+      throttle: %{
+        key: "event.data.account_id",
+        limit: 10,
+        period: "1m",
+        burst: 3
+      }
+    }
+
+    test "should succeed with valid config" do
+      assert %{
+               throttle: %{
+                 key: "event.data.account_id",
+                 limit: 10,
+                 period: "1m",
+                 burst: 3
+               }
+             } = FnOpts.validate_throttle(@fn_opts, @config)
+    end
+  end
+
+  describe "validate_singleton/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "Foobar",
+      singleton: %{
+        key: "event.data.account_id",
+        mode: "skip"
+      }
+    }
+
+    test "should succeed with valid config" do
+      assert %{
+               singleton: %{
+                 key: "event.data.account_id",
+                 mode: "skip"
+               }
+             } = FnOpts.validate_singleton(@fn_opts, @config)
+    end
+  end
+
+  describe "validate_timeouts/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "Foobar",
+      timeouts: %{
+        start: "1m",
+        finish: "1h"
+      }
+    }
+
+    test "should succeed with valid config" do
+      assert %{
+               timeouts: %{
+                 start: "1m",
+                 finish: "1h"
+               }
+             } = FnOpts.validate_timeouts(@fn_opts, @config)
     end
   end
 
