@@ -1,7 +1,7 @@
 #+title: SDK Spec Core Protocol Foundation
 #+author: Darwin D. Wu
 #+date: 2026-06-19
-#+status: Draft
+#+status: Done
 
 * SDK Spec Core Protocol Foundation
 
@@ -46,16 +46,16 @@ None.
 
 ** Phase 2: Edge Cases And Compatibility
 
-- [ ] Implement fallback signing key behavior for inbound signature verification.
-- [ ] Implement fallback signing key behavior for outbound REST API requests.
-- [ ] Keep dev mode permissive for unsigned requests while keeping cloud mode strict.
-- [ ] Preserve compatibility for existing application config keys or document any intentional deprecations.
-- [ ] Ensure ~INNGEST_ENV~ is sent as ~X-Inngest-Env~ only when configured.
-- [ ] Add regression tests for existing event key, signing key, URL, and SDK version behavior.
+- [X] Implement fallback signing key behavior for inbound signature verification.
+- [X] Implement fallback signing key behavior for outbound REST API requests.
+- [X] Keep dev mode permissive for unsigned requests while keeping cloud mode strict.
+- [X] Preserve compatibility for existing application config keys or document any intentional deprecations.
+- [X] Ensure ~INNGEST_ENV~ is sent as ~X-Inngest-Env~ only when configured.
+- [X] Add regression tests for existing event key, signing key, URL, and SDK version behavior.
 
 ** Phase 3: Verification
 
-- [ ] Run ~make fmt~.
-- [ ] Run targeted unit tests for config, headers, and signature behavior.
-- [ ] Run any affected router/client tests.
-- [ ] Update docs or compliance notes with implemented, deferred, and unsupported spec areas.
+- [X] Run ~make fmt~.
+- [X] Run targeted unit tests for config, headers, and signature behavior.
+- [X] Run any affected router/client tests.
+- [X] Update docs or compliance notes with implemented, deferred, and unsupported spec areas.
