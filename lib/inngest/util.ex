@@ -6,9 +6,9 @@ defmodule Inngest.Util do
   """
   @spec parse_duration(binary()) :: {:ok, number()} | {:error, binary()}
   def parse_duration(value) do
-    with [_, num, unit] <- Regex.run(~r/(\d+)(s|m|h|d)/i, value),
+    with [_, num, unit] <- Regex.run(~r/\A(\d+)(s|m|h|d)\z/i, value),
          dur <- String.to_integer(num) do
-      case unit do
+      case String.downcase(unit) do
         "d" -> {:ok, dur * day_in_seconds()}
         "h" -> {:ok, dur * hour_in_seconds()}
         "m" -> {:ok, dur * minute_in_seconds()}

@@ -4,6 +4,19 @@ defmodule Inngest.FnOptsTest do
   alias Inngest.FnOpts
 
   @config %{}
+  @partial_duration_inputs [
+    "1ms",
+    "5m later",
+    "5minutes",
+    "1s2",
+    "0.5s",
+    "duration 1m",
+    " 1m",
+    "1m ",
+    "1m\n",
+    "1h/30m",
+    "1d2h"
+  ]
 
   # helper function to remove nested fields from a struct
   defp drop_at(struct, path) do
@@ -21,12 +34,20 @@ defmodule Inngest.FnOptsTest do
       id: "foobar",
       name: "FooBar",
       debounce: %{
-        period: "5s"
+        key: "event.data.account_id",
+        period: "5s",
+        timeout: "30s"
       }
     }
 
     test "should succeed with valid config" do
-      assert %{debounce: %{period: "5s"}} = FnOpts.validate_debounce(@fn_opts, @config)
+      assert %{
+               debounce: %{
+                 key: "event.data.account_id",
+                 period: "5s",
+                 timeout: "30s"
+               }
+             } = FnOpts.validate_debounce(@fn_opts, @config)
     end
 
     ##  configs
@@ -55,6 +76,27 @@ defmodule Inngest.FnOptsTest do
         FnOpts.validate_debounce(opts, @config)
       end
     end
+
+    test "should raise with invalid timeout" do
+      opts = update_at(@fn_opts, [:debounce, :timeout], "yolo")
+
+      assert_raise Inngest.DebounceConfigError, "invalid duration: 'yolo'", fn ->
+        FnOpts.validate_debounce(opts, @config)
+      end
+    end
+
+    @partial_duration_inputs
+    |> Enum.each(fn duration ->
+      test "should raise when timeout is partial duration #{inspect(duration)}" do
+        opts = update_at(@fn_opts, [:debounce, :timeout], unquote(duration))
+
+        assert_raise Inngest.DebounceConfigError,
+                     "invalid duration: '#{unquote(duration)}'",
+                     fn ->
+                       FnOpts.validate_debounce(opts, @config)
+                     end
+      end
+    end)
   end
 
   describe "validate_priority/2" do
@@ -93,7 +135,8 @@ defmodule Inngest.FnOptsTest do
       name: "Foobar",
       batch_events: %{
         max_size: 10,
-        timeout: "5s"
+        timeout: "5s",
+        key: "event.data.account_id"
       }
     }
 
@@ -101,7 +144,8 @@ defmodule Inngest.FnOptsTest do
       assert %{
                batchEvents: %{
                  maxSize: 10,
-                 timeout: "5s"
+                 timeout: "5s",
+                 key: "event.data.account_id"
                }
              } = FnOpts.validate_batch_events(@fn_opts, @config)
     end
@@ -215,6 +259,201 @@ defmodule Inngest.FnOptsTest do
                      FnOpts.validate_rate_limit(opts, @config)
                    end
     end
+  end
+
+  describe "validate_throttle/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "Foobar",
+      throttle: %{
+        key: "event.data.account_id",
+        limit: 10,
+        period: "1m",
+        burst: 3
+      }
+    }
+
+    test "should succeed with valid config" do
+      assert %{
+               throttle: %{
+                 key: "event.data.account_id",
+                 limit: 10,
+                 period: "1m",
+                 burst: 3
+               }
+             } = FnOpts.validate_throttle(@fn_opts, @config)
+    end
+
+    test "should raise when limit is missing" do
+      opts = drop_at(@fn_opts, [:throttle, :limit])
+
+      assert_raise Inngest.ThrottleConfigError,
+                   "'limit' and 'period' must be set for throttle",
+                   fn ->
+                     FnOpts.validate_throttle(opts, @config)
+                   end
+    end
+
+    test "should raise when period is missing" do
+      opts = drop_at(@fn_opts, [:throttle, :period])
+
+      assert_raise Inngest.ThrottleConfigError,
+                   "'limit' and 'period' must be set for throttle",
+                   fn ->
+                     FnOpts.validate_throttle(opts, @config)
+                   end
+    end
+
+    test "should raise when period is invalid" do
+      opts = update_at(@fn_opts, [:throttle, :period], "yolo")
+
+      assert_raise Inngest.ThrottleConfigError, "invalid duration: 'yolo'", fn ->
+        FnOpts.validate_throttle(opts, @config)
+      end
+    end
+
+    @partial_duration_inputs
+    |> Enum.each(fn duration ->
+      test "should raise when period is partial duration #{inspect(duration)}" do
+        opts = update_at(@fn_opts, [:throttle, :period], unquote(duration))
+
+        assert_raise Inngest.ThrottleConfigError,
+                     "invalid duration: '#{unquote(duration)}'",
+                     fn ->
+                       FnOpts.validate_throttle(opts, @config)
+                     end
+      end
+    end)
+  end
+
+  describe "validate_singleton/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "Foobar",
+      singleton: %{
+        key: "event.data.account_id",
+        mode: :skip
+      }
+    }
+
+    test "should succeed with valid config" do
+      assert %{
+               singleton: %{
+                 key: "event.data.account_id",
+                 mode: "skip"
+               }
+             } = FnOpts.validate_singleton(@fn_opts, @config)
+    end
+
+    test "should succeed with cancel mode" do
+      opts = update_at(@fn_opts, [:singleton, :mode], :cancel)
+
+      assert %{
+               singleton: %{
+                 key: "event.data.account_id",
+                 mode: "cancel"
+               }
+             } = FnOpts.validate_singleton(opts, @config)
+    end
+
+    test "should raise when mode is missing" do
+      opts = drop_at(@fn_opts, [:singleton, :mode])
+
+      assert_raise Inngest.SingletonConfigError,
+                   "'mode' must be set for singleton",
+                   fn ->
+                     FnOpts.validate_singleton(opts, @config)
+                   end
+    end
+
+    test "should raise when mode is invalid" do
+      opts = update_at(@fn_opts, [:singleton, :mode], "replace")
+
+      assert_raise Inngest.SingletonConfigError,
+                   "invalid mode '\"replace\"', needs to be :skip|:cancel",
+                   fn ->
+                     FnOpts.validate_singleton(opts, @config)
+                   end
+    end
+
+    test "should raise when mode is a string value" do
+      opts = update_at(@fn_opts, [:singleton, :mode], "skip")
+
+      assert_raise Inngest.SingletonConfigError,
+                   "invalid mode '\"skip\"', needs to be :skip|:cancel",
+                   fn ->
+                     FnOpts.validate_singleton(opts, @config)
+                   end
+    end
+  end
+
+  describe "validate_timeouts/2" do
+    @fn_opts %FnOpts{
+      id: "foobar",
+      name: "Foobar",
+      timeouts: %{
+        start: "1m",
+        finish: "1h"
+      }
+    }
+
+    test "should succeed with valid config" do
+      assert %{
+               timeouts: %{
+                 start: "1m",
+                 finish: "1h"
+               }
+             } = FnOpts.validate_timeouts(@fn_opts, @config)
+    end
+
+    test "should succeed when only start is set" do
+      opts = %{@fn_opts | timeouts: %{start: "1m"}}
+
+      assert %{
+               timeouts: %{
+                 start: "1m"
+               }
+             } = FnOpts.validate_timeouts(opts, @config)
+    end
+
+    test "should raise when start is invalid" do
+      opts = update_at(@fn_opts, [:timeouts, :start], "yolo")
+
+      assert_raise Inngest.TimeoutConfigError, "invalid duration: 'yolo'", fn ->
+        FnOpts.validate_timeouts(opts, @config)
+      end
+    end
+
+    test "should raise when finish is invalid" do
+      opts = update_at(@fn_opts, [:timeouts, :finish], "yolo")
+
+      assert_raise Inngest.TimeoutConfigError, "invalid duration: 'yolo'", fn ->
+        FnOpts.validate_timeouts(opts, @config)
+      end
+    end
+
+    @partial_duration_inputs
+    |> Enum.each(fn duration ->
+      test "should raise when start is partial duration #{inspect(duration)}" do
+        opts = update_at(@fn_opts, [:timeouts, :start], unquote(duration))
+
+        assert_raise Inngest.TimeoutConfigError,
+                     "invalid duration: '#{unquote(duration)}'",
+                     fn ->
+                       FnOpts.validate_timeouts(opts, @config)
+                     end
+      end
+
+      test "should raise when finish is partial duration #{inspect(duration)}" do
+        opts = update_at(@fn_opts, [:timeouts, :finish], unquote(duration))
+
+        assert_raise Inngest.TimeoutConfigError,
+                     "invalid duration: '#{unquote(duration)}'",
+                     fn ->
+                       FnOpts.validate_timeouts(opts, @config)
+                     end
+      end
+    end)
   end
 
   describe "validate_idempotency/2" do

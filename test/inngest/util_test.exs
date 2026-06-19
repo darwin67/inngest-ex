@@ -25,5 +25,25 @@ defmodule Inngest.UtilTest do
     test "should fail for invalid time units" do
       assert {:error, "invalid duration: '1y'"} = Util.parse_duration("1y")
     end
+
+    [
+      "1ms",
+      "5m later",
+      "5minutes",
+      "1s2",
+      "0.5s",
+      "duration 1m",
+      " 1m",
+      "1m ",
+      "1m\n",
+      "1h/30m",
+      "1d2h"
+    ]
+    |> Enum.each(fn input ->
+      test "should reject partial duration #{inspect(input)}" do
+        assert {:error, "invalid duration: '#{unquote(input)}'"} =
+                 Util.parse_duration(unquote(input))
+      end
+    end)
   end
 end

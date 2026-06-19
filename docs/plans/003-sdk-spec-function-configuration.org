@@ -1,7 +1,7 @@
 #+title: SDK Spec Function Configuration
 #+author: Darwin D. Wu
 #+date: 2026-06-19
-#+status: Draft
+#+status: Done
 
 * SDK Spec Function Configuration
 
@@ -21,36 +21,41 @@ focused test that fails for the desired spec behavior, implement the smallest
 change, and leave the targeted test green. Do not end a phase with intentionally
 failing tests.
 
-** Open Questions
+** Decisions
 
-- [ ] Decide whether public config remains snake_case only and renders camelCase only at JSON boundaries.
-- [ ] Decide whether invalid config raises during module loading, serve generation, or registration.
-- [ ] Decide whether ~batch_events.key~ interacts with existing ~batch_events~ conflict rules.
-- [ ] Decide whether new config options use raw maps, dedicated structs, keyword lists, or multiple accepted forms.
-- [ ] Decide whether docs should show only new options or also update all existing function config examples.
+- Public function config remains idiomatic Elixir ~snake_case~. Spec ~camelCase~ names are emitted only at the registration JSON boundary.
+- Invalid function config raises during serve/registration payload generation, matching existing validation behavior. Module loading should remain side-effect-light.
+- ~batch_events.key~ does not change conflict semantics. Any non-nil ~batch_events~ config remains incompatible with ~rate_limit~ and ~cancel_on~.
+- New function config options use raw maps with atom keys, matching existing options. Do not add dedicated structs or keyword-list normalization in this plan.
+- ~singleton.mode~ uses atom values, ~:skip~ or ~:cancel~, in the public Elixir API and renders the corresponding spec string in registration payloads.
+- Update function configuration docs/examples to cover the full supported option set after this plan, including existing and new options, while avoiding unrelated documentation rewrites.
 
 ** Phase 1: Config Surface Implementation
 
-- [ ] Add ~throttle~ support with ~key~, ~limit~, ~period~, and ~burst~.
-- [ ] Add ~singleton~ support with ~key~ and ~mode~.
-- [ ] Add ~timeouts~ support with ~start~ and ~finish~.
-- [ ] Add ~batch_events.key~ support and render it as ~batchEvents.key~.
-- [ ] Add ~debounce.timeout~ support.
-- [ ] Keep existing ~debounce~, ~priority~, ~batch_events~, ~rate_limit~, ~idempotency~, ~concurrency~, and ~cancel_on~ behavior.
+- [X] Add ~throttle~ support with ~key~, ~limit~, ~period~, and ~burst~.
+- [X] Add ~singleton~ support with ~key~ and ~mode~.
+- [X] Add ~timeouts~ support with ~start~ and ~finish~.
+- [X] Add ~batch_events.key~ support and render it as ~batchEvents.key~.
+- [X] Add ~debounce.timeout~ support.
+- [X] Keep existing ~debounce~, ~priority~, ~batch_events~, ~rate_limit~, ~idempotency~, ~concurrency~, and ~cancel_on~ behavior.
 
 ** Phase 2: Validation And Documentation
 
-- [ ] Validate required fields for new config options.
-- [ ] Validate time strings for new duration fields.
-- [ ] Validate enum values such as singleton mode and concurrency scope.
-- [ ] Keep conflict validation for incompatible options such as ~batch_events~ with ~rate_limit~ or ~cancel_on~.
-- [ ] Document any config fields intentionally not implemented yet.
-- [ ] Do not add checkpoint registration fields unless checkpointing itself is implemented.
-- [ ] Add targeted dev-server smoke tests for representative options when supported by the local Inngest dev server.
+- [X] Validate required fields for new config options.
+- [X] Validate time strings for new duration fields.
+- [X] Validate enum values such as singleton mode and concurrency scope.
+- [X] Keep conflict validation for incompatible options such as ~batch_events~ with ~rate_limit~ or ~cancel_on~.
+- [X] Document any config fields intentionally not implemented yet.
+- [X] Do not add checkpoint registration fields unless checkpointing itself is implemented.
+- [X] Add targeted dev-server smoke tests for representative options when supported by the local Inngest dev server.
 
 ** Phase 3: Verification
 
-- [ ] Run ~make fmt~.
-- [ ] Run targeted function configuration tests.
-- [ ] Run existing function case tests.
-- [ ] Update reference docs for function configuration examples.
+- [X] Run ~make fmt~.
+- [X] Run targeted function configuration tests.
+- [X] Run existing function case tests.
+- [X] Update reference docs for function configuration examples.
+
+** Verification Notes
+
+- The local dev-server e2e suite passed against the existing function case coverage. A representative smoke test for the newly added ~throttle~, ~singleton~, and ~timeouts~ fields was attempted but not kept because the current local dev server returned an event-send error for that config shape before creating a run. Runtime smoke coverage for those fields should be revisited when local dev-server support is confirmed.

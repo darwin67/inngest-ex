@@ -12,6 +12,9 @@ defmodule Inngest.FnOpts do
     :priority,
     :batch_events,
     :rate_limit,
+    :throttle,
+    :singleton,
+    :timeouts,
     :idempotency,
     :concurrency,
     :cancel_on,
@@ -28,6 +31,9 @@ defmodule Inngest.FnOpts do
           priority: priority(),
           batch_events: batch_events(),
           rate_limit: rate_limit(),
+          throttle: throttle(),
+          singleton: singleton(),
+          timeouts: timeouts(),
           idempotency: idempotency(),
           concurrency: concurrency(),
           cancel_on: cancel_on()
@@ -100,7 +106,8 @@ defmodule Inngest.FnOpts do
   @type batch_events() ::
           %{
             max_size: number(),
-            timeout: binary()
+            timeout: binary(),
+            key: binary() | nil
           }
           | nil
 
@@ -139,6 +146,71 @@ defmodule Inngest.FnOpts do
           | nil
 
   @typedoc """
+  Throttle function execution to a given number of runs per period.
+
+  **limit** - `number` required
+
+  The maximum number of runs to allow per the given period.
+
+  **period** - `string` required
+
+  The time period over which the limit applies.
+
+  **key** - `string` optional
+
+  A unique key expression to partition throttle groups.
+
+  **burst** - `number` optional
+
+  Burst capacity beyond the steady-state rate.
+  """
+  @type throttle() ::
+          %{
+            key: binary() | nil,
+            limit: number(),
+            period: binary(),
+            burst: number() | nil
+          }
+          | nil
+
+  @typedoc """
+  Ensure only one run per key executes at a time.
+
+  **mode** - `atom` required
+
+  Determines what happens when a new run is triggered while one is already active.
+  Must be `:skip` or `:cancel`.
+
+  **key** - `string` optional
+
+  A unique key expression to partition singleton groups.
+  """
+  @type singleton() ::
+          %{
+            key: binary() | nil,
+            mode: :skip | :cancel
+          }
+          | nil
+
+  @typedoc """
+  Controls how long a function has to start and finish execution.
+
+  **start** - `string` optional
+
+  Maximum time from trigger to the first execution attempt.
+
+  **finish** - `string` optional
+
+  Maximum total time for the function run to complete.
+  """
+  @type timeouts() ::
+          %{
+            start: binary() | nil,
+            finish: binary() | nil
+          }
+          | nil
+
+  @typedoc """
   A key expression which is used to prevent duplicate events from triggering a function more than once in 24 hours.
 
   This is equivalent to setting `rate_limit` with a `key`, a limit of `1` and period of `24hr`.
@@ -171,6 +243,7 @@ defmodule Inngest.FnOpts do
           }
           | nil
   @concurrency_scopes ["fn", "env", "account"]
+  @singleton_modes [:skip, :cancel]
 
   @typedoc """
   Define an event that can be used to cancel a running or sleeping function ([reference](https://www.inngest.com/docs/functions/cancellation))
@@ -211,6 +284,7 @@ defmodule Inngest.FnOpts do
 
       debounce ->
         period = Map.get(debounce, :period)
+        timeout = Map.get(debounce, :timeout)
 
         if is_nil(period) do
           raise Inngest.DebounceConfigError, message: "'period' must be set for debounce"
@@ -227,6 +301,8 @@ defmodule Inngest.FnOpts do
                 message: "cannot specify period for more than 7 days"
             end
         end
+
+        validate_duration(timeout, Inngest.DebounceConfigError)
 
         Map.put(config, :debounce, debounce)
     end
@@ -295,8 +371,77 @@ defmodule Inngest.FnOpts do
             end
         end
 
-        batch = %{maxSize: max_size, timeout: timeout}
+        batch =
+          %{maxSize: max_size, timeout: timeout}
+          |> maybe_put(:key, Map.get(batch, :key))
+
         Map.put(config, :batchEvents, batch)
+    end
+  end
+
+  @doc false
+  @spec validate_throttle(t(), map()) :: map()
+  def validate_throttle(fnopts, config) do
+    case fnopts |> Map.get(:throttle) do
+      nil ->
+        config
+
+      throttle ->
+        limit = Map.get(throttle, :limit)
+        period = Map.get(throttle, :period)
+
+        if is_nil(limit) || is_nil(period) do
+          raise Inngest.ThrottleConfigError,
+            message: "'limit' and 'period' must be set for throttle"
+        end
+
+        validate_duration(period, Inngest.ThrottleConfigError)
+
+        Map.put(config, :throttle, throttle)
+    end
+  end
+
+  @doc false
+  @spec validate_singleton(t(), map()) :: map()
+  def validate_singleton(fnopts, config) do
+    case fnopts |> Map.get(:singleton) do
+      nil ->
+        config
+
+      singleton ->
+        mode = Map.get(singleton, :mode)
+
+        if is_nil(mode) do
+          raise Inngest.SingletonConfigError, message: "'mode' must be set for singleton"
+        end
+
+        if !Enum.member?(@singleton_modes, mode) do
+          raise Inngest.SingletonConfigError,
+            message: "invalid mode '#{inspect(mode)}', needs to be :skip|:cancel"
+        end
+
+        singleton = Map.put(singleton, :mode, Atom.to_string(mode))
+        Map.put(config, :singleton, singleton)
+    end
+  end
+
+  @doc false
+  @spec validate_timeouts(t(), map()) :: map()
+  def validate_timeouts(fnopts, config) do
+    case fnopts |> Map.get(:timeouts) do
+      nil ->
+        config
+
+      timeouts ->
+        timeouts
+        |> Map.get(:start)
+        |> validate_duration(Inngest.TimeoutConfigError)
+
+        timeouts
+        |> Map.get(:finish)
+        |> validate_duration(Inngest.TimeoutConfigError)
+
+        Map.put(config, :timeouts, timeouts)
     end
   end
 
@@ -429,6 +574,18 @@ defmodule Inngest.FnOpts do
         {:ok, _} ->
           nil
       end
+    end
+  end
+
+  defp maybe_put(config, _key, nil), do: config
+  defp maybe_put(config, key, value), do: Map.put(config, key, value)
+
+  defp validate_duration(nil, _error), do: nil
+
+  defp validate_duration(duration, error) do
+    case Util.parse_duration(duration) do
+      {:error, message} -> raise error, message: message
+      {:ok, _seconds} -> nil
     end
   end
 end

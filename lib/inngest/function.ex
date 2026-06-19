@@ -172,6 +172,9 @@ defmodule Inngest.Function do
           |> maybe_priority()
           |> maybe_batch_events()
           |> maybe_rate_limit()
+          |> maybe_throttle()
+          |> maybe_singleton()
+          |> maybe_timeouts()
           |> maybe_idempotency()
           |> maybe_concurrency()
           |> maybe_cancel_on()
@@ -191,6 +194,15 @@ defmodule Inngest.Function do
 
       defp maybe_rate_limit(config),
         do: fn_opts() |> Inngest.FnOpts.validate_rate_limit(config)
+
+      defp maybe_throttle(config),
+        do: fn_opts() |> Inngest.FnOpts.validate_throttle(config)
+
+      defp maybe_singleton(config),
+        do: fn_opts() |> Inngest.FnOpts.validate_singleton(config)
+
+      defp maybe_timeouts(config),
+        do: fn_opts() |> Inngest.FnOpts.validate_timeouts(config)
 
       defp maybe_idempotency(config),
         do: fn_opts() |> Inngest.FnOpts.validate_idempotency(config)
