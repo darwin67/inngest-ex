@@ -31,12 +31,12 @@ failing tests.
 
 ** Phase 1: Config Surface Implementation
 
-- [ ] Add ~throttle~ support with ~key~, ~limit~, ~period~, and ~burst~.
-- [ ] Add ~singleton~ support with ~key~ and ~mode~.
-- [ ] Add ~timeouts~ support with ~start~ and ~finish~.
-- [ ] Add ~batch_events.key~ support and render it as ~batchEvents.key~.
-- [ ] Add ~debounce.timeout~ support.
-- [ ] Keep existing ~debounce~, ~priority~, ~batch_events~, ~rate_limit~, ~idempotency~, ~concurrency~, and ~cancel_on~ behavior.
+- [X] Add ~throttle~ support with ~key~, ~limit~, ~period~, and ~burst~.
+- [X] Add ~singleton~ support with ~key~ and ~mode~.
+- [X] Add ~timeouts~ support with ~start~ and ~finish~.
+- [X] Add ~batch_events.key~ support and render it as ~batchEvents.key~.
+- [X] Add ~debounce.timeout~ support.
+- [X] Keep existing ~debounce~, ~priority~, ~batch_events~, ~rate_limit~, ~idempotency~, ~concurrency~, and ~cancel_on~ behavior.
 
 ** Phase 2: Validation And Documentation
 
