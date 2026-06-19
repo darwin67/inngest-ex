@@ -7,13 +7,60 @@ defmodule Inngest.Error do
   defstruct [:error, stack: nil]
 end
 
+defmodule Inngest.StepError do
+  @moduledoc """
+  Error raised when a memoized step contains a final serialized error.
+  """
+  defexception [:message, :payload]
+
+  @impl true
+  def exception(payload) when is_map(payload) do
+    payload = normalize_payload(payload)
+    message = Map.get(payload, :message, "step failed")
+
+    %__MODULE__{message: message, payload: payload}
+  end
+
+  def exception(message) when is_binary(message) do
+    payload = %{name: "Inngest.StepError", message: message}
+
+    %__MODULE__{message: message, payload: payload}
+  end
+
+  defp normalize_payload(payload) do
+    payload
+    |> get_payload_value(:name, "Inngest.StepError")
+    |> get_payload_value(:message, "step failed")
+    |> maybe_payload_value(payload, :stack)
+  end
+
+  defp get_payload_value(payload, key, default) do
+    Map.put(payload, key, Map.get(payload, key) || Map.get(payload, Atom.to_string(key), default))
+  end
+
+  defp maybe_payload_value(acc, payload, key) do
+    case Map.get(payload, key) || Map.get(payload, Atom.to_string(key)) do
+      nil -> acc
+      value -> Map.put(acc, key, value)
+    end
+  end
+end
+
 defimpl Jason.Encoder, for: Inngest.Error do
   def encode(value, opts) do
     error = Map.get(value, :error)
-    stacktrace = Exception.format(:error, error, Map.get(value, :stack))
+
+    error
+    |> encode_error(Map.get(value, :stack))
+    |> Jason.Encode.map(opts)
+  end
+
+  defp encode_error(%Inngest.StepError{payload: payload}, _stacktrace), do: payload
+
+  defp encode_error(error, stacktrace) do
+    stacktrace = Exception.format(:error, error, stacktrace)
 
     %{name: error.__struct__, message: error.message, stack: stacktrace}
-    |> Jason.Encode.map(opts)
   end
 end
 

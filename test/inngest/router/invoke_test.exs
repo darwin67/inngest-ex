@@ -25,6 +25,32 @@ defmodule Inngest.Router.InvokeContextTestFn do
   end
 end
 
+defmodule Inngest.Router.InvokeStepErrorTestFn do
+  @moduledoc false
+
+  use Inngest.Function
+
+  @func %FnOpts{id: "invoke-step-error-test", name: "Invoke Step Error Test"}
+  @trigger %Trigger{event: "test/router.invoke.step_error"}
+
+  @impl true
+  def exec(ctx, %{step: step}) do
+    step.run(ctx, "failed-step", fn -> "ok" end)
+  end
+end
+
+defmodule Inngest.Router.InvokeNoStepTestFn do
+  @moduledoc false
+
+  use Inngest.Function
+
+  @func %FnOpts{id: "invoke-no-step-test", name: "Invoke No Step Test"}
+  @trigger %Trigger{event: "test/router.invoke.no_step"}
+
+  @impl true
+  def exec(_ctx, _input), do: {:ok, "done"}
+end
+
 defmodule Inngest.Router.InvokeTest do
   use ExUnit.Case, async: false
 
@@ -239,6 +265,73 @@ defmodule Inngest.Router.InvokeTest do
 
       assert conn.status == 500
     end
+
+    test "returns memoized step errors as non-retriable function errors" do
+      System.put_env("INNGEST_DEV", "1")
+
+      step_id = hash("failed-step")
+
+      {body, params} =
+        invoke_body(
+          fn_id: Inngest.Router.InvokeStepErrorTestFn.slug(),
+          steps: %{
+            step_id => %{
+              "error" => %{"name" => "RuntimeError", "message" => "memoized boom"}
+            }
+          }
+        )
+
+      conn =
+        body
+        |> invoke_conn(params)
+        |> Invoke.call(%{funcs: [Inngest.Router.InvokeStepErrorTestFn]})
+
+      assert conn.status == 400
+      assert Plug.Conn.get_resp_header(conn, Headers.no_retry()) == ["true"]
+
+      assert %{"name" => "RuntimeError", "message" => "memoized boom"} =
+               Jason.decode!(conn.resp_body)
+    end
+
+    test "returns StepNotFound when targeted execution cannot reach the requested step" do
+      System.put_env("INNGEST_DEV", "1")
+
+      target_step_id = hash("missing-step")
+
+      {body, params} =
+        invoke_body(
+          fn_id: Inngest.Router.InvokeStepErrorTestFn.slug(),
+          step_id: target_step_id
+        )
+
+      conn =
+        body
+        |> invoke_conn(params)
+        |> Invoke.call(%{funcs: [Inngest.Router.InvokeStepErrorTestFn]})
+
+      assert conn.status == 206
+      assert [%{"id" => ^target_step_id, "op" => "StepNotFound"}] = Jason.decode!(conn.resp_body)
+    end
+
+    test "returns StepNotFound when targeted traversal completes without finding the step" do
+      System.put_env("INNGEST_DEV", "1")
+
+      target_step_id = hash("missing-step")
+
+      {body, params} =
+        invoke_body(
+          fn_id: Inngest.Router.InvokeNoStepTestFn.slug(),
+          step_id: target_step_id
+        )
+
+      conn =
+        body
+        |> invoke_conn(params)
+        |> Invoke.call(%{funcs: [Inngest.Router.InvokeNoStepTestFn]})
+
+      assert conn.status == 206
+      assert [%{"id" => ^target_step_id, "op" => "StepNotFound"}] = Jason.decode!(conn.resp_body)
+    end
   end
 
   defp invoke_body(opts \\ []) do
@@ -247,14 +340,17 @@ defmodule Inngest.Router.InvokeTest do
     ctx = Keyword.get(opts, :ctx, %{"run_id" => "run-1", "attempt" => 0, "use_api" => false})
     fn_id = Keyword.get(opts, :fn_id, Inngest.Router.InvokeTestFn.slug())
     steps = Keyword.get(opts, :steps, %{})
+    step_id = Keyword.get(opts, :step_id)
 
-    params = %{
-      "event" => event,
-      "events" => events,
-      "ctx" => ctx,
-      "fnId" => fn_id,
-      "steps" => steps
-    }
+    params =
+      %{
+        "event" => event,
+        "events" => events,
+        "ctx" => ctx,
+        "fnId" => fn_id,
+        "steps" => steps
+      }
+      |> maybe_put("stepId", step_id)
 
     {Jason.encode!(params), params}
   end
@@ -265,4 +361,9 @@ defmodule Inngest.Router.InvokeTest do
     |> Plug.Conn.put_private(:raw_body, [body])
     |> Map.put(:params, params)
   end
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
+
+  defp hash(id), do: :crypto.hash(:sha, id) |> Base.encode16()
 end

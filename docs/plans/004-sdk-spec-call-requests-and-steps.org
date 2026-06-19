@@ -70,20 +70,20 @@ failing tests.
 
 ** Phase 2: Step Execution And Memoization
 
-- [ ] Memoize successful run and invoke-style steps by unwrapping ~%{"data" => value}~.
-- [ ] Memoize failed steps by handling ~%{"error" => ...}~ as a step error.
-- [ ] Preserve step-specific memoized values for sleep and wait-for-event results.
-- [ ] Ensure memoized steps are not reported again.
-- [ ] Align run step reporting with ~StepRun~, ~StepPlanned~, ~StepError~, and ~StepNotFound~ using spec fields only.
-- [ ] Return memoized ~Inngest.StepError~ failures as non-retriable when they bubble out of user code.
-- [ ] Align sleep reporting with ~Sleep~ and ~opts.duration~.
-- [ ] Keep wait-for-event reporting aligned with ~WaitForEvent~.
-- [ ] Keep invocation reporting aligned with ~InvokeFunction~.
-- [ ] Keep durable event sending retriable and memoized.
-- [ ] Support targeted ~stepId~ execution for hashed step IDs.
-- [ ] Avoid immediate execution when ~ctx.disable_immediate_execution~ is true.
-- [ ] Return ~StepNotFound~ when a targeted step cannot be found.
-- [ ] Add stack-aware recovery behavior or document and defer it explicitly if it is not implemented in this phase.
+- [X] Memoize successful run and invoke-style steps by unwrapping ~%{"data" => value}~.
+- [X] Memoize failed steps by handling ~%{"error" => ...}~ as a step error.
+- [X] Preserve step-specific memoized values for sleep and wait-for-event results.
+- [X] Ensure memoized steps are not reported again.
+- [X] Align run step reporting with ~StepRun~, ~StepPlanned~, ~StepError~, and ~StepNotFound~ using spec fields only.
+- [X] Return memoized ~Inngest.StepError~ failures as non-retriable when they bubble out of user code.
+- [X] Align sleep reporting with ~Sleep~ and ~opts.duration~.
+- [X] Keep wait-for-event reporting aligned with ~WaitForEvent~.
+- [X] Keep invocation reporting aligned with ~InvokeFunction~.
+- [X] Keep durable event sending retriable and memoized.
+- [X] Support targeted ~stepId~ execution for hashed step IDs.
+- [X] Avoid immediate execution when ~ctx.disable_immediate_execution~ is true.
+- [X] Return ~StepNotFound~ when a targeted step cannot be found.
+- [X] Add stack-aware recovery behavior or document and defer it explicitly if it is not implemented in this phase.
 
 ** Phase 3: Verification
 

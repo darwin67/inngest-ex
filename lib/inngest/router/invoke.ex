@@ -86,10 +86,11 @@ defmodule Inngest.Router.Invoke do
   defp invoke(func, ctx, input) do
     try do
       if failure?(input) do
-        func.handle_failure(ctx, input) |> SdkResponse.from_result([])
+        func.handle_failure(ctx, input)
       else
-        func.exec(ctx, input) |> SdkResponse.from_result([])
+        func.exec(ctx, input)
       end
+      |> result_response(ctx)
     rescue
       non_retry in Inngest.NonRetriableError ->
         SdkResponse.from_result({:error, non_retry}, retry: false, stacktrace: __STACKTRACE__)
@@ -99,6 +100,12 @@ defmodule Inngest.Router.Invoke do
 
         SdkResponse.from_result({:error, retry},
           retry: delay,
+          stacktrace: __STACKTRACE__
+        )
+
+      step_error in Inngest.StepError ->
+        SdkResponse.from_result({:error, step_error},
+          retry: false,
           stacktrace: __STACKTRACE__
         )
 
@@ -113,6 +120,14 @@ defmodule Inngest.Router.Invoke do
         SdkResponse.from_result({:error, error}, stacktrace: __STACKTRACE__)
     end
   end
+
+  defp result_response(_result, %{target_step_id: step_id}) when step_id not in [nil, "step"] do
+    SdkResponse.from_result({:ok, [%GeneratorOpCode{id: step_id, op: "StepNotFound"}]},
+      continue: true
+    )
+  end
+
+  defp result_response(result, _ctx), do: SdkResponse.from_result(result, [])
 
   ## Helper functions to retrieve data from API
 

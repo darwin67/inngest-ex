@@ -12,24 +12,9 @@ defmodule Inngest.StepTool do
     op = UnhashedOp.new(ctx, "Step", step_id)
     hashed_id = UnhashedOp.hash(op)
 
-    # check for hash
     case Map.get(steps, hashed_id) do
-      nil ->
-        # if not, execute function
-        result = func.()
-
-        # cancel execution and return with opcode
-        throw(%GeneratorOpCode{
-          id: hashed_id,
-          name: step_id,
-          display_name: step_id,
-          op: op.op,
-          data: result
-        })
-
-      # if found, return value
-      val ->
-        val
+      nil -> report_run_step(ctx, hashed_id, step_id, func)
+      val -> memoized_result!(ctx, hashed_id, val)
     end
   end
 
@@ -41,12 +26,13 @@ defmodule Inngest.StepTool do
     if Map.has_key?(steps, hashed_id) do
       nil
     else
+      maybe_step_not_found!(ctx, hashed_id)
+
       throw(%GeneratorOpCode{
         id: hashed_id,
-        name: duration,
         display_name: step_id,
         op: op.op,
-        data: nil
+        opts: %{duration: duration}
       })
     end
   end
@@ -59,13 +45,15 @@ defmodule Inngest.StepTool do
     if Map.has_key?(steps, hashed_id) do
       nil
     else
+      maybe_step_not_found!(ctx, hashed_id)
+
       case Inngest.Function.validate_datetime(time) do
         {:ok, datetime} ->
           throw(%GeneratorOpCode{
             id: hashed_id,
-            name: datetime,
-            display_name: datetime,
-            op: op.op
+            display_name: step_id,
+            op: op.op,
+            opts: %{duration: datetime}
           })
 
         {:error, error} ->
@@ -85,6 +73,8 @@ defmodule Inngest.StepTool do
         event -> Event.from(event)
       end
     else
+      maybe_step_not_found!(ctx, hashed_id)
+
       opts =
         opts
         |> Enum.reduce(%{}, fn
@@ -124,6 +114,8 @@ defmodule Inngest.StepTool do
 
     case Map.get(steps, hashed_id) do
       nil ->
+        maybe_step_not_found!(ctx, hashed_id)
+
         func = Map.get(opts, :function)
         data = Map.get(opts, :data)
         timeout = Map.get(opts, :timeout)
@@ -145,24 +137,13 @@ defmodule Inngest.StepTool do
 
         throw(%GeneratorOpCode{
           id: hashed_id,
-          name: step_id,
           display_name: step_id,
           op: op.op,
           opts: generator_otps
         })
 
-      %{
-        "error" => %{
-          "name" => "InngestInvokeTimeoutError",
-          "error" => message,
-          "message" => _
-        }
-      } ->
-        raise Inngest.NonRetriableError, message: message
-
-      # return value if found
       val ->
-        val
+        memoized_result!(ctx, hashed_id, val)
     end
   end
 
@@ -172,6 +153,8 @@ defmodule Inngest.StepTool do
 
     case Map.get(steps, hashed_id) do
       nil ->
+        maybe_step_not_found!(ctx, hashed_id)
+
         display_name =
           if is_map(events) do
             Map.get(events, :name, step_id)
@@ -188,13 +171,120 @@ defmodule Inngest.StepTool do
           id: hashed_id,
           name: "sendEvent",
           display_name: "Send " <> display_name,
-          op: op.op,
+          op: "StepRun",
           data: %{event_ids: event_ids}
         })
 
-      # if found, return value
       val ->
-        val
+        memoized_result!(ctx, hashed_id, val)
     end
+  end
+
+  defp report_run_step(ctx, hashed_id, step_id, func) do
+    cond do
+      targeted_step?(ctx, hashed_id) ->
+        execute_run_step(hashed_id, step_id, func)
+
+      targeted_execution?(ctx) ->
+        step_not_found!(ctx)
+
+      Map.get(ctx, :disable_immediate_execution, false) ->
+        throw(%GeneratorOpCode{
+          id: hashed_id,
+          display_name: step_id,
+          op: "StepPlanned"
+        })
+
+      true ->
+        execute_run_step(hashed_id, step_id, func)
+    end
+  end
+
+  defp execute_run_step(hashed_id, step_id, func) do
+    result = func.()
+
+    throw(%GeneratorOpCode{
+      id: hashed_id,
+      display_name: step_id,
+      op: "StepRun",
+      data: result
+    })
+  rescue
+    error ->
+      throw(%GeneratorOpCode{
+        id: hashed_id,
+        display_name: step_id,
+        op: "StepError",
+        error: error_payload(error, __STACKTRACE__)
+      })
+  end
+
+  defp memoized_result!(ctx, hashed_id, value) do
+    if memoized_step_allowed?(ctx, hashed_id) do
+      unwrap_memoized_result!(value)
+    else
+      step_not_found!(ctx)
+    end
+  end
+
+  defp unwrap_memoized_result!(%{"data" => value}), do: value
+  defp unwrap_memoized_result!(%{data: value}), do: value
+
+  defp unwrap_memoized_result!(%{"error" => error}), do: raise(Inngest.StepError, error)
+  defp unwrap_memoized_result!(%{error: error}), do: raise(Inngest.StepError, error)
+
+  defp unwrap_memoized_result!(value) do
+    raise Inngest.StepError, "invalid memoized step data: #{inspect(value)}"
+  end
+
+  defp maybe_step_not_found!(ctx, hashed_id) do
+    if targeted_execution?(ctx) and not targeted_step?(ctx, hashed_id) do
+      step_not_found!(ctx)
+    end
+  end
+
+  defp step_not_found!(ctx) do
+    throw(%GeneratorOpCode{
+      id: Map.get(ctx, :target_step_id),
+      op: "StepNotFound"
+    })
+  end
+
+  defp targeted_execution?(%{target_step_id: step_id}), do: step_id not in [nil, "step"]
+  defp targeted_execution?(_ctx), do: false
+
+  defp targeted_step?(%{target_step_id: step_id}, hashed_id), do: step_id == hashed_id
+  defp targeted_step?(_ctx, _hashed_id), do: false
+
+  defp memoized_step_allowed?(ctx, hashed_id) do
+    cond do
+      not targeted_execution?(ctx) ->
+        true
+
+      targeted_step?(ctx, hashed_id) ->
+        true
+
+      is_nil(Map.get(ctx, :stack)) ->
+        true
+
+      true ->
+        hashed_id in replayable_stack(ctx)
+    end
+  end
+
+  defp replayable_stack(ctx) do
+    stack = Map.get(ctx, :stack) || %{}
+    ids = Map.get(stack, "stack") || Map.get(stack, :stack) || []
+    current = Map.get(stack, "current") || Map.get(stack, :current) || length(ids)
+
+    Enum.take(ids, current)
+  end
+
+  defp error_payload(error, stacktrace) do
+    %{
+      name: error.__struct__ |> Module.split() |> Enum.join("."),
+      message: Exception.message(error),
+      stack: Exception.format_stacktrace(stacktrace)
+    }
   end
 end
