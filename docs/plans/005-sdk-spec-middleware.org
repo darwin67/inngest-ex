@@ -25,12 +25,18 @@ failing tests.
 - Middleware will be represented by behaviour modules with optional callbacks.
   Middleware configuration accepts modules and ={module, opts}= tuples so hooks
   remain named, discoverable, and testable.
-- Middleware can be configured globally through application config and per
-  function through function options. Client-level middleware depends on the
-  first-class client architecture plan.
+- Middleware can be configured on first-class clients and per function through
+  function options. Global application middleware may remain as a compatibility
+  fallback, but the primary public API should be client-owned.
+- Client-level middleware attaches to ~use Inngest.Client~ options and is
+  resolved onto the runtime ~%Inngest.Client{}~ used by routers, sends,
+  introspection, and call execution.
 - Event-send middleware applies to both ~Inngest.Client.send/2~ and
-  ~Inngest.StepTool.send_event/3~ through the same event-send hook path. Durable
-  step memoization stores the result after middleware and event send complete.
+  ~Inngest.StepTool.send_event/3~ through the same event-send hook path.
+  ~StepTool.send_event/3~ already receives the active invocation client through
+  ~Inngest.Function.Context~, so middleware must preserve that client scope.
+  Durable step memoization stores the result after middleware and event send
+  complete.
 - Connect, checkpointing, streaming, AI Gateway, Gateway fetch, and in-band sync
   remain deferred in this plan. Plan 5 only documents those boundaries and
   prevents optional capabilities from being advertised before implementation.
@@ -40,8 +46,9 @@ failing tests.
 
 ** Phase 1: Middleware Implementation
 
-- [ ] Add client-level middleware registration after the first-class client
-  architecture is available.
+- [ ] Add tests for client-level middleware declared through ~use Inngest.Client~.
+- [ ] Add client-level middleware registration to ~Inngest.Client.new/1~ and the
+  runtime client struct.
 - [ ] Add function-level middleware registration.
 - [ ] Ensure client middleware runs before function middleware.
 - [ ] Ensure middleware runs in registration order.
@@ -62,8 +69,10 @@ failing tests.
 ** Phase 3: Verification
 
 - [ ] Run ~make fmt~.
-- [ ] Run targeted middleware and event send tests.
+- [ ] Run targeted middleware, client, router, and event send tests.
 - [ ] Run introspection capability tests.
+- [ ] Run ~make test-e2e~ so client-scoped middleware is verified through the
+  integration router and step event-send path.
 - [ ] Add docs example compile checks or doctests where practical.
 - [ ] Document middleware behavior and ordering.
 - [ ] Document implemented and deferred optional capabilities.

@@ -37,7 +37,7 @@ Canonical spec: https://github.com/inngest/inngest/blob/main/docs/SDK_SPEC.md
 
 | Decision                        | Status     | Notes                                                                                                                                                   |
 |---------------------------------|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Middleware client struct config | `deferred` | Middleware is planned for application config and function options first. Client-struct middleware waits until the SDK exposes a first-class client API. |
+| Middleware client struct config | `planned`  | First-class clients are implemented; middleware should attach to client modules/runtime structs in Plan 5.                                             |
 | Connect                         | `deferred` | Optional capability; do not advertise until implemented.                                                                                                |
 | Streaming                       | `deferred` | Optional capability; do not advertise until implemented.                                                                                                |
 | Checkpointing                   | `deferred` | Optional capability; checkpoint registration fields remain deferred until checkpoint runtime behavior is implemented.                                   |
