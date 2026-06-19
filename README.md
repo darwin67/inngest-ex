@@ -104,14 +104,14 @@ defmodule MyApp.AwesomeFunction do
 
     # There are times you want to wait for something to happen before
     # continue on the workflow. `wait_for_event` allows exactly that.
-    evt = step.wait_for_event("wait-for-registration-complete", %{
+    evt = step.wait_for_event(ctx, "wait-for-registration-complete", %{
       event: "user/register.completed",
       timeout: "1h"
     })
 
     # You might want to trigger some other workflow, sending an event
     # will trigger the functions that are registered against the `event`.
-    step.send_event("completed-work", %{
+    step.send_event(ctx, "completed-work", %{
       name: "func/awesome.completed",
       data: %{name: name}
     })
@@ -122,7 +122,8 @@ end
 ```
 
 See the **[guides](https://hexdocs.pm/inngest)** and the
-**[function configuration reference](docs/references/function_configuration.md)**
+**[function configuration reference](docs/references/function_configuration.md)** or
+**[steps reference](docs/references/steps.md)**
 for more details regarding use cases and how each macro can be used.
 
 <!-- MDOC ! -->

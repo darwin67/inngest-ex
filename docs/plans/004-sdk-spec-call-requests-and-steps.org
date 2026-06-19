@@ -90,4 +90,4 @@ failing tests.
 - [ ] Run ~make fmt~.
 - [ ] Run targeted call request and step tests.
 - [ ] Run e2e tests for run, sleep, wait for event, invoke, send event, and failure behavior.
-- [ ] Update step documentation with opcode and memoization behavior.
+- [X] Update step documentation with opcode and memoization behavior.
