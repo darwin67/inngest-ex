@@ -12,6 +12,8 @@ defmodule Inngest.Router.Invoke do
 
   @spec call(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def call(%{params: params} = conn, opts) do
+    # Signature verification must use the original request body. Full-payload
+    # expansion is an API convenience for execution, not part of the signed body.
     with :ok <- verify_signature(conn),
          {:ok, params} <- maybe_retrieve_full_payload(params) do
       exec(conn, Map.merge(opts, params))
@@ -39,6 +41,8 @@ defmodule Inngest.Router.Invoke do
       raise RuntimeError, "function not found: #{fn_slug}"
     end
 
+    # Context is for SDK internals and step tools. Input is the user-facing
+    # function argument shape, so keep executor-only fields out of Input.
     ctx = %Inngest.Function.Context{
       attempt: Map.get(request_ctx, "attempt", 0),
       run_id: Map.get(request_ctx, "run_id"),
@@ -46,6 +50,8 @@ defmodule Inngest.Router.Invoke do
       stack: Map.get(request_ctx, "stack"),
       target_step_id: Map.get(params, "stepId", "step"),
       steps: Map.get(params, "steps"),
+      # The ETS table tracks repeated step IDs within a single traversal so the
+      # hash input follows the SDK spec: id, id:1, id:2, and so on.
       index: :ets.new(:index, [:set, :private])
     }
 
@@ -100,7 +106,8 @@ defmodule Inngest.Router.Invoke do
       error ->
         SdkResponse.from_result({:error, error}, stacktrace: __STACKTRACE__)
     catch
-      # Finished step, report back to executor
+      # Step tools throw GeneratorOpCode values to stop user code at the first
+      # reportable step and return a 206 generator response to the executor.
       %GeneratorOpCode{} = opcode ->
         SdkResponse.from_result({:ok, [opcode]}, continue: true)
 
@@ -109,6 +116,8 @@ defmodule Inngest.Router.Invoke do
     end
   end
 
+  # Targeted step requests ask this SDK to find one hashed step ID. If user code
+  # completes without reporting it, the executor needs an explicit StepNotFound.
   defp result_response(_result, %{target_step_id: step_id}) when step_id not in [nil, "step"] do
     SdkResponse.from_result({:ok, [%GeneratorOpCode{id: step_id, op: "StepNotFound"}]},
       continue: true
@@ -141,11 +150,14 @@ defmodule Inngest.Router.Invoke do
   defp raw_body(_conn), do: ""
 
   defp maybe_retrieve_full_payload(%{"ctx" => %{"use_api" => true, "run_id" => run_id}} = params) do
+    # The executor may send trimmed call payloads. When ctx.use_api is true,
+    # fetch events and memoized actions before invoking user code.
     retrieve_steps = Task.async(fn -> fn_run_steps(run_id) end)
     retrieve_batch = Task.async(fn -> fn_run_batch(run_id) end)
 
     with {:ok, step_data} <- Task.await(retrieve_steps),
          {:ok, batch_data} <- Task.await(retrieve_batch) do
+      # The spec treats the first full batch event as input.event.
       {:ok,
        Map.merge(params, %{
          "event" => List.first(batch_data, Map.get(params, "event")),

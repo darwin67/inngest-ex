@@ -27,6 +27,8 @@ defmodule Inngest.StepError do
     %__MODULE__{message: message, payload: payload}
   end
 
+  # Executor payloads may arrive with string keys, while local tests and callers
+  # often use atom keys. Normalize once so JSON encoding can pass the payload on.
   defp normalize_payload(payload) do
     payload
     |> get_payload_value(:name, "Inngest.StepError")
@@ -55,6 +57,8 @@ defimpl Jason.Encoder, for: Inngest.Error do
     |> Jason.Encode.map(opts)
   end
 
+  # StepError already carries the executor-shaped payload, so do not wrap it in
+  # the generic Elixir exception format.
   defp encode_error(%Inngest.StepError{payload: payload}, _stacktrace), do: payload
 
   defp encode_error(error, stacktrace) do

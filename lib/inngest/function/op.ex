@@ -77,6 +77,8 @@ end
 
 defimpl Jason.Encoder, for: Inngest.Function.GeneratorOpCode do
   def encode(value, opts) do
+    # Only emit spec-facing fields. Internal names such as display_name are kept
+    # in the struct for Elixir ergonomics, but must not leak to JSON.
     %{
       id: value.id,
       op: value.op
@@ -88,6 +90,8 @@ defimpl Jason.Encoder, for: Inngest.Function.GeneratorOpCode do
     |> Jason.Encode.map(opts)
   end
 
+  # StepRun must include data even when the user step returns nil; other opcodes
+  # omit nil data so planned/sleep/not-found responses stay minimal.
   defp maybe_put_data(map, %{op: "StepRun", data: data}), do: Map.put(map, :data, data)
   defp maybe_put_data(map, %{data: nil}), do: map
   defp maybe_put_data(map, %{data: data}), do: Map.put(map, :data, data)
