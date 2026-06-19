@@ -1,3 +1,33 @@
+defmodule Inngest.Test.Client do
+  @moduledoc false
+
+  use Inngest.Client,
+    id: "test",
+    mode: :dev,
+    funcs: [
+      Inngest.Test.Case.BatchFn,
+      Inngest.Test.Case.CancelOnFn,
+      Inngest.Test.Case.ConcurrencyFn,
+      Inngest.Test.Case.DebounceFn,
+      Inngest.Test.Case.DebounceWithKeyFn,
+      Inngest.Test.Case.IdempotentFn,
+      Inngest.Test.Case.InvokeCallerFn,
+      Inngest.Test.Case.InvokeTimeoutCallerFn,
+      Inngest.Test.Case.InvokedFn,
+      Inngest.Test.Case.InvokedLongFn,
+      Inngest.Test.Case.LoopFn,
+      Inngest.Test.Case.NoStepFn,
+      Inngest.Test.Case.NonRetriableError,
+      Inngest.Test.Case.RateLimitFn,
+      Inngest.Test.Case.RetriableError,
+      Inngest.Test.Case.SendFn,
+      Inngest.Test.Case.SleepFn,
+      Inngest.Test.Case.SleepUntilFn,
+      Inngest.Test.Case.StepFn,
+      Inngest.Test.Case.WaitForEventFn
+    ]
+end
+
 defmodule Inngest.Test.PlugRouter do
   @moduledoc false
 
@@ -25,7 +55,7 @@ defmodule Inngest.Test.PlugRouter do
     |> send_resp(200, data)
   end
 
-  inngest("/api/inngest", path: "test/support/cases/*")
+  inngest("/api/inngest", client: Inngest.Test.Client)
 
   match _ do
     send_resp(conn, 404, "oops\n")

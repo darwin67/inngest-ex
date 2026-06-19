@@ -1,0 +1,124 @@
+#+title: First-Class Client Architecture
+#+author: Darwin D. Wu
+#+date: 2026-06-19
+#+status: Done
+
+* First-Class Client Architecture
+
+Source context: https://github.com/inngest/inngest/blob/main/docs/SDK_SPEC.md
+
+** Goal
+
+Introduce a first-class Elixir client API that owns app identity, configuration,
+function discovery, event sending defaults, middleware, and capability metadata
+while keeping function definitions idiomatic Elixir modules.
+
+** Motivation
+
+The current SDK relies heavily on global application configuration and standalone
+function modules. That works for simple Elixir usage, but it makes several SDK
+patterns harder to model:
+
+- Multiple Inngest apps in one runtime.
+- Per-client middleware and capability ownership.
+- Router registration and introspection driven by a specific SDK client.
+- Test isolation without rewriting application environment.
+- Future Connect, streaming, checkpointing, and trust-probe capabilities.
+
+This plan should be completed before implementing SDK middleware so middleware
+has the right owner from the start.
+
+** Proposed Direction
+
+- Add a macro-backed client module API such as:
+
+  #+begin_src elixir
+  defmodule MyApp.Inngest do
+    use Inngest.Client,
+      id: "my-app",
+      funcs: [
+        MyApp.Functions.SendEmail,
+        MyApp.Functions.SyncUser
+      ]
+  end
+  #+end_src
+
+- Keep user functions as regular modules using ~Inngest.Function~.
+- Let routers accept ~client: MyApp.Inngest~ and derive functions,
+  registration payloads, introspection metadata, and future middleware from that
+  client.
+- Replace existing application config and router ~funcs:~/~path:~ setup with the
+  first-class client API as the required public setup path.
+
+** Implementation Guide
+
+Before checking off any implementation item in any phase, decide any relevant
+open question, capture the current behavior if it matters, add or update a
+focused test that fails for the desired behavior, implement the smallest change,
+and leave the targeted test green. Do not end a phase with intentionally failing
+tests.
+
+** Decisions
+
+- The public client API will be macro-backed modules that expose a runtime
+  ~%Inngest.Client{}~ struct through ~client/0~. User code should normally use
+  ~use Inngest.Client~, while routers and internals operate on the runtime
+  struct.
+- The first-class client API is a breaking replacement for the old global
+  application configuration as the primary setup path. Because the package is
+  pre-v1, this plan does not need to preserve the old setup indefinitely.
+- Explicit first-class client configuration takes precedence over SDK
+  environment variables. Environment variables fill missing client config and
+  remain the recommended source for secrets and deploy-specific values. Defaults
+  apply only after both explicit client config and environment variables are
+  absent. User-facing docs should recommend omitting secrets from client modules
+  and loading keys from runtime environment variables instead.
+- Plug and Phoenix routers will require ~client:~ as the public setup API.
+  Existing ~funcs:~ and ~path:~ router setup will be removed as public API in
+  this breaking pre-v1 plan.
+- Direct event sending should document ~MyApp.Inngest.send/1~ as the primary
+  user-facing API. ~Inngest.Client.send/2~ should remain available for runtime
+  ~%Inngest.Client{}~ structs used by routers, internals, and tests.
+
+** Phase 1: Client API And Configuration Ownership
+
+- [X] Add tests for defining a client module with app id, functions, and
+  optional per-client config.
+- [X] Implement the client module API and runtime client representation.
+- [X] Add tests that client config resolves app identity, URLs, keys, mode, env,
+  and SDK metadata without relying only on global application config.
+- [X] Implement client-aware config resolution with clear env precedence.
+- [X] Add tests for multiple clients coexisting in the same VM without leaking
+  function lists or app identity.
+
+** Phase 2: Function Generation And Router Integration
+
+- [X] Add tests that registration payload generation uses the client function
+  list and client app identity.
+- [X] Update registration payload generation to accept client context.
+- [X] Add tests that call requests load functions from ~client:~.
+- [X] Update Plug and Phoenix routers to require ~client:~.
+- [X] Add tests that introspection reflects the selected client.
+- [X] Update introspection to use client-owned app identity, function count,
+  framework metadata, and future capability metadata.
+
+** Phase 3: Event Sending And Compatibility
+
+- [X] Add tests for client-owned event sending defaults and headers.
+- [X] Implement client-aware event sending.
+- [X] Remove or rewrite tests that depend on old global config, router
+  ~funcs:~, and router ~path:~ setup.
+- [X] Document the breaking migration from global setup to first-class clients.
+- [X] Ensure Plan 5 middleware can attach client-level middleware to the new
+  client owner.
+
+** Phase 4: Verification And Documentation
+
+- [X] Run ~make fmt~.
+- [X] Run targeted client, config, router, register, invoke, introspection, and
+  event-send tests.
+- [X] Run ~make lint~.
+- [X] Run ~make unit-test~ if the touched surface is broad.
+- [X] Document the first-class client API in user-facing docs.
+- [X] Update middleware planning notes to reference the client architecture
+  dependency.

@@ -79,6 +79,7 @@ defmodule Inngest.Function do
   @callback exec(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
 
   defmacro __using__(_opts) do
+    # credo:disable-for-next-line Credo.Check.Refactor.LongQuoteBlocks
     quote location: :keep do
       alias Inngest.{Client, FnOpts, Trigger}
 
@@ -91,8 +92,12 @@ defmodule Inngest.Function do
 
       @impl true
       def slug() do
+        slug(Config.app_name())
+      end
+
+      def slug(app_id) do
         fnid = fn_opts() |> Map.get(:id)
-        Inngest.Util.slugify(Config.app_name() <> "-" <> fnid)
+        Inngest.Util.slugify(app_id <> "-" <> fnid)
       end
 
       @impl true
@@ -115,10 +120,23 @@ defmodule Inngest.Function do
         [slug()] ++ failure
       end
 
+      def slugs(app_id) do
+        failure = if failure_handler_defined?(), do: [failure_slug(app_id)], else: []
+        [slug(app_id)] ++ failure
+      end
+
       def serve(path) do
+        serve(path, Config.app_name())
+      end
+
+      def serve(path, app_id) do
+        serve(path, app_id, Config.serve_url(path))
+      end
+
+      def serve(_path, app_id, serve_url) do
         handler =
           if failure_handler_defined?() do
-            id = failure_slug()
+            id = failure_slug(app_id)
 
             [
               %{
@@ -127,7 +145,7 @@ defmodule Inngest.Function do
                 triggers: [
                   %Trigger{
                     event: "inngest/function.failed",
-                    expression: "event.data.function_id == \"#{slug()}\""
+                    expression: "event.data.function_id == \"#{slug(app_id)}\""
                   }
                 ],
                 steps: %{
@@ -136,7 +154,7 @@ defmodule Inngest.Function do
                     name: "step",
                     runtime: %{
                       type: "http",
-                      url: "#{Config.serve_url(path)}?stepId=step&fnId=#{id}"
+                      url: "#{serve_url}?stepId=step&fnId=#{id}"
                     },
                     retries: %{
                       attempts: 0
@@ -151,7 +169,7 @@ defmodule Inngest.Function do
 
         [
           %{
-            id: slug(),
+            id: slug(app_id),
             name: name(),
             triggers: [trigger()],
             steps: %{
@@ -160,7 +178,7 @@ defmodule Inngest.Function do
                 name: "step",
                 runtime: %{
                   type: "http",
-                  url: "#{Config.serve_url(path)}?stepId=step&fnId=#{slug()}"
+                  url: "#{serve_url}?stepId=step&fnId=#{slug(app_id)}"
                 },
                 retries: %{
                   attempts: retries()
@@ -225,6 +243,7 @@ defmodule Inngest.Function do
       end
 
       defp failure_slug(), do: "#{slug()}-failure"
+      defp failure_slug(app_id), do: "#{slug(app_id)}-failure"
     end
   end
 

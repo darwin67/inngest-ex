@@ -10,6 +10,16 @@ defmodule Inngest.Router.IntrospectionTestFn do
   def exec(_ctx, _input), do: {:ok, %{"ok" => true}}
 end
 
+defmodule Inngest.Router.IntrospectionClient do
+  @moduledoc false
+
+  use Inngest.Client,
+    id: "introspection-app",
+    funcs: [Inngest.Router.IntrospectionTestFn],
+    serve_origin: "https://serve.example",
+    serve_path: "/api/inngest"
+end
+
 defmodule Inngest.Router.IntrospectionPlugRouter do
   @moduledoc false
 
@@ -19,7 +29,7 @@ defmodule Inngest.Router.IntrospectionPlugRouter do
   plug(:match)
   plug(:dispatch)
 
-  inngest("/api/inngest", funcs: [Inngest.Router.IntrospectionTestFn])
+  inngest("/api/inngest", client: Inngest.Router.IntrospectionClient)
 
   match _ do
     send_resp(conn, 404, "not found")
@@ -32,7 +42,7 @@ defmodule Inngest.Router.IntrospectionPhoenixRouter do
   use Phoenix.Router
   use Inngest.Router, :phoenix
 
-  inngest("/api/inngest", funcs: [Inngest.Router.IntrospectionTestFn])
+  inngest("/api/inngest", client: Inngest.Router.IntrospectionClient)
 end
 
 defmodule Inngest.Router.IntrospectionTest do
@@ -60,7 +70,6 @@ defmodule Inngest.Router.IntrospectionTest do
 
   @config_keys ~w(
     api_url
-    app_name
     env
     event_key
     event_url
@@ -77,10 +86,6 @@ defmodule Inngest.Router.IntrospectionTest do
 
     Enum.each(@env_vars, &System.delete_env/1)
     Enum.each(@config_keys, &Application.delete_env(:inngest, &1))
-
-    Application.put_env(:inngest, :app_name, "IntrospectionApp")
-    Application.put_env(:inngest, :serve_origin, "https://serve.example")
-    Application.put_env(:inngest, :serve_path, "/api/inngest")
 
     on_exit(fn ->
       Enum.each(env, fn
@@ -151,7 +156,7 @@ defmodule Inngest.Router.IntrospectionTest do
       assert conn.status == 200
       assert Map.keys(body) |> Enum.sort() == authenticated_keys()
       assert body["api_origin"] == "https://api.example"
-      assert body["app_id"] == "IntrospectionApp"
+      assert body["app_id"] == "introspection-app"
       assert body["authentication_succeeded"] == true
       assert body["env"] == "prod"
       assert body["event_api_origin"] == "https://event.example"
@@ -192,34 +197,22 @@ defmodule Inngest.Router.IntrospectionTest do
       assert Jason.decode!(conn.resp_body)["authentication_succeeded"] == true
     end
 
-    test "uses request path as authenticated serve path when none is configured" do
-      Application.delete_env(:inngest, :serve_path)
+    test "uses request path as authenticated serve path when client serve path is unset" do
       System.put_env("INNGEST_SIGNING_KEY", @signing_key)
+
+      client =
+        Inngest.Client.new(
+          id: "introspection-app",
+          funcs: [Inngest.Router.IntrospectionTestFn],
+          serve_origin: "https://serve.example"
+        )
 
       conn =
         introspection_conn()
         |> Plug.Conn.put_req_header(Headers.signature(), signed_empty_body(@signing_key))
-        |> Introspection.call(introspection_opts())
+        |> Introspection.call(%{introspection_opts() | client: client})
 
       assert Jason.decode!(conn.resp_body)["serve_path"] == "/api/inngest"
-    end
-
-    test "requires non-empty app id for authenticated introspection" do
-      Application.put_env(:inngest, :app_name, "")
-      System.put_env("INNGEST_SIGNING_KEY", @signing_key)
-
-      signature =
-        System.os_time(:second)
-        |> Integer.to_string()
-        |> Signature.sign(@signing_key, "")
-
-      conn =
-        introspection_conn()
-        |> Plug.Conn.put_req_header(Headers.signature(), signature)
-        |> Introspection.call(introspection_opts())
-
-      assert conn.status == 500
-      assert Jason.decode!(conn.resp_body) == %{"error" => "app_id must not be empty"}
     end
 
     test "uses the same behavior for Phoenix framework metadata" do
@@ -267,7 +260,7 @@ defmodule Inngest.Router.IntrospectionTest do
   end
 
   defp introspection_opts do
-    %{framework: "plug", funcs: [Inngest.Router.IntrospectionTestFn]}
+    %{framework: "plug", client: Inngest.Router.IntrospectionClient}
   end
 
   defp introspection_conn do

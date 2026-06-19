@@ -12,11 +12,13 @@ defmodule Inngest.Router.Invoke do
 
   @spec call(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def call(%{params: params} = conn, opts) do
+    client = client!(opts)
+
     # Signature verification must use the original request body. Full-payload
     # expansion is an API convenience for execution, not part of the signed body.
-    with :ok <- verify_signature(conn),
-         {:ok, params} <- maybe_retrieve_full_payload(params) do
-      exec(conn, Map.merge(opts, params))
+    with :ok <- verify_signature(conn, client),
+         {:ok, params} <- maybe_retrieve_full_payload(params, client) do
+      exec(conn, Map.merge(opts, params), client)
     else
       {:error, :invalid_signature} ->
         send_signature_error(conn)
@@ -28,13 +30,14 @@ defmodule Inngest.Router.Invoke do
 
   defp exec(
          conn,
-         %{"event" => event, "events" => events, "ctx" => request_ctx, "fnId" => fn_slug} = params
+         %{"event" => event, "events" => events, "ctx" => request_ctx, "fnId" => fn_slug} =
+           params,
+         client
        ) do
     func =
-      params
-      |> load_functions()
+      client.funcs
       |> Enum.find(fn func ->
-        Enum.member?(func.slugs(), fn_slug)
+        Enum.member?(func.slugs(client.id), fn_slug)
       end)
 
     if is_nil(func) do
@@ -46,6 +49,7 @@ defmodule Inngest.Router.Invoke do
     ctx = %Inngest.Function.Context{
       attempt: Map.get(request_ctx, "attempt", 0),
       run_id: Map.get(request_ctx, "run_id"),
+      client: client,
       disable_immediate_execution: Map.get(request_ctx, "disable_immediate_execution", false),
       stack: Map.get(request_ctx, "stack"),
       target_step_id: Map.get(params, "stepId", "step"),
@@ -128,15 +132,15 @@ defmodule Inngest.Router.Invoke do
 
   ## Helper functions to retrieve data from API
 
-  defp fn_run_steps(run_id), do: fn_run_data("/v0/runs/#{run_id}/actions")
-  defp fn_run_batch(run_id), do: fn_run_data("/v0/runs/#{run_id}/batch")
+  defp fn_run_steps(run_id, client), do: fn_run_data(client, "/v0/runs/#{run_id}/actions")
+  defp fn_run_batch(run_id, client), do: fn_run_data(client, "/v0/runs/#{run_id}/batch")
 
-  defp verify_signature(conn) do
-    if Config.dev?() do
+  defp verify_signature(conn, client) do
+    if client.mode == :dev do
       :ok
     else
       sig = conn |> Plug.Conn.get_req_header(Headers.signature()) |> List.first()
-      signing_keys = [Config.signing_key(), Config.signing_key_fallback()]
+      signing_keys = [client.signing_key, client.signing_key_fallback]
 
       if Signature.signing_key_valid?(sig, signing_keys, raw_body(conn)) do
         :ok
@@ -149,11 +153,14 @@ defmodule Inngest.Router.Invoke do
   defp raw_body(%{private: %{raw_body: body}}) when is_list(body), do: Enum.join(body)
   defp raw_body(_conn), do: ""
 
-  defp maybe_retrieve_full_payload(%{"ctx" => %{"use_api" => true, "run_id" => run_id}} = params) do
+  defp maybe_retrieve_full_payload(
+         %{"ctx" => %{"use_api" => true, "run_id" => run_id}} = params,
+         client
+       ) do
     # The executor may send trimmed call payloads. When ctx.use_api is true,
     # fetch events and memoized actions before invoking user code.
-    retrieve_steps = Task.async(fn -> fn_run_steps(run_id) end)
-    retrieve_batch = Task.async(fn -> fn_run_batch(run_id) end)
+    retrieve_steps = Task.async(fn -> fn_run_steps(run_id, client) end)
+    retrieve_batch = Task.async(fn -> fn_run_batch(run_id, client) end)
 
     with {:ok, step_data} <- Task.await(retrieve_steps),
          {:ok, batch_data} <- Task.await(retrieve_batch) do
@@ -170,10 +177,10 @@ defmodule Inngest.Router.Invoke do
     end
   end
 
-  defp maybe_retrieve_full_payload(params), do: {:ok, params}
+  defp maybe_retrieve_full_payload(params, _client), do: {:ok, params}
 
-  defp fn_run_data(path) do
-    case Client.get(:api, path) do
+  defp fn_run_data(client, path) do
+    case Client.get(client, :api, path, []) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         # parse result just in case it isn't already parsed
         result =

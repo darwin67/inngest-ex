@@ -51,6 +51,19 @@ defmodule Inngest.Router.InvokeNoStepTestFn do
   def exec(_ctx, _input), do: {:ok, "done"}
 end
 
+defmodule Inngest.Router.InvokeClient do
+  @moduledoc false
+
+  use Inngest.Client,
+    id: "invoke-app",
+    funcs: [
+      Inngest.Router.InvokeTestFn,
+      Inngest.Router.InvokeContextTestFn,
+      Inngest.Router.InvokeStepErrorTestFn,
+      Inngest.Router.InvokeNoStepTestFn
+    ]
+end
+
 defmodule Inngest.Router.InvokeTest do
   use ExUnit.Case, async: false
 
@@ -107,7 +120,7 @@ defmodule Inngest.Router.InvokeTest do
         body
         |> invoke_conn(params)
         |> Plug.Conn.put_req_header(Headers.signature(), signature)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 200
       assert Jason.decode!(conn.resp_body) == %{"ok" => true}
@@ -123,7 +136,7 @@ defmodule Inngest.Router.InvokeTest do
       conn =
         body
         |> invoke_conn(params)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 400
       assert Plug.Conn.get_resp_header(conn, Headers.no_retry()) == ["true"]
@@ -147,7 +160,7 @@ defmodule Inngest.Router.InvokeTest do
       conn =
         body
         |> invoke_conn(params)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 400
       assert Plug.Conn.get_resp_header(conn, Headers.no_retry()) == ["true"]
@@ -162,7 +175,7 @@ defmodule Inngest.Router.InvokeTest do
       conn =
         body
         |> invoke_conn(params)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 200
       assert Jason.decode!(conn.resp_body) == %{"ok" => true}
@@ -187,13 +200,13 @@ defmodule Inngest.Router.InvokeTest do
             "disable_immediate_execution" => true,
             "stack" => %{"current" => 1, "stack" => ["memoized-step"]}
           },
-          fn_id: Inngest.Router.InvokeContextTestFn.slug()
+          fn_id: fn_slug(Inngest.Router.InvokeContextTestFn)
         )
 
       conn =
         body
         |> invoke_conn(params)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeContextTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 200
 
@@ -235,14 +248,14 @@ defmodule Inngest.Router.InvokeTest do
           event: trimmed_event,
           events: [trimmed_event],
           ctx: %{"run_id" => "run-full", "attempt" => 0, "use_api" => true},
-          fn_id: Inngest.Router.InvokeContextTestFn.slug(),
+          fn_id: fn_slug(Inngest.Router.InvokeContextTestFn),
           steps: %{}
         )
 
       conn =
         body
         |> invoke_conn(params)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeContextTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 200
       assert_receive {:invoke, ctx, input}
@@ -267,13 +280,13 @@ defmodule Inngest.Router.InvokeTest do
       {body, params} =
         invoke_body(
           ctx: %{"run_id" => "run-fetch-fail", "attempt" => 0, "use_api" => true},
-          fn_id: Inngest.Router.InvokeContextTestFn.slug()
+          fn_id: fn_slug(Inngest.Router.InvokeContextTestFn)
         )
 
       conn =
         body
         |> invoke_conn(params)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeContextTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 500
     end
@@ -286,7 +299,7 @@ defmodule Inngest.Router.InvokeTest do
       conn =
         body
         |> invoke_conn(params)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 500
     end
@@ -298,7 +311,7 @@ defmodule Inngest.Router.InvokeTest do
 
       {body, params} =
         invoke_body(
-          fn_id: Inngest.Router.InvokeStepErrorTestFn.slug(),
+          fn_id: fn_slug(Inngest.Router.InvokeStepErrorTestFn),
           steps: %{
             step_id => %{
               "error" => %{"name" => "RuntimeError", "message" => "memoized boom"}
@@ -309,7 +322,7 @@ defmodule Inngest.Router.InvokeTest do
       conn =
         body
         |> invoke_conn(params)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeStepErrorTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 400
       assert Plug.Conn.get_resp_header(conn, Headers.no_retry()) == ["true"]
@@ -325,14 +338,14 @@ defmodule Inngest.Router.InvokeTest do
 
       {body, params} =
         invoke_body(
-          fn_id: Inngest.Router.InvokeStepErrorTestFn.slug(),
+          fn_id: fn_slug(Inngest.Router.InvokeStepErrorTestFn),
           step_id: target_step_id
         )
 
       conn =
         body
         |> invoke_conn(params)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeStepErrorTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 206
       assert [%{"id" => ^target_step_id, "op" => "StepNotFound"}] = Jason.decode!(conn.resp_body)
@@ -345,14 +358,14 @@ defmodule Inngest.Router.InvokeTest do
 
       {body, params} =
         invoke_body(
-          fn_id: Inngest.Router.InvokeNoStepTestFn.slug(),
+          fn_id: fn_slug(Inngest.Router.InvokeNoStepTestFn),
           step_id: target_step_id
         )
 
       conn =
         body
         |> invoke_conn(params)
-        |> Invoke.call(%{funcs: [Inngest.Router.InvokeNoStepTestFn]})
+        |> Invoke.call(invoke_opts())
 
       assert conn.status == 206
       assert [%{"id" => ^target_step_id, "op" => "StepNotFound"}] = Jason.decode!(conn.resp_body)
@@ -363,7 +376,7 @@ defmodule Inngest.Router.InvokeTest do
     event = Keyword.get(opts, :event, %{"name" => "test/router.invoke", "data" => %{}})
     events = Keyword.get(opts, :events, [event])
     ctx = Keyword.get(opts, :ctx, %{"run_id" => "run-1", "attempt" => 0, "use_api" => false})
-    fn_id = Keyword.get(opts, :fn_id, Inngest.Router.InvokeTestFn.slug())
+    fn_id = Keyword.get(opts, :fn_id, fn_slug(Inngest.Router.InvokeTestFn))
     steps = Keyword.get(opts, :steps, %{})
     step_id = Keyword.get(opts, :step_id)
 
@@ -391,4 +404,8 @@ defmodule Inngest.Router.InvokeTest do
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   defp hash(id), do: :crypto.hash(:sha, id) |> Base.encode16()
+
+  defp invoke_opts, do: %{client: Inngest.Router.InvokeClient}
+
+  defp fn_slug(func), do: func.slug(Inngest.Router.InvokeClient.client().id)
 end

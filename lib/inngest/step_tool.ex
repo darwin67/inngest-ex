@@ -18,8 +18,8 @@ defmodule Inngest.StepTool do
   | targeted `stepId` | `StepNotFound` | Returned when a targeted hashed step ID cannot be found during deterministic traversal. |
   | `sleep/3`, `sleep_until/3` | `Sleep` | Uses `opts.duration` for the duration or ISO timestamp. |
   | `wait_for_event/3` | `WaitForEvent` | Uses `opts` for event name, timeout, and matching expression. |
-  | `invoke/3` | `InvokeFunction` | Uses `opts.function_id`, `opts.payload`, and optional `opts.timeout`. |
-  | `send_event/3` | `StepRun` | Implemented as a durable run step around event sending. |
+  | `invoke/3` | `InvokeFunction` | Uses the active client ID for module targets, plus `opts.payload` and optional `opts.timeout`. |
+  | `send_event/3` | `StepRun` | Implemented as a durable run step around event sending with the active client. |
 
   ## Memoization
 
@@ -253,6 +253,10 @@ defmodule Inngest.StepTool do
   New invocations report an `InvokeFunction` opcode. Replayed memoized results
   are unwrapped from `%{"data" => value}` or raised as `Inngest.StepError` from
   `%{"error" => error}`.
+
+  When `:function` is a module, the reported function ID is built from the
+  active `Inngest.Client` in the invocation context. This keeps step invokes
+  aligned with the client used to register and serve functions.
   """
   @spec invoke(Context.t(), binary(), map()) :: map()
   def invoke(%{steps: steps} = ctx, step_id, opts) do
@@ -273,13 +277,13 @@ defmodule Inngest.StepTool do
         generator_otps =
           if Map.has_key?(opts, :timeout) do
             %{
-              function_id: func.slug(),
+              function_id: function_id(ctx, func),
               payload: %{data: data, v: v},
               timeout: timeout
             }
           else
             %{
-              function_id: func.slug(),
+              function_id: function_id(ctx, func),
               payload: %{data: data, v: v}
             }
           end
@@ -302,6 +306,9 @@ defmodule Inngest.StepTool do
   The event send is executed once, then reported as a `StepRun` containing the
   sent event IDs. Replayed memoized results return the stored event-send result
   without sending again.
+
+  During function execution, sends use the active invocation client so event
+  URL, event key, mode, and environment headers match the served app.
   """
   def send_event(%{steps: steps} = ctx, step_id, events) do
     op = UnhashedOp.new(ctx, "Step", step_id)
@@ -318,8 +325,9 @@ defmodule Inngest.StepTool do
             step_id
           end
 
-        # TODO: handle error responses as well
-        {:ok, %{"ids" => event_ids, "status" => 200}} = Inngest.Client.send(events)
+        # Nested sends should use the same client as the invoked function so
+        # event URLs, mode, env headers, and keys remain scoped to that app.
+        {:ok, %{"ids" => event_ids, "status" => 200}} = send_events(ctx, events)
 
         # Sending events is durable only after the executor stores this StepRun.
         throw(%GeneratorOpCode{
@@ -334,6 +342,15 @@ defmodule Inngest.StepTool do
         memoized_result!(ctx, hashed_id, val)
     end
   end
+
+  defp send_events(%{client: %Inngest.Client{} = client}, events) do
+    Inngest.Client.send(client, events)
+  end
+
+  defp send_events(_ctx, events), do: Inngest.Client.send(events)
+
+  defp function_id(%{client: %Inngest.Client{id: app_id}}, func), do: func.slug(app_id)
+  defp function_id(_ctx, func), do: func.slug()
 
   @spec report_run_step(Context.t(), binary(), binary(), fun()) :: no_return()
   defp report_run_step(ctx, hashed_id, step_id, func) do

@@ -1,0 +1,78 @@
+#+title: SDK Spec Middleware
+#+author: Darwin D. Wu
+#+date: 2026-06-19
+#+status: Draft
+
+* SDK Spec Middleware
+
+Source spec: https://github.com/inngest/inngest/blob/main/docs/SDK_SPEC.md
+
+** Goal
+
+Add the required middleware API, lifecycle hooks, mutation points, and
+capability boundaries required for SDK spec compliance.
+
+** Implementation Guide
+
+Before checking off any implementation item in any phase, decide any relevant
+open question, capture the current behavior if it matters, add or update a
+focused test that fails for the desired spec behavior, implement the smallest
+change, and leave the targeted test green. Do not end a phase with intentionally
+failing tests.
+
+** Decisions
+
+- Middleware will be represented by behaviour modules with optional callbacks.
+  Middleware configuration accepts modules and ={module, opts}= tuples so hooks
+  remain named, discoverable, and testable.
+- Middleware can be configured on first-class clients and per function through
+  function options. Global application middleware may remain as a compatibility
+  fallback, but the primary public API should be client-owned.
+- Client-level middleware attaches to ~use Inngest.Client~ options and is
+  resolved onto the runtime ~%Inngest.Client{}~ used by routers, sends,
+  introspection, and call execution.
+- Event-send middleware applies to both ~Inngest.Client.send/2~ and
+  ~Inngest.StepTool.send_event/3~ through the same event-send hook path.
+  ~StepTool.send_event/3~ already receives the active invocation client through
+  ~Inngest.Function.Context~, so middleware must preserve that client scope.
+  Durable step memoization stores the result after middleware and event send
+  complete.
+- Connect, checkpointing, streaming, AI Gateway, Gateway fetch, and in-band sync
+  remain deferred in this plan. Plan 5 only documents those boundaries and
+  prevents optional capabilities from being advertised before implementation.
+- Introspection must only advertise ~trust_probe~ after a separate trust probe
+  feature exists. Signed introspection alone is not sufficient to advertise that
+  capability.
+
+** Phase 1: Middleware Implementation
+
+- [ ] Add tests for client-level middleware declared through ~use Inngest.Client~.
+- [ ] Add client-level middleware registration to ~Inngest.Client.new/1~ and the
+  runtime client struct.
+- [ ] Add function-level middleware registration.
+- [ ] Ensure client middleware runs before function middleware.
+- [ ] Ensure middleware runs in registration order.
+- [ ] Add function lifecycle hooks for transform input, before execution, after execution, and transform output.
+- [ ] Consider recommended hooks for after memoization and before response.
+- [ ] Add event send lifecycle hooks for before send events and after send events.
+
+** Phase 2: Mutation And Capability Boundaries
+
+- [ ] Allow middleware to add fields to function context.
+- [ ] Allow middleware to access framework/platform request information where available.
+- [ ] Allow middleware to mutate memoized step data before user code sees it.
+- [ ] Allow middleware to mutate output and errors before SDK responses are sent.
+- [ ] Allow middleware to mutate events before sending them to Inngest.
+- [ ] Keep Connect, streaming, checkpointing, AI Gateway, Gateway fetch, and in-band sync as explicit future work unless implemented in this phase.
+- [ ] Ensure introspection capabilities only advertise implemented optional features.
+
+** Phase 3: Verification
+
+- [ ] Run ~make fmt~.
+- [ ] Run targeted middleware, client, router, and event send tests.
+- [ ] Run introspection capability tests.
+- [ ] Run ~make test-e2e~ so client-scoped middleware is verified through the
+  integration router and step event-send path.
+- [ ] Add docs example compile checks or doctests where practical.
+- [ ] Document middleware behavior and ordering.
+- [ ] Document implemented and deferred optional capabilities.

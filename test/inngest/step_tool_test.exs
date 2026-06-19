@@ -4,6 +4,22 @@ defmodule Inngest.StepToolTest do
   alias Inngest.Function.GeneratorOpCode
   alias Inngest.StepTool
 
+  defmodule InvokeTarget do
+    def slug(app_id), do: "#{app_id}-invoke-target"
+    def slug(), do: "legacy-invoke-target"
+  end
+
+  setup do
+    tesla_adapter = Application.fetch_env(:tesla, :adapter)
+
+    on_exit(fn ->
+      case tesla_adapter do
+        {:ok, adapter} -> Application.put_env(:tesla, :adapter, adapter)
+        :error -> Application.delete_env(:tesla, :adapter)
+      end
+    end)
+  end
+
   describe "run/3" do
     test "reports an immediately executed run step when allowed" do
       assert %GeneratorOpCode{
@@ -184,10 +200,67 @@ defmodule Inngest.StepToolTest do
     end
   end
 
+  describe "invoke/3" do
+    test "uses invocation client id for function module targets" do
+      client = Inngest.Client.new(id: "step-client")
+
+      assert %GeneratorOpCode{
+               op: "InvokeFunction",
+               opts: %{
+                 function_id: "step-client-invoke-target",
+                 payload: %{data: %{hello: "world"}, v: nil}
+               }
+             } =
+               catch_throw(
+                 StepTool.invoke(ctx(client: client), "call target", %{
+                   function: InvokeTarget,
+                   data: %{hello: "world"}
+                 })
+               )
+    end
+  end
+
+  describe "send_event/3" do
+    test "uses invocation client when available" do
+      Application.put_env(:tesla, :adapter, Tesla.Mock)
+
+      client =
+        Inngest.Client.new(
+          id: "step-client",
+          event_url: "https://step-events.example",
+          event_key: "step-key",
+          env: "step-env"
+        )
+
+      Tesla.Mock.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
+        assert url == "https://step-events.example/e/step-key"
+        [event] = Jason.decode!(body)
+        assert event["name"] == "test/step.send"
+        assert event["data"] == %{"ok" => true}
+        assert {Inngest.Headers.env(), "step-env"} in headers
+
+        %Tesla.Env{status: 200, body: %{"ids" => ["step-event-id"], "status" => 200}}
+      end)
+
+      assert %GeneratorOpCode{
+               op: "StepRun",
+               data: %{event_ids: ["step-event-id"]},
+               display_name: "Send test/step.send"
+             } =
+               catch_throw(
+                 StepTool.send_event(ctx(client: client), "send", %Inngest.Event{
+                   name: "test/step.send",
+                   data: %{ok: true}
+                 })
+               )
+    end
+  end
+
   defp ctx(attrs \\ []) do
     defaults = %{
       attempt: 0,
       run_id: "run-1",
+      client: nil,
       disable_immediate_execution: false,
       stack: nil,
       target_step_id: "step",

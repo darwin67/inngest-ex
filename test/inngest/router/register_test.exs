@@ -10,6 +10,17 @@ defmodule Inngest.Router.RegisterTestFn do
   def exec(_ctx, _input), do: {:ok, %{"ok" => true}}
 end
 
+defmodule Inngest.Router.RegisterClient do
+  @moduledoc false
+
+  use Inngest.Client,
+    id: "register-app",
+    funcs: [Inngest.Router.RegisterTestFn],
+    register_url: "https://register.example",
+    serve_origin: "https://serve.example",
+    mode: :dev
+end
+
 defmodule Inngest.Router.RegisterTest do
   use ExUnit.Case, async: false
 
@@ -30,10 +41,7 @@ defmodule Inngest.Router.RegisterTest do
 
   @config_keys ~w(
     app_host
-    app_name
     env
-    register_url
-    serve_origin
     serve_path
     signing_key
   )a
@@ -47,9 +55,6 @@ defmodule Inngest.Router.RegisterTest do
     Enum.each(@config_keys, &Application.delete_env(:inngest, &1))
 
     Application.put_env(:tesla, :adapter, Tesla.Mock)
-    Application.put_env(:inngest, :env, :dev)
-    Application.put_env(:inngest, :app_name, "RegisterApp")
-    Application.put_env(:inngest, :serve_origin, "https://serve.example")
 
     on_exit(fn ->
       Enum.each(env, fn
@@ -74,9 +79,9 @@ defmodule Inngest.Router.RegisterTest do
       Tesla.Mock.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
         payload = Jason.decode!(body)
 
-        assert url == Config.register_url() <> "/fn/register"
+        assert url == "https://register.example/fn/register"
         assert payload["url"] == "https://serve.example/api/inngest"
-        assert payload["appName"] == "RegisterApp"
+        assert payload["appName"] == "register-app"
         assert payload["framework"] == "plug"
         sdk_header = Headers.sdk_version()
         sdk_version = Config.sdk_version()
@@ -85,7 +90,7 @@ defmodule Inngest.Router.RegisterTest do
         [function] = payload["functions"]
 
         assert get_in(function, ["steps", "step", "runtime", "url"]) ==
-                 "https://serve.example/api/inngest?stepId=step&fnId=registerapp-register-test"
+                 "https://serve.example/api/inngest?stepId=step&fnId=register-app-register-test"
 
         %Tesla.Env{status: 200, body: %{}}
       end)
@@ -147,7 +152,7 @@ defmodule Inngest.Router.RegisterTest do
       Tesla.Mock.mock(fn %{url: url, body: body, headers: headers} ->
         payload = Jason.decode!(body)
 
-        assert url == Config.register_url() <> "/fn/register?deployId=deploy-123"
+        assert url == "https://register.example/fn/register?deployId=deploy-123"
         assert payload["url"] == "https://serve.example/api/inngest"
         assert {"x-inngest-expected-server-kind", "cloud"} in headers
 
@@ -158,30 +163,6 @@ defmodule Inngest.Router.RegisterTest do
         ""
         |> register_conn(%{"deployId" => "deploy-123"})
         |> Plug.Conn.put_req_header(Headers.server_kind(), "cloud")
-        |> Register.call(register_opts())
-
-      assert conn.status == 200
-    end
-
-    test "uses configured serve path for registered app and runtime URLs" do
-      Application.put_env(:inngest, :serve_path, "/custom/inngest")
-
-      Tesla.Mock.mock(fn %{body: body} ->
-        payload = Jason.decode!(body)
-
-        assert payload["url"] == "https://serve.example/custom/inngest"
-
-        [function] = payload["functions"]
-
-        assert get_in(function, ["steps", "step", "runtime", "url"]) ==
-                 "https://serve.example/custom/inngest?stepId=step&fnId=registerapp-register-test"
-
-        %Tesla.Env{status: 200, body: %{}}
-      end)
-
-      conn =
-        ""
-        |> register_conn()
         |> Register.call(register_opts())
 
       assert conn.status == 200
@@ -216,22 +197,49 @@ defmodule Inngest.Router.RegisterTest do
       assert Jason.decode!(conn.resp_body) == %{"error" => %{"error" => "boom"}}
     end
 
-    test "does not register when appName is empty" do
-      Application.put_env(:inngest, :app_name, "")
-      Tesla.Mock.mock(fn _env -> flunk("registration should not be called") end)
+    test "requires a first-class client" do
+      assert_raise ArgumentError, "Inngest router requires :client", fn ->
+        ""
+        |> register_conn()
+        |> Register.call(%{framework: "plug"})
+      end
+    end
+
+    test "uses configured client serve path for registered app and runtime URLs" do
+      client =
+        Inngest.Client.new(
+          id: "register-app",
+          funcs: [Inngest.Router.RegisterTestFn],
+          register_url: "https://register.example",
+          serve_origin: "https://serve.example",
+          serve_path: "/custom/inngest",
+          mode: :dev
+        )
+
+      Tesla.Mock.mock(fn %{body: body} ->
+        payload = Jason.decode!(body)
+
+        assert payload["url"] == "https://serve.example/custom/inngest"
+
+        [function] = payload["functions"]
+
+        assert get_in(function, ["steps", "step", "runtime", "url"]) ==
+                 "https://serve.example/custom/inngest?stepId=step&fnId=register-app-register-test"
+
+        %Tesla.Env{status: 200, body: %{}}
+      end)
 
       conn =
         ""
         |> register_conn()
-        |> Register.call(register_opts())
+        |> Register.call(%{register_opts() | client: client})
 
-      assert conn.status == 500
-      assert Jason.decode!(conn.resp_body) == %{"error" => "appName must not be empty"}
+      assert conn.status == 200
     end
   end
 
   defp register_opts do
-    %{framework: "plug", funcs: [Inngest.Router.RegisterTestFn]}
+    %{framework: "plug", client: Inngest.Router.RegisterClient}
   end
 
   defp register_conn(body, params \\ %{}) do

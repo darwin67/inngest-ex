@@ -10,25 +10,26 @@ The Elixir SDK provides an `inngest` macro, that will setup the required API end
 to your router. The recommended path is `/api/inngest` since it makes it obvious where
 the endpoints are, but you can change it to whatever you see fit.
 
-``` elixir
+```elixir
+defmodule MyApp.Inngest do
+  use Inngest.Client,
+    id: "my-app",
+    funcs: [
+      MyApp.EventFn,
+      MyApp.CronFn
+    ]
+end
+
 defmodule MyApp.Router do
   use Inngest.Router, :plug
 
-  inngest("/api/inngest", path: "inngest/**/*.ex")
+  inngest("/api/inngest", client: MyApp.Inngest)
 end
 ```
 
 Accepted arguments for the `inngest` macros are
 
-- `path`
-- `opts`
-
-#### opts
-
-- `func` - the list of modules. e.g. `[MyApp.EventFn, MyApp.CronFn]`
-- `path` - the path or paths to the inngest function modules. e.g. `path: "inngest/**/*.ex"`
-
-Among the options, `path` takes precedence.
+- `client` - the first-class Inngest client module.
 
 There are 2 routers available based on what you're using for exposing HTTP endpoints for
 your apps:

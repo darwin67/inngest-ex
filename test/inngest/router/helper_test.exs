@@ -3,37 +3,33 @@ defmodule Inngest.Router.HelperTest do
 
   alias Inngest.Router.Helper
 
-  describe "load_functions_from_path/1" do
-    @path "test/support/**/*.ex"
-    @paths ["dev/**/*.ex", @path]
+  defmodule Client do
+    use Inngest.Client,
+      id: "helper-client",
+      funcs: []
+  end
 
-    @dev_mods [Inngest.Dev.EventFn, Inngest.Dev.CronFn]
-    @test_mods [Inngest.TestEventFn, Inngest.TestCronFn]
-
-    @tag :skip
-    test "should compile all modules in the provided path" do
-      assert %{funcs: funcs} = Helper.load_functions_from_path(%{path: @path})
-      assert Enum.count(funcs) == Enum.count(@test_mods)
-
-      for mod <- funcs do
-        assert Enum.member?(@test_mods, mod)
-      end
+  describe "require_client!/1" do
+    test "returns opts when a client is present" do
+      assert %{client: Client} = Helper.require_client!(%{client: Client})
     end
 
-    @tag :skip
-    test "should compile all modules in the provided paths" do
-      expected = @dev_mods ++ @test_mods
-
-      assert %{funcs: funcs} = Helper.load_functions_from_path(%{path: @paths})
-      assert Enum.count(funcs) == Enum.count(expected)
-
-      for mod <- funcs do
-        assert Enum.member?(expected, mod)
+    test "raises when a client is missing" do
+      assert_raise ArgumentError, "Inngest router requires :client", fn ->
+        Helper.require_client!(%{funcs: []})
       end
     end
+  end
 
-    test "should not update the map if path is not provided" do
-      assert %{funcs: [10]} = Helper.load_functions_from_path(%{funcs: [10]})
+  describe "client!/1" do
+    test "resolves a client module into a runtime client struct" do
+      assert %Inngest.Client{id: "helper-client"} = Helper.client!(%{client: Client})
+    end
+
+    test "returns an already-built runtime client struct" do
+      client = Client.client()
+
+      assert Helper.client!(%{client: client}) == client
     end
   end
 end

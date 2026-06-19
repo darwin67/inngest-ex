@@ -21,7 +21,7 @@ defmodule Inngest.Router.Phoenix do
         opts
       end
       |> Enum.into(%{})
-      |> Inngest.Router.Helper.load_functions_from_path()
+      |> Inngest.Router.Helper.require_client!()
       |> Map.put(:framework, @framework)
       |> Macro.escape()
 
