@@ -26,8 +26,8 @@ failing tests.
   Middleware configuration accepts modules and ={module, opts}= tuples so hooks
   remain named, discoverable, and testable.
 - Middleware can be configured globally through application config and per
-  function through function options. Client-struct middleware is deferred until
-  the SDK exposes a first-class client struct API.
+  function through function options. Client-level middleware depends on the
+  first-class client architecture plan.
 - Event-send middleware applies to both ~Inngest.Client.send/2~ and
   ~Inngest.StepTool.send_event/3~ through the same event-send hook path. Durable
   step memoization stores the result after middleware and event send complete.
@@ -40,7 +40,8 @@ failing tests.
 
 ** Phase 1: Middleware Implementation
 
-- [ ] Add client-level middleware registration.
+- [ ] Add client-level middleware registration after the first-class client
+  architecture is available.
 - [ ] Add function-level middleware registration.
 - [ ] Ensure client middleware runs before function middleware.
 - [ ] Ensure middleware runs in registration order.
