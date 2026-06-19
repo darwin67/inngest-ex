@@ -3,6 +3,7 @@ defmodule Inngest.Test.Client do
 
   use Inngest.Client,
     id: "test",
+    mode: :dev,
     funcs: [
       Inngest.Test.Case.BatchFn,
       Inngest.Test.Case.CancelOnFn,

@@ -29,10 +29,10 @@ defmodule Inngest.Test.Helper do
 
   defp send_event(event, retries \\ @send_retries)
 
-  defp send_event(event, 0), do: Inngest.send(event)
+  defp send_event(event, 0), do: Inngest.Test.Client.send(event)
 
   defp send_event(event, retries) do
-    case Inngest.send(event) do
+    case Inngest.Test.Client.send(event) do
       {:error, _} ->
         Process.sleep(@send_retry_interval)
         send_event(event, retries - 1)

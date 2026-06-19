@@ -29,6 +29,7 @@ defmodule Inngest.Function.Context do
   defstruct [
     :attempt,
     :run_id,
+    :client,
     :disable_immediate_execution,
     :stack,
     :target_step_id,
@@ -40,6 +41,7 @@ defmodule Inngest.Function.Context do
   @type t() :: %__MODULE__{
           attempt: number(),
           run_id: binary(),
+          client: Inngest.Client.t() | nil,
           disable_immediate_execution: boolean(),
           stack: map() | nil,
           target_step_id: binary(),

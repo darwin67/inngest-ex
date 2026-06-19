@@ -49,6 +49,7 @@ defmodule Inngest.Router.Invoke do
     ctx = %Inngest.Function.Context{
       attempt: Map.get(request_ctx, "attempt", 0),
       run_id: Map.get(request_ctx, "run_id"),
+      client: client,
       disable_immediate_execution: Map.get(request_ctx, "disable_immediate_execution", false),
       stack: Map.get(request_ctx, "stack"),
       target_step_id: Map.get(params, "stepId", "step"),
