@@ -121,7 +121,9 @@ defmodule MyApp.AwesomeFunction do
 end
 ```
 
-See the **[guides](https://hexdocs.pm/inngest)** for more details regarding use cases and how each macros can be used.
+See the **[guides](https://hexdocs.pm/inngest)** and the
+**[function configuration reference](docs/references/function_configuration.md)**
+for more details regarding use cases and how each macro can be used.
 
 <!-- MDOC ! -->
 
