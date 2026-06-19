@@ -15,7 +15,7 @@ defmodule Inngest.Function.Cases.InvokeTest do
             %{
               "data" => [
                 %{
-                  "output" => %{"data" => "INVOKED!"},
+                  "output" => "INVOKED!",
                   "run_id" => _,
                   "status" => "Completed"
                 }

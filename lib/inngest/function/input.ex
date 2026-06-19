@@ -29,6 +29,9 @@ defmodule Inngest.Function.Context do
   defstruct [
     :attempt,
     :run_id,
+    :disable_immediate_execution,
+    :stack,
+    :target_step_id,
     # ETS table
     :index,
     steps: %{}
@@ -37,6 +40,9 @@ defmodule Inngest.Function.Context do
   @type t() :: %__MODULE__{
           attempt: number(),
           run_id: binary(),
+          disable_immediate_execution: boolean(),
+          stack: map() | nil,
+          target_step_id: binary(),
           index: :ets.tid(),
           steps: map()
         }

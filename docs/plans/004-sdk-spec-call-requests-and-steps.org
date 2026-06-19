@@ -1,7 +1,7 @@
 #+title: SDK Spec Call Requests And Steps
 #+author: Darwin D. Wu
 #+date: 2026-06-19
-#+status: Draft
+#+status: Done
 
 * SDK Spec Call Requests And Steps
 
@@ -20,42 +20,74 @@ focused test that fails for the desired spec behavior, implement the smallest
 change, and leave the targeted test green. Do not end a phase with intentionally
 failing tests.
 
-** Open Questions
+** Decisions
 
-- [ ] Decide whether to make a hard break to spec memoized step shape or temporarily support old dev-server payloads too.
-- [ ] Decide whether ~step.run~ should immediately execute when allowed or always plan first for simpler determinism.
-- [ ] Decide how long targeted step discovery may run before returning ~StepNotFound~.
-- [ ] Decide whether memoized step errors raise a dedicated ~Inngest.StepError~.
-- [ ] Decide how much ~ctx.stack.stack~ recovery belongs in the first pass.
-- [ ] Decide whether parallelism is explicitly out of scope until stack recovery exists.
+- Plan 4 will hard-break to the spec memoized step action shape for step types
+  that memoize as result objects. Run and invoke-style memoized actions must be
+  handled as ~%{"data" => value}~ or ~%{"error" => error}~, while step types
+  with explicit spec-defined memoized values, such as sleep ~nil~ and
+  wait-for-event event-or-~nil~ results, must preserve those shapes. The SDK
+  will not preserve legacy raw run-step payload compatibility.
+- ~step.run~ will execute immediately when the step is not memoized and
+  ~ctx.disable_immediate_execution~ is false, the request ~stepId~ is ~"step"~,
+  and the traversal finds exactly one reportable run step. When immediate
+  execution is not allowed, the SDK will report a planned step instead of
+  running the step body.
+- Targeted ~stepId~ discovery will make one deterministic function traversal
+  with no local retry loop or wall-clock discovery budget. If the requested
+  hashed step ID is not encountered during that traversal, the SDK will return
+  ~StepNotFound~.
+- Memoized step errors will raise a dedicated ~Inngest.StepError~ carrying the
+  original error payload when practical, so remote step failures have a stable
+  SDK exception type.
+- Plan 4 will implement the minimal ~ctx.stack.stack~ recovery needed for
+  sequential targeted ~stepId~ correctness: parse and store ~ctx.stack~, use it
+  to follow executor-provided sequential traversal order, skip/replay prior
+  memoized stack entries, and return ~StepNotFound~ when the target cannot be
+  reached in that traversal.
+- Plan 4 will keep parallel step recovery and execution semantics explicitly
+  out of scope until full stack recovery exists.
+
+** Deferred Scope
+
+- Full out-of-order stack recovery and parallel branch reconstruction are
+  deferred beyond Plan 4.
+- Spec-complete parallel step execution/recovery is deferred beyond Plan 4. Any
+  existing public API that appears to imply parallel execution should remain
+  undocumented or be documented as not spec-complete until stack recovery can
+  reconstruct parallel branches reliably.
 
 ** Phase 1: Call Request Implementation
 
-- [ ] Normalize call request parsing around ~ctx.use_api~ instead of top-level ~use_api~.
-- [ ] Fetch full batch events from ~/v0/runs/:run_id/batch~ when ~ctx.use_api~ is true.
-- [ ] Fetch full memoized step data from ~/v0/runs/:run_id/actions~ when ~ctx.use_api~ is true.
-- [ ] Return ~500~ when required full payload fetches fail.
-- [ ] Expose ~event~, ~events~, ~run_id~, ~attempt~, and ~step~ to function input.
-- [ ] Add context fields for ~disable_immediate_execution~, ~stack~, and ~qi_id~.
+- [X] Normalize call request parsing around ~ctx.use_api~ instead of top-level ~use_api~.
+- [X] Fetch full batch events from ~/v0/runs/:run_id/batch~ when ~ctx.use_api~ is true.
+- [X] Use the first fetched batch event as ~event~ when full batch events replace the request payload.
+- [X] Fetch full memoized step data from ~/v0/runs/:run_id/actions~ when ~ctx.use_api~ is true.
+- [X] Return ~500~ when required full payload fetches fail.
+- [X] Return ~500~ when ~fnId~ does not match a registered function.
+- [X] Expose ~event~, ~events~, ~run_id~, ~attempt~, and ~step~ to function input.
+- [X] Add context fields for ~disable_immediate_execution~ and ~stack~.
 
 ** Phase 2: Step Execution And Memoization
 
-- [ ] Memoize successful steps by unwrapping ~%{"data" => value}~.
-- [ ] Memoize failed steps by handling ~%{"error" => ...}~ as a step error.
-- [ ] Ensure memoized steps are not reported again.
-- [ ] Align run step reporting with ~StepRun~, ~StepPlanned~, ~StepError~, and ~StepNotFound~.
-- [ ] Align sleep reporting with ~Sleep~ and ~opts.duration~.
-- [ ] Keep wait-for-event reporting aligned with ~WaitForEvent~.
-- [ ] Keep invocation reporting aligned with ~InvokeFunction~.
-- [ ] Keep durable event sending retriable and memoized.
-- [ ] Support targeted ~stepId~ execution for hashed step IDs.
-- [ ] Avoid immediate execution when ~ctx.disable_immediate_execution~ is true.
-- [ ] Return ~StepNotFound~ when a targeted step cannot be found.
-- [ ] Add stack-aware recovery behavior or document and defer it explicitly if it is not implemented in this phase.
+- [X] Memoize successful run and invoke-style steps by unwrapping ~%{"data" => value}~.
+- [X] Memoize failed steps by handling ~%{"error" => ...}~ as a step error.
+- [X] Preserve step-specific memoized values for sleep and wait-for-event results.
+- [X] Ensure memoized steps are not reported again.
+- [X] Align run step reporting with ~StepRun~, ~StepPlanned~, ~StepError~, and ~StepNotFound~ using spec fields only.
+- [X] Return memoized ~Inngest.StepError~ failures as non-retriable when they bubble out of user code.
+- [X] Align sleep reporting with ~Sleep~ and ~opts.duration~.
+- [X] Keep wait-for-event reporting aligned with ~WaitForEvent~.
+- [X] Keep invocation reporting aligned with ~InvokeFunction~.
+- [X] Keep durable event sending retriable and memoized.
+- [X] Support targeted ~stepId~ execution for hashed step IDs.
+- [X] Avoid immediate execution when ~ctx.disable_immediate_execution~ is true.
+- [X] Return ~StepNotFound~ when a targeted step cannot be found.
+- [X] Add stack-aware recovery behavior or document and defer it explicitly if it is not implemented in this phase.
 
 ** Phase 3: Verification
 
-- [ ] Run ~make fmt~.
-- [ ] Run targeted call request and step tests.
-- [ ] Run e2e tests for run, sleep, wait for event, invoke, send event, and failure behavior.
-- [ ] Update step documentation with opcode and memoization behavior.
+- [X] Run ~make fmt~.
+- [X] Run targeted call request and step tests.
+- [X] Run e2e tests for run, sleep, wait for event, invoke, send event, and failure behavior.
+- [X] Update step documentation with opcode and memoization behavior.

@@ -59,7 +59,9 @@ defmodule Inngest.Function.GeneratorOpCode do
     :opts,
     # data is the resulting data from the operation, e.g. the step
     # output
-    :data
+    :data,
+    # error is the serialized error returned from a failed StepRun.
+    :error
   ]
 
   @type t() :: %__MODULE__{
@@ -68,14 +70,32 @@ defmodule Inngest.Function.GeneratorOpCode do
           name: binary(),
           display_name: binary(),
           opts: any(),
-          data: any()
+          data: any(),
+          error: map() | nil
         }
 end
 
 defimpl Jason.Encoder, for: Inngest.Function.GeneratorOpCode do
   def encode(value, opts) do
-    value
-    |> Map.put(:displayName, Map.get(value, :display_name))
+    # Only emit spec-facing fields. Internal names such as display_name are kept
+    # in the struct for Elixir ergonomics, but must not leak to JSON.
+    %{
+      id: value.id,
+      op: value.op
+    }
+    |> maybe_put(:displayName, value.display_name)
+    |> maybe_put(:opts, value.opts)
+    |> maybe_put_data(value)
+    |> maybe_put(:error, value.error)
     |> Jason.Encode.map(opts)
   end
+
+  # StepRun must include data even when the user step returns nil; other opcodes
+  # omit nil data so planned/sleep/not-found responses stay minimal.
+  defp maybe_put_data(map, %{op: "StepRun", data: data}), do: Map.put(map, :data, data)
+  defp maybe_put_data(map, %{data: nil}), do: map
+  defp maybe_put_data(map, %{data: data}), do: Map.put(map, :data, data)
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end
