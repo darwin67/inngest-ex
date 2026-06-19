@@ -15,8 +15,15 @@ defmodule Inngest.Signature do
     end
   end
 
-  @spec signing_key_valid?(binary(), binary(), binary(), keyword()) :: boolean()
+  @spec signing_key_valid?(binary(), binary() | [binary()], binary(), keyword()) :: boolean()
   def signing_key_valid?(sig, key, body, opts \\ [])
+
+  def signing_key_valid?(sig, keys, body, opts)
+      when is_list(keys) and is_binary(body) do
+    keys
+    |> Enum.reject(&blank?/1)
+    |> Enum.any?(&signing_key_valid?(sig, &1, body, opts))
+  end
 
   def signing_key_valid?(sig, key, body, opts)
       when is_binary(sig) and is_binary(key) and is_binary(body) do
@@ -59,4 +66,8 @@ defmodule Inngest.Signature do
   def sign(_, _, _), do: ""
 
   def normalize_key(key), do: Regex.replace(~r/^(signkey-.+-)/, key, "")
+
+  defp blank?(nil), do: true
+  defp blank?(""), do: true
+  defp blank?(_), do: false
 end

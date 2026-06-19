@@ -1,0 +1,56 @@
+#+title: SDK Spec Function Configuration
+#+author: Darwin D. Wu
+#+date: 2026-06-19
+#+status: Draft
+
+* SDK Spec Function Configuration
+
+Source spec: https://github.com/inngest/inngest/blob/main/docs/SDK_SPEC.md
+
+** Goal
+
+Expand function configuration support so registration payloads can represent the
+function-level controls documented in the spec while preserving the current Elixir
+SDK API where practical.
+
+** Implementation Guide
+
+Before checking off any implementation item in any phase, decide any relevant
+open question, capture the current behavior if it matters, add or update a
+focused test that fails for the desired spec behavior, implement the smallest
+change, and leave the targeted test green. Do not end a phase with intentionally
+failing tests.
+
+** Open Questions
+
+- [ ] Decide whether public config remains snake_case only and renders camelCase only at JSON boundaries.
+- [ ] Decide whether invalid config raises during module loading, serve generation, or registration.
+- [ ] Decide whether ~batch_events.key~ interacts with existing ~batch_events~ conflict rules.
+- [ ] Decide whether new config options use raw maps, dedicated structs, keyword lists, or multiple accepted forms.
+- [ ] Decide whether docs should show only new options or also update all existing function config examples.
+
+** Phase 1: Config Surface Implementation
+
+- [ ] Add ~throttle~ support with ~key~, ~limit~, ~period~, and ~burst~.
+- [ ] Add ~singleton~ support with ~key~ and ~mode~.
+- [ ] Add ~timeouts~ support with ~start~ and ~finish~.
+- [ ] Add ~batch_events.key~ support and render it as ~batchEvents.key~.
+- [ ] Add ~debounce.timeout~ support.
+- [ ] Keep existing ~debounce~, ~priority~, ~batch_events~, ~rate_limit~, ~idempotency~, ~concurrency~, and ~cancel_on~ behavior.
+
+** Phase 2: Validation And Documentation
+
+- [ ] Validate required fields for new config options.
+- [ ] Validate time strings for new duration fields.
+- [ ] Validate enum values such as singleton mode and concurrency scope.
+- [ ] Keep conflict validation for incompatible options such as ~batch_events~ with ~rate_limit~ or ~cancel_on~.
+- [ ] Document any config fields intentionally not implemented yet.
+- [ ] Do not add checkpoint registration fields unless checkpointing itself is implemented.
+- [ ] Add targeted dev-server smoke tests for representative options when supported by the local Inngest dev server.
+
+** Phase 3: Verification
+
+- [ ] Run ~make fmt~.
+- [ ] Run targeted function configuration tests.
+- [ ] Run existing function case tests.
+- [ ] Update reference docs for function configuration examples.

@@ -1,0 +1,58 @@
+#+title: SDK Spec Developer Ergonomics And Optional Capabilities
+#+author: Darwin D. Wu
+#+date: 2026-06-19
+#+status: Draft
+
+* SDK Spec Developer Ergonomics And Optional Capabilities
+
+Source spec: https://github.com/inngest/inngest/blob/main/docs/SDK_SPEC.md
+
+** Goal
+
+Add the required middleware ergonomics and clearly separate implemented
+capabilities from optional features that should be planned independently.
+
+** Implementation Guide
+
+Before checking off any implementation item in any phase, decide any relevant
+open question, capture the current behavior if it matters, add or update a
+focused test that fails for the desired spec behavior, implement the smallest
+change, and leave the targeted test green. Do not end a phase with intentionally
+failing tests.
+
+** Open Questions
+
+- [ ] Decide whether middleware is represented by behaviour modules, function callbacks, anonymous functions, or a combination.
+- [ ] Decide whether middleware is configured globally, on a client struct, on function opts, or all three.
+- [ ] Decide whether event-send middleware applies to both ~Inngest.Client.send/2~ and ~step.send_event/3~.
+- [ ] Decide whether Connect, checkpointing, streaming, AI Gateway, Gateway fetch, and in-band sync are all deferred.
+- [ ] Decide whether introspection can advertise ~trust_probe~ after signed introspection works or only after a separate trust probe feature exists.
+
+** Phase 1: Middleware Implementation
+
+- [ ] Add client-level middleware registration.
+- [ ] Add function-level middleware registration.
+- [ ] Ensure client middleware runs before function middleware.
+- [ ] Ensure middleware runs in registration order.
+- [ ] Add function lifecycle hooks for transform input, before execution, after execution, and transform output.
+- [ ] Consider recommended hooks for after memoization and before response.
+- [ ] Add event send lifecycle hooks for before send events and after send events.
+
+** Phase 2: Mutation And Capability Boundaries
+
+- [ ] Allow middleware to add fields to function context.
+- [ ] Allow middleware to access framework/platform request information where available.
+- [ ] Allow middleware to mutate memoized step data before user code sees it.
+- [ ] Allow middleware to mutate output and errors before SDK responses are sent.
+- [ ] Allow middleware to mutate events before sending them to Inngest.
+- [ ] Keep Connect, streaming, checkpointing, AI Gateway, Gateway fetch, and in-band sync as explicit future work unless implemented in this phase.
+- [ ] Ensure introspection capabilities only advertise implemented optional features.
+
+** Phase 3: Verification
+
+- [ ] Run ~make fmt~.
+- [ ] Run targeted middleware and event send tests.
+- [ ] Run introspection capability tests.
+- [ ] Add docs example compile checks or doctests where practical.
+- [ ] Document middleware behavior and ordering.
+- [ ] Document implemented and deferred optional capabilities.

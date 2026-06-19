@@ -3,12 +3,10 @@ defmodule Inngest.Router.Invoke do
 
   import Plug.Conn
   import Inngest.Router.Helper
-  alias Inngest.{Config, Headers, Signature, SdkResponse}
+  alias Inngest.{Client, Config, Headers, Signature, SdkResponse}
   alias Inngest.Function.GeneratorOpCode
 
   @content_type "application/json"
-
-  defdelegate httpclient(type, opts), to: Inngest.Client
 
   def init(opts), do: opts
 
@@ -66,11 +64,13 @@ defmodule Inngest.Router.Invoke do
 
         false ->
           with sig <- conn |> Plug.Conn.get_req_header(Headers.signature()) |> List.first(),
-               true <- Signature.signing_key_valid?(sig, Config.signing_key(), body) do
+               signing_keys <- [Config.signing_key(), Config.signing_key_fallback()],
+               true <- Signature.signing_key_valid?(sig, signing_keys, body) do
             invoke(func, ctx, input)
           else
             _ ->
-              SdkResponse.from_result({:error, "unable to verify signature"}, retry: false)
+              error = RuntimeError.exception("unable to verify signature")
+              SdkResponse.from_result({:error, error}, retry: false)
           end
       end
 
@@ -120,15 +120,7 @@ defmodule Inngest.Router.Invoke do
   defp fn_run_batch(run_id), do: fn_run_data("/v0/runs/#{run_id}/batch")
 
   defp fn_run_data(path) do
-    key = Signature.hashed_signing_key(Config.signing_key())
-    headers = if is_nil(key), do: [], else: [authorization: "Bearer " <> key]
-
-    headers =
-      if is_nil(Config.env()),
-        do: headers,
-        else: Keyword.put(headers, :"x-inngest-env", Config.env())
-
-    case httpclient(:api, headers: headers) |> Tesla.get(path) do
+    case Client.get(:api, path) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         # parse result just in case it isn't already parsed
         result =
