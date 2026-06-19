@@ -243,6 +243,7 @@ defmodule Inngest.FnOpts do
           }
           | nil
   @concurrency_scopes ["fn", "env", "account"]
+  @singleton_modes ["skip", "cancel"]
 
   @typedoc """
   Define an event that can be used to cancel a running or sleeping function ([reference](https://www.inngest.com/docs/functions/cancellation))
@@ -283,6 +284,7 @@ defmodule Inngest.FnOpts do
 
       debounce ->
         period = Map.get(debounce, :period)
+        timeout = Map.get(debounce, :timeout)
 
         if is_nil(period) do
           raise Inngest.DebounceConfigError, message: "'period' must be set for debounce"
@@ -299,6 +301,8 @@ defmodule Inngest.FnOpts do
                 message: "cannot specify period for more than 7 days"
             end
         end
+
+        validate_duration(timeout, Inngest.DebounceConfigError)
 
         Map.put(config, :debounce, debounce)
     end
@@ -379,8 +383,21 @@ defmodule Inngest.FnOpts do
   @spec validate_throttle(t(), map()) :: map()
   def validate_throttle(fnopts, config) do
     case fnopts |> Map.get(:throttle) do
-      nil -> config
-      throttle -> Map.put(config, :throttle, throttle)
+      nil ->
+        config
+
+      throttle ->
+        limit = Map.get(throttle, :limit)
+        period = Map.get(throttle, :period)
+
+        if is_nil(limit) || is_nil(period) do
+          raise Inngest.ThrottleConfigError,
+            message: "'limit' and 'period' must be set for throttle"
+        end
+
+        validate_duration(period, Inngest.ThrottleConfigError)
+
+        Map.put(config, :throttle, throttle)
     end
   end
 
@@ -388,8 +405,22 @@ defmodule Inngest.FnOpts do
   @spec validate_singleton(t(), map()) :: map()
   def validate_singleton(fnopts, config) do
     case fnopts |> Map.get(:singleton) do
-      nil -> config
-      singleton -> Map.put(config, :singleton, singleton)
+      nil ->
+        config
+
+      singleton ->
+        mode = Map.get(singleton, :mode)
+
+        if is_nil(mode) do
+          raise Inngest.SingletonConfigError, message: "'mode' must be set for singleton"
+        end
+
+        if !Enum.member?(@singleton_modes, mode) do
+          raise Inngest.SingletonConfigError,
+            message: "invalid mode '#{mode}', needs to be \"skip\"|\"cancel\""
+        end
+
+        Map.put(config, :singleton, singleton)
     end
   end
 
@@ -397,8 +428,19 @@ defmodule Inngest.FnOpts do
   @spec validate_timeouts(t(), map()) :: map()
   def validate_timeouts(fnopts, config) do
     case fnopts |> Map.get(:timeouts) do
-      nil -> config
-      timeouts -> Map.put(config, :timeouts, timeouts)
+      nil ->
+        config
+
+      timeouts ->
+        timeouts
+        |> Map.get(:start)
+        |> validate_duration(Inngest.TimeoutConfigError)
+
+        timeouts
+        |> Map.get(:finish)
+        |> validate_duration(Inngest.TimeoutConfigError)
+
+        Map.put(config, :timeouts, timeouts)
     end
   end
 
@@ -536,4 +578,13 @@ defmodule Inngest.FnOpts do
 
   defp maybe_put(config, _key, nil), do: config
   defp maybe_put(config, key, value), do: Map.put(config, key, value)
+
+  defp validate_duration(nil, _error), do: nil
+
+  defp validate_duration(duration, error) do
+    case Util.parse_duration(duration) do
+      {:error, message} -> raise error, message: message
+      {:ok, _seconds} -> nil
+    end
+  end
 end

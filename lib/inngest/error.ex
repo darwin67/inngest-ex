@@ -55,6 +55,27 @@ defmodule Inngest.RateLimitConfigError do
   defexception [:message]
 end
 
+defmodule Inngest.ThrottleConfigError do
+  @moduledoc """
+  Error indicating there's a misconfiguration when attempting to use `throttle`.
+  """
+  defexception [:message]
+end
+
+defmodule Inngest.SingletonConfigError do
+  @moduledoc """
+  Error indicating there's a misconfiguration when attempting to use `singleton`.
+  """
+  defexception [:message]
+end
+
+defmodule Inngest.TimeoutConfigError do
+  @moduledoc """
+  Error indicating there's a misconfiguration when attempting to use `timeouts`.
+  """
+  defexception [:message]
+end
+
 defmodule Inngest.ConcurrencyConfigError do
   @moduledoc """
   Error indicating there's a misconfiguration when attempting to use `concurrency`.

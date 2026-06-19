@@ -63,6 +63,14 @@ defmodule Inngest.FnOptsTest do
         FnOpts.validate_debounce(opts, @config)
       end
     end
+
+    test "should raise with invalid timeout" do
+      opts = update_at(@fn_opts, [:debounce, :timeout], "yolo")
+
+      assert_raise Inngest.DebounceConfigError, "invalid duration: 'yolo'", fn ->
+        FnOpts.validate_debounce(opts, @config)
+      end
+    end
   end
 
   describe "validate_priority/2" do
@@ -249,6 +257,34 @@ defmodule Inngest.FnOptsTest do
                }
              } = FnOpts.validate_throttle(@fn_opts, @config)
     end
+
+    test "should raise when limit is missing" do
+      opts = drop_at(@fn_opts, [:throttle, :limit])
+
+      assert_raise Inngest.ThrottleConfigError,
+                   "'limit' and 'period' must be set for throttle",
+                   fn ->
+                     FnOpts.validate_throttle(opts, @config)
+                   end
+    end
+
+    test "should raise when period is missing" do
+      opts = drop_at(@fn_opts, [:throttle, :period])
+
+      assert_raise Inngest.ThrottleConfigError,
+                   "'limit' and 'period' must be set for throttle",
+                   fn ->
+                     FnOpts.validate_throttle(opts, @config)
+                   end
+    end
+
+    test "should raise when period is invalid" do
+      opts = update_at(@fn_opts, [:throttle, :period], "yolo")
+
+      assert_raise Inngest.ThrottleConfigError, "invalid duration: 'yolo'", fn ->
+        FnOpts.validate_throttle(opts, @config)
+      end
+    end
   end
 
   describe "validate_singleton/2" do
@@ -269,6 +305,26 @@ defmodule Inngest.FnOptsTest do
                }
              } = FnOpts.validate_singleton(@fn_opts, @config)
     end
+
+    test "should raise when mode is missing" do
+      opts = drop_at(@fn_opts, [:singleton, :mode])
+
+      assert_raise Inngest.SingletonConfigError,
+                   "'mode' must be set for singleton",
+                   fn ->
+                     FnOpts.validate_singleton(opts, @config)
+                   end
+    end
+
+    test "should raise when mode is invalid" do
+      opts = update_at(@fn_opts, [:singleton, :mode], "replace")
+
+      assert_raise Inngest.SingletonConfigError,
+                   "invalid mode 'replace', needs to be \"skip\"|\"cancel\"",
+                   fn ->
+                     FnOpts.validate_singleton(opts, @config)
+                   end
+    end
   end
 
   describe "validate_timeouts/2" do
@@ -288,6 +344,32 @@ defmodule Inngest.FnOptsTest do
                  finish: "1h"
                }
              } = FnOpts.validate_timeouts(@fn_opts, @config)
+    end
+
+    test "should succeed when only start is set" do
+      opts = %{@fn_opts | timeouts: %{start: "1m"}}
+
+      assert %{
+               timeouts: %{
+                 start: "1m"
+               }
+             } = FnOpts.validate_timeouts(opts, @config)
+    end
+
+    test "should raise when start is invalid" do
+      opts = update_at(@fn_opts, [:timeouts, :start], "yolo")
+
+      assert_raise Inngest.TimeoutConfigError, "invalid duration: 'yolo'", fn ->
+        FnOpts.validate_timeouts(opts, @config)
+      end
+    end
+
+    test "should raise when finish is invalid" do
+      opts = update_at(@fn_opts, [:timeouts, :finish], "yolo")
+
+      assert_raise Inngest.TimeoutConfigError, "invalid duration: 'yolo'", fn ->
+        FnOpts.validate_timeouts(opts, @config)
+      end
     end
   end
 
