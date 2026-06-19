@@ -52,7 +52,8 @@ defmodule Inngest.MixProject do
             Inngest.Trigger,
             Inngest.Function.Step,
             Inngest.Function.Context,
-            Inngest.Function.Input
+            Inngest.Function.Input,
+            Inngest.StepTool
           ],
           Router: [
             Inngest.Router,
