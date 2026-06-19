@@ -21,13 +21,13 @@ focused test that fails for the desired spec behavior, implement the smallest
 change, and leave the targeted test green. Do not end a phase with intentionally
 failing tests.
 
-** Open Questions
+** Decisions
 
-- [ ] Decide whether public config remains snake_case only and renders camelCase only at JSON boundaries.
-- [ ] Decide whether invalid config raises during module loading, serve generation, or registration.
-- [ ] Decide whether ~batch_events.key~ interacts with existing ~batch_events~ conflict rules.
-- [ ] Decide whether new config options use raw maps, dedicated structs, keyword lists, or multiple accepted forms.
-- [ ] Decide whether docs should show only new options or also update all existing function config examples.
+- Public function config remains idiomatic Elixir ~snake_case~. Spec ~camelCase~ names are emitted only at the registration JSON boundary.
+- Invalid function config raises during serve/registration payload generation, matching existing validation behavior. Module loading should remain side-effect-light.
+- ~batch_events.key~ does not change conflict semantics. Any non-nil ~batch_events~ config remains incompatible with ~rate_limit~ and ~cancel_on~.
+- New function config options use raw maps with atom keys, matching existing options. Do not add dedicated structs or keyword-list normalization in this plan.
+- Update function configuration docs/examples to cover the full supported option set after this plan, including existing and new options, while avoiding unrelated documentation rewrites.
 
 ** Phase 1: Config Surface Implementation
 
