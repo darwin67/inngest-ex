@@ -136,7 +136,7 @@ defmodule Inngest.Function do
                     name: "step",
                     runtime: %{
                       type: "http",
-                      url: "#{Config.app_host() <> path}?fnId=#{id}&step=step"
+                      url: "#{Config.serve_url(path)}?stepId=step&fnId=#{id}"
                     },
                     retries: %{
                       attempts: 0
@@ -160,7 +160,7 @@ defmodule Inngest.Function do
                 name: "step",
                 runtime: %{
                   type: "http",
-                  url: "#{Config.app_host() <> path}?fnId=#{slug()}&step=step"
+                  url: "#{Config.serve_url(path)}?stepId=step&fnId=#{slug()}"
                 },
                 retries: %{
                   attempts: retries()
