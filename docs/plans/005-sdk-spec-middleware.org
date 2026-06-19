@@ -1,16 +1,16 @@
-#+title: SDK Spec Developer Ergonomics And Optional Capabilities
+#+title: SDK Spec Middleware
 #+author: Darwin D. Wu
 #+date: 2026-06-19
 #+status: Draft
 
-* SDK Spec Developer Ergonomics And Optional Capabilities
+* SDK Spec Middleware
 
 Source spec: https://github.com/inngest/inngest/blob/main/docs/SDK_SPEC.md
 
 ** Goal
 
-Add the required middleware ergonomics and clearly separate implemented
-capabilities from optional features that should be planned independently.
+Add the required middleware API, lifecycle hooks, mutation points, and
+capability boundaries required for SDK spec compliance.
 
 ** Implementation Guide
 
