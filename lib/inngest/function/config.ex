@@ -18,6 +18,7 @@ defmodule Inngest.FnOpts do
     :idempotency,
     :concurrency,
     :cancel_on,
+    middleware: [],
     retries: 3
   ]
 
@@ -36,6 +37,7 @@ defmodule Inngest.FnOpts do
           timeouts: timeouts(),
           idempotency: idempotency(),
           concurrency: concurrency(),
+          middleware: middleware(),
           cancel_on: cancel_on()
         }
 
@@ -235,6 +237,7 @@ defmodule Inngest.FnOpts do
   A unique key expression for which to restrict concurrently running steps to. The expression is evaluated for each triggering event and a unique key is generate.
   """
   @type concurrency() :: number() | concurrency_option() | list(concurrency_option()) | nil
+  @type middleware() :: [Inngest.Middleware.entry()]
   @type concurrency_option() ::
           %{
             limit: number(),

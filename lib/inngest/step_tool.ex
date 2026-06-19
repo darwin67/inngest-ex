@@ -68,7 +68,7 @@ defmodule Inngest.StepTool do
   > application.
   """
 
-  alias Inngest.Event
+  alias Inngest.{Event, Middleware}
   alias Inngest.Function.{Context, UnhashedOp, GeneratorOpCode}
 
   @type id() :: binary()
@@ -343,8 +343,11 @@ defmodule Inngest.StepTool do
     end
   end
 
-  defp send_events(%{client: %Inngest.Client{} = client}, events) do
-    Inngest.Client.send(client, events)
+  defp send_events(%{client: %Inngest.Client{} = client} = ctx, events) do
+    Inngest.Client.send(client, events,
+      middleware: Map.get(ctx, :middleware, client.middleware),
+      context: ctx
+    )
   end
 
   defp send_events(_ctx, events), do: Inngest.Client.send(events)
@@ -407,7 +410,12 @@ defmodule Inngest.StepTool do
     # For targeted execution, a memoized step is only safe to replay when it is
     # the target itself or appears in the executor-provided sequential stack.
     if memoized_step_allowed?(ctx, hashed_id) do
-      unwrap_memoized_result!(value, opts)
+      middleware = Map.get(ctx, :middleware, [])
+
+      value
+      |> unwrap_memoized_result!(opts)
+      |> then(&Middleware.run_after_memoization(middleware, ctx, hashed_id, &1))
+      |> then(&Middleware.run_transform_step_data(middleware, ctx, hashed_id, &1))
     else
       step_not_found!(ctx)
     end

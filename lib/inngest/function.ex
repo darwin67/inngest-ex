@@ -78,6 +78,11 @@ defmodule Inngest.Function do
   """
   @callback exec(Context.t(), Input.t()) :: {:ok, any()} | {:error, any()}
 
+  @doc """
+  Returns function-level middleware entries.
+  """
+  @callback middleware() :: [Inngest.Middleware.normalized_entry()]
+
   defmacro __using__(_opts) do
     # credo:disable-for-next-line Credo.Check.Refactor.LongQuoteBlocks
     quote location: :keep do
@@ -123,6 +128,13 @@ defmodule Inngest.Function do
       def slugs(app_id) do
         failure = if failure_handler_defined?(), do: [failure_slug(app_id)], else: []
         [slug(app_id)] ++ failure
+      end
+
+      @impl true
+      def middleware() do
+        fn_opts()
+        |> Map.get(:middleware, [])
+        |> Inngest.Middleware.normalize()
       end
 
       def serve(path) do

@@ -3,7 +3,7 @@ defmodule Inngest.Router.Invoke do
 
   import Plug.Conn
   import Inngest.Router.Helper
-  alias Inngest.{Client, Config, Headers, Signature, SdkResponse}
+  alias Inngest.{Client, Config, Headers, Middleware, Signature, SdkResponse}
   alias Inngest.Function.GeneratorOpCode
 
   @content_type "application/json"
@@ -44,16 +44,20 @@ defmodule Inngest.Router.Invoke do
       raise RuntimeError, "function not found: #{fn_slug}"
     end
 
+    middleware = Middleware.for_function(client, func)
+
     # Context is for SDK internals and step tools. Input is the user-facing
     # function argument shape, so keep executor-only fields out of Input.
     ctx = %Inngest.Function.Context{
       attempt: Map.get(request_ctx, "attempt", 0),
       run_id: Map.get(request_ctx, "run_id"),
       client: client,
+      request: conn,
       disable_immediate_execution: Map.get(request_ctx, "disable_immediate_execution", false),
       stack: Map.get(request_ctx, "stack"),
       target_step_id: Map.get(params, "stepId", "step"),
       steps: Map.get(params, "steps"),
+      middleware: middleware,
       # The ETS table tracks repeated step IDs within a single traversal so the
       # hash input follows the SDK spec: id, id:1, id:2, and so on.
       index: :ets.new(:index, [:set, :private])
@@ -67,7 +71,12 @@ defmodule Inngest.Router.Invoke do
       step: Inngest.StepTool
     }
 
-    resp = invoke(func, ctx, input)
+    {ctx, input} = Middleware.run_transform_input(middleware, ctx, input)
+    {ctx, input} = Middleware.run_before_execution(middleware, ctx, input)
+
+    resp =
+      middleware
+      |> Middleware.run_before_response(ctx, input, invoke(func, ctx, input))
 
     conn
     |> put_resp_content_type(@content_type)
@@ -83,12 +92,19 @@ defmodule Inngest.Router.Invoke do
 
   defp invoke(func, ctx, input) do
     try do
-      if failure?(input) do
-        func.handle_failure(ctx, input)
-      else
-        func.exec(ctx, input)
-      end
-      |> result_response(ctx)
+      result =
+        if failure?(input) do
+          func.handle_failure(ctx, input)
+        else
+          func.exec(ctx, input)
+        end
+
+      result =
+        ctx.middleware
+        |> Middleware.run_after_execution(ctx, input, result)
+        |> then(&Middleware.run_transform_output(ctx.middleware, ctx, input, &1))
+
+      result_response(result, ctx)
     rescue
       non_retry in Inngest.NonRetriableError ->
         SdkResponse.from_result({:error, non_retry}, retry: false, stacktrace: __STACKTRACE__)

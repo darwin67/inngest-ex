@@ -2,7 +2,7 @@ defmodule Inngest.Client do
   @moduledoc """
   Module representing an Inngest client (subject to change).
   """
-  alias Inngest.{Config, Event, Headers, Signature}
+  alias Inngest.{Config, Event, Headers, Middleware, Signature}
 
   @fallback_signing_key {__MODULE__, :fallback_signing_key}
   @event_url "https://inn.gs"
@@ -26,6 +26,7 @@ defmodule Inngest.Client do
           signing_key: binary(),
           signing_key_fallback: binary(),
           env: binary() | nil,
+          middleware: [Middleware.normalized_entry()],
           sdk_version: binary(),
           req_version: binary()
         }
@@ -44,6 +45,7 @@ defmodule Inngest.Client do
     event_key: "test",
     signing_key: "",
     signing_key_fallback: "",
+    middleware: [],
     sdk_version: nil,
     req_version: nil
   ]
@@ -85,6 +87,7 @@ defmodule Inngest.Client do
       signing_key: client_signing_key(opts),
       signing_key_fallback: client_signing_key_fallback(opts),
       env: client_env(opts),
+      middleware: client_middleware(opts),
       sdk_version: Config.sdk_version(),
       req_version: Config.req_version()
     }
@@ -103,53 +106,44 @@ defmodule Inngest.Client do
   @doc """
   Send one or a batch of events to Inngest
   """
-  @spec send(t(), Event.t() | list(Event.t())) :: {:ok, map()} | {:error, binary()}
+  @type send_result() :: {:ok, map()} | {:error, binary()}
+
+  @spec send(t(), Event.t() | list(Event.t())) :: send_result()
   def send(payload, opts \\ [])
 
   def send(%__MODULE__{} = client, payload) do
-    payload = List.wrap(payload)
-
-    case client
-         |> client(:event, [])
-         |> Tesla.post("/e/#{client.event_key}", payload) do
-      {:ok, %Tesla.Env{status: 200, body: resp}} ->
-        decode_send_response(resp)
-
-      {:ok, %Tesla.Env{status: 400}} ->
-        {:error, "invalid event data"}
-
-      {:ok, %Tesla.Env{status: 401}} ->
-        {:error, "unknown ingest key"}
-
-      {:ok, %Tesla.Env{status: 403}} ->
-        {:error, "this ingest key is not authorized to send this event"}
-
-      _ ->
-        {:error, "unknown error"}
-    end
+    send(client, payload, [])
   end
 
-  @spec send(Event.t() | list(Event.t()), Keyword.t()) :: {:ok, map()} | {:error, binary()}
+  @spec send(Event.t() | list(Event.t()), Keyword.t()) :: send_result()
   def send(payload, opts) when not is_struct(payload, __MODULE__) do
     event_key = Config.event_key()
     client = httpclient(:event, opts)
+    middleware = opts |> Keyword.get(:middleware, []) |> Middleware.normalize()
+    context = Keyword.get(opts, :context, %{})
+    payload = Middleware.run_before_send_events(middleware, List.wrap(payload), context)
 
-    case Tesla.post(client, "/e/#{event_key}", payload) do
-      {:ok, %Tesla.Env{status: 200, body: resp}} ->
-        decode_send_response(resp)
+    result =
+      client
+      |> Tesla.post("/e/#{event_key}", payload)
+      |> decode_send_http_response()
 
-      {:ok, %Tesla.Env{status: 400}} ->
-        {:error, "invalid event data"}
+    Middleware.run_after_send_events(middleware, result, payload, context)
+  end
 
-      {:ok, %Tesla.Env{status: 401}} ->
-        {:error, "unknown ingest key"}
+  @spec send(t(), Event.t() | list(Event.t()), Keyword.t()) :: send_result()
+  def send(%__MODULE__{} = client, payload, opts) do
+    middleware = opts |> Keyword.get(:middleware, client.middleware) |> Middleware.normalize()
+    context = Keyword.get(opts, :context, %{client: client})
+    payload = Middleware.run_before_send_events(middleware, List.wrap(payload), context)
 
-      {:ok, %Tesla.Env{status: 403}} ->
-        {:error, "this ingest key is not authorized to send this event"}
+    result =
+      client
+      |> client(:event, opts)
+      |> Tesla.post("/e/#{client.event_key}", payload)
+      |> decode_send_http_response()
 
-      _ ->
-        {:error, "unknown error"}
-    end
+    Middleware.run_after_send_events(middleware, result, payload, context)
   end
 
   # Retrieves the registration information from the Dev server.
@@ -235,6 +229,20 @@ defmodule Inngest.Client do
   end
 
   # Inngest may return send responses as parsed JSON or text/plain JSON.
+  defp decode_send_http_response({:ok, %Tesla.Env{status: 200, body: resp}}),
+    do: decode_send_response(resp)
+
+  defp decode_send_http_response({:ok, %Tesla.Env{status: 400}}),
+    do: {:error, "invalid event data"}
+
+  defp decode_send_http_response({:ok, %Tesla.Env{status: 401}}),
+    do: {:error, "unknown ingest key"}
+
+  defp decode_send_http_response({:ok, %Tesla.Env{status: 403}}),
+    do: {:error, "this ingest key is not authorized to send this event"}
+
+  defp decode_send_http_response(_), do: {:error, "unknown error"}
+
   defp decode_send_response(resp) when is_binary(resp), do: Jason.decode(resp)
   defp decode_send_response(resp), do: {:ok, resp}
 
@@ -572,6 +580,12 @@ defmodule Inngest.Client do
         ""
 
   defp client_env(opts), do: Keyword.get(opts, :env) || System.get_env("INNGEST_ENV")
+
+  defp client_middleware(opts) do
+    opts
+    |> Keyword.get(:middleware, Application.get_env(:inngest, :middleware, []))
+    |> Middleware.normalize()
+  end
 
   defp explicit_url(opts, keys) do
     keys

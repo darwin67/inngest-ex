@@ -30,11 +30,14 @@ defmodule Inngest.Function.Context do
     :attempt,
     :run_id,
     :client,
+    :request,
     :disable_immediate_execution,
     :stack,
     :target_step_id,
     # ETS table
     :index,
+    data: %{},
+    middleware: [],
     steps: %{}
   ]
 
@@ -42,10 +45,13 @@ defmodule Inngest.Function.Context do
           attempt: number(),
           run_id: binary(),
           client: Inngest.Client.t() | nil,
+          request: term() | nil,
           disable_immediate_execution: boolean(),
           stack: map() | nil,
           target_step_id: binary(),
           index: :ets.tid(),
+          data: map(),
+          middleware: [Inngest.Middleware.normalized_entry()],
           steps: map()
         }
 end

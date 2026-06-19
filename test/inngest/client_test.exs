@@ -12,6 +12,24 @@ defmodule Inngest.ClientTest do
   defmodule SecondFunction do
   end
 
+  defmodule ClientMiddleware do
+    @behaviour Inngest.Middleware
+
+    @impl true
+    def before_send_events(events, _context, opts) do
+      tag = Keyword.fetch!(opts, :tag)
+
+      Enum.map(events, fn event ->
+        update_in(event.data, &Map.put(&1, :middleware, tag))
+      end)
+    end
+
+    @impl true
+    def after_send_events({:ok, response}, _events, _context, opts) do
+      {:ok, Map.put(response, "middleware", Keyword.fetch!(opts, :tag))}
+    end
+  end
+
   defmodule FirstClient do
     use Inngest.Client,
       id: "first-client",
@@ -34,6 +52,13 @@ defmodule Inngest.ClientTest do
       id: "second-client",
       funcs: [SecondFunction],
       env: "second-env"
+  end
+
+  defmodule MiddlewareClient do
+    use Inngest.Client,
+      id: "middleware-client",
+      funcs: [],
+      middleware: [{ClientMiddleware, tag: "client"}]
   end
 
   defmodule EnvBackedClient do
@@ -119,6 +144,10 @@ defmodule Inngest.ClientTest do
       assert client.signing_key_fallback == "client-fallback-key"
       assert client.sdk_version == Config.sdk_version()
       assert client.req_version == Config.req_version()
+    end
+
+    test "defines normalized middleware from a macro-backed module" do
+      assert MiddlewareClient.client().middleware == [{ClientMiddleware, [tag: "client"]}]
     end
 
     test "explicit client config takes precedence over environment and application config" do
@@ -231,6 +260,32 @@ defmodule Inngest.ClientTest do
 
       assert {:ok, %{"ids" => ["runtime-id"], "status" => 200}} =
                Client.send(client, %Event{name: "test/runtime.send"})
+    end
+
+    test "client middleware mutates sent events and send results" do
+      Application.put_env(:tesla, :adapter, Tesla.Mock)
+
+      client =
+        Client.new(
+          id: "middleware-client",
+          event_url: "https://events.example",
+          event_key: "send-key",
+          middleware: [{ClientMiddleware, tag: "runtime"}]
+        )
+
+      Tesla.Mock.mock(fn %{method: :post, body: body} ->
+        [event] = Jason.decode!(body)
+        assert event["data"] == %{"middleware" => "runtime"}
+
+        %Tesla.Env{status: 200, body: %{"ids" => ["runtime-id"], "status" => 200}}
+      end)
+
+      assert {:ok,
+              %{
+                "ids" => ["runtime-id"],
+                "middleware" => "runtime",
+                "status" => 200
+              }} = Client.send(client, %Event{name: "test/runtime.middleware"})
     end
   end
 
