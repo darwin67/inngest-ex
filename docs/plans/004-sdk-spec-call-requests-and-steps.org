@@ -22,12 +22,17 @@ failing tests.
 
 ** Decisions
 
-- Plan 4 will hard-break to the spec memoized step action shape. Memoized
-  actions must be handled as ~%{"data" => value}~ or ~%{"error" => error}~,
-  and the SDK will not preserve legacy raw action payload compatibility.
+- Plan 4 will hard-break to the spec memoized step action shape for step types
+  that memoize as result objects. Run and invoke-style memoized actions must be
+  handled as ~%{"data" => value}~ or ~%{"error" => error}~, while step types
+  with explicit spec-defined memoized values, such as sleep ~nil~ and
+  wait-for-event event-or-~nil~ results, must preserve those shapes. The SDK
+  will not preserve legacy raw run-step payload compatibility.
 - ~step.run~ will execute immediately when the step is not memoized and
-  ~ctx.disable_immediate_execution~ is false. When immediate execution is
-  disabled, the SDK will report a planned step instead of running the step body.
+  ~ctx.disable_immediate_execution~ is false, the request ~stepId~ is ~"step"~,
+  and the traversal finds exactly one reportable run step. When immediate
+  execution is not allowed, the SDK will report a planned step instead of
+  running the step body.
 - Targeted ~stepId~ discovery will make one deterministic function traversal
   with no local retry loop or wall-clock discovery budget. If the requested
   hashed step ID is not encountered during that traversal, the SDK will return
@@ -56,17 +61,21 @@ failing tests.
 
 - [ ] Normalize call request parsing around ~ctx.use_api~ instead of top-level ~use_api~.
 - [ ] Fetch full batch events from ~/v0/runs/:run_id/batch~ when ~ctx.use_api~ is true.
+- [ ] Use the first fetched batch event as ~event~ when full batch events replace the request payload.
 - [ ] Fetch full memoized step data from ~/v0/runs/:run_id/actions~ when ~ctx.use_api~ is true.
 - [ ] Return ~500~ when required full payload fetches fail.
+- [ ] Return ~500~ when ~fnId~ does not match a registered function.
 - [ ] Expose ~event~, ~events~, ~run_id~, ~attempt~, and ~step~ to function input.
-- [ ] Add context fields for ~disable_immediate_execution~, ~stack~, and ~qi_id~.
+- [ ] Add context fields for ~disable_immediate_execution~ and ~stack~.
 
 ** Phase 2: Step Execution And Memoization
 
-- [ ] Memoize successful steps by unwrapping ~%{"data" => value}~.
+- [ ] Memoize successful run and invoke-style steps by unwrapping ~%{"data" => value}~.
 - [ ] Memoize failed steps by handling ~%{"error" => ...}~ as a step error.
+- [ ] Preserve step-specific memoized values for sleep and wait-for-event results.
 - [ ] Ensure memoized steps are not reported again.
-- [ ] Align run step reporting with ~StepRun~, ~StepPlanned~, ~StepError~, and ~StepNotFound~.
+- [ ] Align run step reporting with ~StepRun~, ~StepPlanned~, ~StepError~, and ~StepNotFound~ using spec fields only.
+- [ ] Return memoized ~Inngest.StepError~ failures as non-retriable when they bubble out of user code.
 - [ ] Align sleep reporting with ~Sleep~ and ~opts.duration~.
 - [ ] Keep wait-for-event reporting aligned with ~WaitForEvent~.
 - [ ] Keep invocation reporting aligned with ~InvokeFunction~.
