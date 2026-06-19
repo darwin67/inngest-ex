@@ -222,22 +222,11 @@ defmodule Inngest.Config do
   end
 
   defp configured_url(config_key, cloud_url) do
-    with mode when mode != :dev <- dev_env_mode(),
-         nil <- Application.get_env(:inngest, config_key) do
-      case mode() do
-        :unset -> default_url(cloud_url)
-        :cloud -> cloud_url
-      end
-    else
+    case dev_env_mode() do
       :dev -> dev_server_url()
-      url -> url
+      _ -> Application.get_env(:inngest, config_key) || mode_default_url(cloud_url)
     end
   end
 
-  defp default_url(cloud_url) do
-    case mode() do
-      :dev -> dev_server_url()
-      :cloud -> cloud_url
-    end
-  end
+  defp mode_default_url(cloud_url), do: if(dev?(), do: dev_server_url(), else: cloud_url)
 end
