@@ -1,7 +1,7 @@
 #+title: SDK Spec Serve API
 #+author: Darwin D. Wu
 #+date: 2026-06-19
-#+status: Draft
+#+status: Done
 
 * SDK Spec Serve API
 
@@ -44,20 +44,20 @@ failing tests.
 
 ** Phase 2: Introspection And Compatibility
 
-- [ ] Add ~GET~ introspection handling on the same serve endpoint.
-- [ ] Return schema version ~2024-05-24~ introspection responses.
-- [ ] Return unauthenticated introspection when the request is unsigned.
-- [ ] Return unauthenticated introspection when signature validation fails.
-- [ ] Return authenticated introspection when signature validation succeeds.
-- [ ] Use ~Config.app_name()~ as authenticated introspection ~app_id~ and require it to be non-empty.
-- [ ] Include key hashes, origins, mode, framework, SDK metadata, and function count where required.
-- [ ] Do not advertise optional capabilities, including deferred ~in_band_sync~, until their implementations exist.
-- [ ] Ensure Plug and Phoenix route integrations share the same serve API behavior.
+- [X] Add ~GET~ introspection handling on the same serve endpoint.
+- [X] Return schema version ~2024-05-24~ introspection responses.
+- [X] Return unauthenticated introspection when the request is unsigned.
+- [X] Return unauthenticated introspection when signature validation fails.
+- [X] Return authenticated introspection when signature validation succeeds.
+- [X] Use ~Config.app_name()~ as authenticated introspection ~app_id~ and require it to be non-empty.
+- [X] Include key hashes, origins, mode, framework, SDK metadata, and function count where required.
+- [X] Do not advertise optional capabilities, including deferred ~in_band_sync~, until their implementations exist.
+- [X] Ensure Plug and Phoenix route integrations share the same serve API behavior.
 
 ** Phase 3: Verification
 
-- [ ] Run ~make fmt~.
-- [ ] Run targeted serve API unit tests.
-- [ ] Run existing Plug and Phoenix route tests.
-- [ ] Run a local dev-server sync smoke test if the dev server is available.
-- [ ] Update serve API docs or compliance notes for supported and deferred features.
+- [X] Run ~make fmt~.
+- [X] Run targeted serve API unit tests.
+- [X] Run existing Plug and Phoenix route tests.
+- [X] Run a local dev-server sync smoke test if the dev server is available.
+- [X] Update serve API docs or compliance notes for supported and deferred features.
