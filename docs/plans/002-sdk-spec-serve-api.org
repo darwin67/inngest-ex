@@ -30,17 +30,17 @@ failing tests.
 
 ** Phase 1: Sync Implementation
 
-- [ ] Allow unsigned ~PUT~ sync requests while validating any provided inbound signature.
-- [ ] Reject invalid signed ~PUT~ sync requests before registration with a spec-shaped error response.
-- [ ] Update ~PUT~ sync handling to return the spec response shape: ~{message, modified}~.
-- [ ] Return ~500~ with a spec-shaped payload when Inngest registration fails.
-- [ ] Preserve and forward incoming ~deployId~ to ~/fn/register~ query params.
-- [ ] Ensure ~deployId~ is not included in the registered app URL.
-- [ ] Forward incoming ~X-Inngest-Server-Kind~ to Inngest as ~X-Inngest-Expected-Server-Kind~.
-- [ ] Generate registered app URLs from serve origin and serve path rules.
-- [ ] Fix registered step runtime URLs to use ~stepId=step&fnId=...~.
-- [ ] Keep framework identifiers stable as ~plug~ and ~phoenix~ for Plug and Phoenix routes.
-- [ ] Ensure ~appName~ is non-empty anywhere it is emitted as the local app ID.
+- [X] Allow unsigned ~PUT~ sync requests while validating any provided inbound signature.
+- [X] Reject invalid signed ~PUT~ sync requests before registration with a spec-shaped error response.
+- [X] Update ~PUT~ sync handling to return the spec response shape: ~{message, modified}~.
+- [X] Return ~500~ with a spec-shaped payload when Inngest registration fails.
+- [X] Preserve and forward incoming ~deployId~ to ~/fn/register~ query params.
+- [X] Ensure ~deployId~ is not included in the registered app URL.
+- [X] Forward incoming ~X-Inngest-Server-Kind~ to Inngest as ~X-Inngest-Expected-Server-Kind~.
+- [X] Generate registered app URLs from serve origin and serve path rules.
+- [X] Fix registered step runtime URLs to use ~stepId=step&fnId=...~.
+- [X] Keep framework identifiers stable as ~plug~ and ~phoenix~ for Plug and Phoenix routes.
+- [X] Ensure ~appName~ is non-empty anywhere it is emitted as the local app ID.
 
 ** Phase 2: Introspection And Compatibility
 
