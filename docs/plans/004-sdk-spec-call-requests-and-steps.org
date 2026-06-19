@@ -1,7 +1,7 @@
 #+title: SDK Spec Call Requests And Steps
 #+author: Darwin D. Wu
 #+date: 2026-06-19
-#+status: Draft
+#+status: Done
 
 * SDK Spec Call Requests And Steps
 
@@ -87,7 +87,7 @@ failing tests.
 
 ** Phase 3: Verification
 
-- [ ] Run ~make fmt~.
-- [ ] Run targeted call request and step tests.
-- [ ] Run e2e tests for run, sleep, wait for event, invoke, send event, and failure behavior.
+- [X] Run ~make fmt~.
+- [X] Run targeted call request and step tests.
+- [X] Run e2e tests for run, sleep, wait for event, invoke, send event, and failure behavior.
 - [X] Update step documentation with opcode and memoization behavior.

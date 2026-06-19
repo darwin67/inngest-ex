@@ -18,8 +18,7 @@ defmodule Inngest.Function.Cases.InvokeTimeoutTest do
                  %{
                    "output" => %{
                      "name" => error,
-                     "message" => message,
-                     "stack" => _
+                     "message" => message
                    },
                    "run_id" => _,
                    "status" => "Failed"
@@ -28,9 +27,8 @@ defmodule Inngest.Function.Cases.InvokeTimeoutTest do
              }
            } = DevServer.run_ids(event_id)
 
-    assert error == "Elixir.Inngest.NonRetriableError"
+    assert error == "InngestInvokeTimeoutError"
 
-    assert message ==
-             "InngestInvokeTimeoutError: Timed out waiting for invoked function to complete"
+    assert message == "Timed out waiting for invoked function to complete"
   end
 end

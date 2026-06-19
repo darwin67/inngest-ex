@@ -105,6 +105,14 @@ defmodule Inngest.StepToolTest do
       assert id == hash("first")
     end
 
+    test "lets explicit non-retriable step body errors bubble" do
+      assert_raise Inngest.NonRetriableError, "do not retry", fn ->
+        StepTool.run(ctx(), "first", fn ->
+          raise Inngest.NonRetriableError, message: "do not retry"
+        end)
+      end
+    end
+
     test "encodes run step nil results as data null and omits internal fields" do
       opcode = catch_throw(StepTool.run(ctx(), "first", fn -> nil end))
 

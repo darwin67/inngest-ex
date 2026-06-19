@@ -180,6 +180,7 @@ defmodule Inngest.StepTool do
     end
   end
 
+  @spec report_run_step(Context.t(), binary(), binary(), fun()) :: no_return()
   defp report_run_step(ctx, hashed_id, step_id, func) do
     cond do
       targeted_step?(ctx, hashed_id) ->
@@ -200,6 +201,7 @@ defmodule Inngest.StepTool do
     end
   end
 
+  @spec execute_run_step(binary(), binary(), fun()) :: no_return()
   defp execute_run_step(hashed_id, step_id, func) do
     result = func.()
 
@@ -210,6 +212,9 @@ defmodule Inngest.StepTool do
       data: result
     })
   rescue
+    error in [Inngest.NonRetriableError, Inngest.RetryAfterError] ->
+      reraise error, __STACKTRACE__
+
     error ->
       throw(%GeneratorOpCode{
         id: hashed_id,
@@ -250,11 +255,10 @@ defmodule Inngest.StepTool do
     })
   end
 
-  defp targeted_execution?(%{target_step_id: step_id}), do: step_id not in [nil, "step"]
-  defp targeted_execution?(_ctx), do: false
+  defp targeted_execution?(%{target_step_id: "step"}), do: false
+  defp targeted_execution?(%{target_step_id: _step_id}), do: true
 
   defp targeted_step?(%{target_step_id: step_id}, hashed_id), do: step_id == hashed_id
-  defp targeted_step?(_ctx, _hashed_id), do: false
 
   defp memoized_step_allowed?(ctx, hashed_id) do
     cond do
