@@ -28,8 +28,8 @@ defmodule Inngest.Router.Register do
     with :ok <- verify_signature(conn),
          {:ok, app_name} <- app_name(),
          funcs <- params |> load_functions() |> Enum.flat_map(& &1.serve(path)),
-         :ok <- register(conn, path, funcs, app_name, framework) do
-      {200, %{message: "registered", modified: true}}
+         {:ok, modified} <- register(conn, path, funcs, app_name, framework) do
+      {200, %{message: "registered", modified: modified}}
     else
       {:error, :invalid_signature} ->
         {500, %{error: "unable to verify signature"}}
@@ -51,14 +51,14 @@ defmodule Inngest.Router.Register do
     }
 
     case Client.post(:register, register_path(conn), payload, headers: register_headers(conn)) do
-      {:ok, %Tesla.Env{status: 200}} ->
-        :ok
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        {:ok, registration_modified(body)}
 
-      {:ok, %Tesla.Env{status: 201}} ->
-        :ok
+      {:ok, %Tesla.Env{status: 201, body: body}} ->
+        {:ok, registration_modified(body)}
 
-      {:ok, %Tesla.Env{status: 202}} ->
-        :ok
+      {:ok, %Tesla.Env{status: 202, body: body}} ->
+        {:ok, registration_modified(body)}
 
       {:ok, %Tesla.Env{status: _, body: error}} ->
         {:error, error}
@@ -98,6 +98,10 @@ defmodule Inngest.Router.Register do
       deploy_id -> "/fn/register?" <> URI.encode_query(%{"deployId" => deploy_id})
     end
   end
+
+  defp registration_modified(%{"modified" => modified}) when is_boolean(modified), do: modified
+  defp registration_modified(%{modified: modified}) when is_boolean(modified), do: modified
+  defp registration_modified(_body), do: true
 
   defp register_headers(conn) do
     case get_req_header(conn, Headers.server_kind()) do

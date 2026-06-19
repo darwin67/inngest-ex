@@ -99,6 +99,18 @@ defmodule Inngest.Router.RegisterTest do
       assert Jason.decode!(conn.resp_body) == %{"message" => "registered", "modified" => true}
     end
 
+    test "preserves an unchanged registration response" do
+      Tesla.Mock.mock(fn _env -> %Tesla.Env{status: 200, body: %{"modified" => false}} end)
+
+      conn =
+        ""
+        |> register_conn()
+        |> Register.call(register_opts())
+
+      assert conn.status == 200
+      assert Jason.decode!(conn.resp_body) == %{"message" => "registered", "modified" => false}
+    end
+
     test "rejects an invalid signed sync before registration" do
       Tesla.Mock.mock(fn _env -> flunk("registration should not be called") end)
 
