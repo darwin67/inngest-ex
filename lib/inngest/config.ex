@@ -38,6 +38,15 @@ defmodule Inngest.Config do
     end
   end
 
+  @spec serve_url(binary()) :: binary()
+  def serve_url(request_path) do
+    path = serve_path() || request_path
+
+    app_host()
+    |> String.trim_trailing("/")
+    |> Kernel.<>(normalize_path(path))
+  end
+
   @doc """
   Returns the App name to be registered with the inngestion functions.
   Defaults to `InngestApp`.
@@ -229,4 +238,10 @@ defmodule Inngest.Config do
   end
 
   defp mode_default_url(cloud_url), do: if(dev?(), do: dev_server_url(), else: cloud_url)
+
+  defp normalize_path(path) when is_binary(path) do
+    if String.starts_with?(path, "/"), do: path, else: "/" <> path
+  end
+
+  defp normalize_path(_), do: ""
 end

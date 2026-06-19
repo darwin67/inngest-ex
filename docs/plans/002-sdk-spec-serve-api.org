@@ -1,7 +1,7 @@
 #+title: SDK Spec Serve API
 #+author: Darwin D. Wu
 #+date: 2026-06-19
-#+status: Draft
+#+status: Done
 
 * SDK Spec Serve API
 
@@ -20,40 +20,44 @@ focused test that fails for the desired spec behavior, implement the smallest
 change, and leave the targeted test green. Do not end a phase with intentionally
 failing tests.
 
-** Open Questions
+** Decisions
 
-- [ ] Decide whether sync registration remains publicly triggerable by any ~PUT~ request or requires stricter behavior for signed requests.
-- [ ] Decide whether in-band sync is explicitly unsupported for now or belongs in this plan.
-- [ ] Decide what local value maps to authenticated introspection ~app_id~.
-- [ ] Decide whether Plug and Phoenix should expose identical ~GET~ introspection behavior.
-- [ ] Decide whether framework values stay ~plug~ and ~phoenix~ or include framework versions.
+- ~PUT~ sync remains triggerable by unsigned requests for dev/local compatibility. When an inbound sync request includes an Inngest signature, validate it with the current/fallback signing keys; invalid signed sync requests must not register and must return a spec-shaped error response.
+- In-band sync is explicitly deferred. Plan 2 covers serve-endpoint sync via ~PUT~ and ~GET~ introspection only; do not advertise or implement in-band sync until a later plan defines its lifecycle and trigger behavior.
+- Authenticated introspection uses the same app identifier as sync registration: ~Config.app_name()~. Treat ~appName~ as the local ~app_id~ until the SDK introduces a separate app ID config, and ensure it is non-empty anywhere it is emitted in registration, introspection, or composite IDs.
+- Plug and Phoenix must expose identical ~GET~ introspection semantics by routing through the same shared introspection implementation. Framework-specific code should only handle route integration and framework metadata.
+- Framework identifiers remain stable values: ~plug~ and ~phoenix~. Do not include framework versions in the framework string; include framework version only as separate metadata if a spec-supported field exists or is added later.
 
 ** Phase 1: Sync Implementation
 
-- [ ] Update ~PUT~ sync handling to return the spec response shape: ~{message, modified}~.
-- [ ] Return ~500~ with a spec-shaped payload when Inngest registration fails.
-- [ ] Preserve and forward incoming ~deployId~ to ~/fn/register~ query params.
-- [ ] Ensure ~deployId~ is not included in the registered app URL.
-- [ ] Forward incoming ~X-Inngest-Server-Kind~ to Inngest as ~X-Inngest-Expected-Server-Kind~.
-- [ ] Generate registered app URLs from serve origin and serve path rules.
-- [ ] Fix registered step runtime URLs to use ~stepId=step&fnId=...~.
-- [ ] Keep framework reporting for Plug and Phoenix routes.
+- [X] Allow unsigned ~PUT~ sync requests while validating any provided inbound signature.
+- [X] Reject invalid signed ~PUT~ sync requests before registration with a spec-shaped error response.
+- [X] Update ~PUT~ sync handling to return the spec response shape: ~{message, modified}~.
+- [X] Return ~500~ with a spec-shaped payload when Inngest registration fails.
+- [X] Preserve and forward incoming ~deployId~ to ~/fn/register~ query params.
+- [X] Ensure ~deployId~ is not included in the registered app URL.
+- [X] Forward incoming ~X-Inngest-Server-Kind~ to Inngest as ~X-Inngest-Expected-Server-Kind~.
+- [X] Generate registered app URLs from serve origin and serve path rules.
+- [X] Fix registered step runtime URLs to use ~stepId=step&fnId=...~.
+- [X] Keep framework identifiers stable as ~plug~ and ~phoenix~ for Plug and Phoenix routes.
+- [X] Ensure ~appName~ is non-empty anywhere it is emitted as the local app ID.
 
 ** Phase 2: Introspection And Compatibility
 
-- [ ] Add ~GET~ introspection handling on the same serve endpoint.
-- [ ] Return schema version ~2024-05-24~ introspection responses.
-- [ ] Return unauthenticated introspection when the request is unsigned.
-- [ ] Return unauthenticated introspection when signature validation fails.
-- [ ] Return authenticated introspection when signature validation succeeds.
-- [ ] Include key hashes, origins, mode, framework, SDK metadata, and function count where required.
-- [ ] Do not advertise optional capabilities until their implementations exist.
-- [ ] Ensure Plug and Phoenix route integrations share the same serve API behavior.
+- [X] Add ~GET~ introspection handling on the same serve endpoint.
+- [X] Return schema version ~2024-05-24~ introspection responses.
+- [X] Return unauthenticated introspection when the request is unsigned.
+- [X] Return unauthenticated introspection when signature validation fails.
+- [X] Return authenticated introspection when signature validation succeeds.
+- [X] Use ~Config.app_name()~ as authenticated introspection ~app_id~ and require it to be non-empty.
+- [X] Include key hashes, origins, mode, framework, SDK metadata, and function count where required.
+- [X] Do not advertise optional capabilities, including deferred ~in_band_sync~, until their implementations exist.
+- [X] Ensure Plug and Phoenix route integrations share the same serve API behavior.
 
 ** Phase 3: Verification
 
-- [ ] Run ~make fmt~.
-- [ ] Run targeted serve API unit tests.
-- [ ] Run existing Plug and Phoenix route tests.
-- [ ] Run a local dev-server sync smoke test if the dev server is available.
-- [ ] Update serve API docs or compliance notes for supported and deferred features.
+- [X] Run ~make fmt~.
+- [X] Run targeted serve API unit tests.
+- [X] Run existing Plug and Phoenix route tests.
+- [X] Run a local dev-server sync smoke test if the dev server is available.
+- [X] Update serve API docs or compliance notes for supported and deferred features.
