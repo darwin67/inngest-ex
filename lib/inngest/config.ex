@@ -87,12 +87,8 @@ defmodule Inngest.Config do
   def event_url() do
     with nil <- System.get_env("INNGEST_EVENT_API_BASE_URL"),
          nil <- System.get_env("INNGEST_BASE_URL"),
-         nil <- System.get_env("INNGEST_EVENT_URL"),
-         nil <- Application.get_env(:inngest, :event_url) do
-      case mode() do
-        :dev -> dev_server_url()
-        :cloud -> @event_url
-      end
+         nil <- System.get_env("INNGEST_EVENT_URL") do
+      configured_url(:event_url, @event_url)
     else
       url -> url
     end
@@ -117,12 +113,8 @@ defmodule Inngest.Config do
   @spec api_url() :: binary()
   def api_url() do
     with nil <- System.get_env("INNGEST_API_BASE_URL"),
-         nil <- System.get_env("INNGEST_BASE_URL"),
-         nil <- Application.get_env(:inngest, :api_url) do
-      case mode() do
-        :dev -> dev_server_url()
-        :cloud -> @api_url
-      end
+         nil <- System.get_env("INNGEST_BASE_URL") do
+      configured_url(:api_url, @api_url)
     else
       url -> url
     end
@@ -132,12 +124,8 @@ defmodule Inngest.Config do
   def register_url() do
     with nil <- System.get_env("INNGEST_API_BASE_URL"),
          nil <- System.get_env("INNGEST_BASE_URL"),
-         nil <- System.get_env("INNGEST_REGISTER_URL"),
-         nil <- Application.get_env(:inngest, :register_url) do
-      case mode() do
-        :dev -> dev_server_url()
-        :cloud -> @api_url
-      end
+         nil <- System.get_env("INNGEST_REGISTER_URL") do
+      configured_url(:register_url, @api_url)
     else
       url -> url
     end
@@ -230,6 +218,26 @@ defmodule Inngest.Config do
 
       _ ->
         @dev_server_url
+    end
+  end
+
+  defp configured_url(config_key, cloud_url) do
+    with mode when mode != :dev <- dev_env_mode(),
+         nil <- Application.get_env(:inngest, config_key) do
+      case mode() do
+        :unset -> default_url(cloud_url)
+        :cloud -> cloud_url
+      end
+    else
+      :dev -> dev_server_url()
+      url -> url
+    end
+  end
+
+  defp default_url(cloud_url) do
+    case mode() do
+      :dev -> dev_server_url()
+      :cloud -> cloud_url
     end
   end
 end

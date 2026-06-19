@@ -123,6 +123,17 @@ defmodule Inngest.ConfigTest do
       assert Config.register_url() == "http://localhost:9999"
     end
 
+    test "INNGEST_DEV overrides configured cloud URLs" do
+      Application.put_env(:inngest, :api_url, "https://api.example")
+      Application.put_env(:inngest, :event_url, "https://events.example")
+      Application.put_env(:inngest, :register_url, "https://register.example")
+      System.put_env("INNGEST_DEV", "1")
+
+      assert Config.api_url() == "http://127.0.0.1:8288"
+      assert Config.event_url() == "http://127.0.0.1:8288"
+      assert Config.register_url() == "http://127.0.0.1:8288"
+    end
+
     test "base URL config applies to API and event URLs" do
       System.put_env("INNGEST_BASE_URL", "https://inngest.example")
 
