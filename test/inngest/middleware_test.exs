@@ -1,43 +1,64 @@
-defmodule Inngest.MiddlewareTest.ClientLifecycleMiddleware do
+defmodule Inngest.MiddlewareTest.ClientMiddleware do
   @moduledoc false
   @behaviour Inngest.Middleware
 
   @impl true
-  def transform_input(ctx, input, _opts) do
-    send(test_pid(), {:hook, :client, :transform_input})
+  def on_register(args, _opts) do
+    send(test_pid(), {:hook, :client, :on_register, args.function})
+  end
 
-    ctx = put_in(ctx.data[:client_transform_input], true)
+  @impl true
+  def transform_function_input(%{ctx: ctx, input: input} = args, _opts) do
+    send(test_pid(), {:hook, :client, :transform_function_input})
+
+    ctx = put_in(ctx.data[:client_transform_function_input], true)
     input = put_in(input.event.data, Map.put(input.event.data, "client", "input"))
 
-    {ctx, input}
+    %{args | ctx: ctx, input: input}
   end
 
   @impl true
-  def before_execution(ctx, input, _opts) do
-    send(test_pid(), {:hook, :client, :before_execution})
-    {put_in(ctx.data[:client_before_execution], true), input}
+  def on_memoization_end(_args, _opts) do
+    send(test_pid(), {:hook, :client, :on_memoization_end})
   end
 
   @impl true
-  def after_execution(_ctx, _input, {:ok, output}, _opts) do
-    send(test_pid(), {:hook, :client, :after_execution})
-    {:ok, Map.put(output, "client_after", true)}
+  def on_run_start(_args, _opts) do
+    send(test_pid(), {:hook, :client, :on_run_start})
   end
 
   @impl true
-  def transform_output(_ctx, _input, {:ok, output}, _opts) do
-    send(test_pid(), {:hook, :client, :transform_output})
-    {:ok, Map.put(output, "client_output", true)}
+  def wrap_function_handler(%{next: next}, _opts) do
+    send(test_pid(), {:hook, :client, :wrap_function_handler_before})
+
+    case next.() do
+      {:ok, output} ->
+        send(test_pid(), {:hook, :client, :wrap_function_handler_after})
+        {:ok, Map.put(output, "client_wrapper", true)}
+
+      result ->
+        result
+    end
   end
 
   @impl true
-  def before_response(_ctx, _input, response, _opts) do
-    send(test_pid(), {:hook, :client, :before_response})
+  def on_run_complete(_args, _opts) do
+    send(test_pid(), {:hook, :client, :on_run_complete})
+  end
 
+  @impl true
+  def wrap_request(%{next: next}, _opts) do
+    send(test_pid(), {:hook, :client, :wrap_request_before})
+    response = next.()
+    send(test_pid(), {:hook, :client, :wrap_request_after})
+    put_response_body(response, "client_response", true)
+  end
+
+  defp put_response_body(response, key, value) do
     body =
       response.body
       |> Jason.decode!()
-      |> Map.put("client_response", true)
+      |> Map.put(key, value)
       |> Jason.encode!()
 
     %{response | body: body}
@@ -46,46 +67,67 @@ defmodule Inngest.MiddlewareTest.ClientLifecycleMiddleware do
   defp test_pid, do: Application.fetch_env!(:inngest, :middleware_test_pid)
 end
 
-defmodule Inngest.MiddlewareTest.FunctionLifecycleMiddleware do
+defmodule Inngest.MiddlewareTest.FunctionMiddleware do
   @moduledoc false
   @behaviour Inngest.Middleware
 
   @impl true
-  def transform_input(ctx, input, _opts) do
-    send(test_pid(), {:hook, :function, :transform_input})
+  def on_register(args, _opts) do
+    send(test_pid(), {:hook, :function, :on_register, args.function})
+  end
 
-    ctx = put_in(ctx.data[:function_transform_input], true)
+  @impl true
+  def transform_function_input(%{ctx: ctx, input: input} = args, _opts) do
+    send(test_pid(), {:hook, :function, :transform_function_input})
+
+    ctx = put_in(ctx.data[:function_transform_function_input], true)
     input = put_in(input.event.data, Map.put(input.event.data, "function", "input"))
 
-    {ctx, input}
+    %{args | ctx: ctx, input: input}
   end
 
   @impl true
-  def before_execution(ctx, input, _opts) do
-    send(test_pid(), {:hook, :function, :before_execution})
-    {put_in(ctx.data[:function_before_execution], true), input}
+  def on_memoization_end(_args, _opts) do
+    send(test_pid(), {:hook, :function, :on_memoization_end})
   end
 
   @impl true
-  def after_execution(_ctx, _input, {:ok, output}, _opts) do
-    send(test_pid(), {:hook, :function, :after_execution})
-    {:ok, Map.put(output, "function_after", true)}
+  def on_run_start(_args, _opts) do
+    send(test_pid(), {:hook, :function, :on_run_start})
   end
 
   @impl true
-  def transform_output(_ctx, _input, {:ok, output}, _opts) do
-    send(test_pid(), {:hook, :function, :transform_output})
-    {:ok, Map.put(output, "function_output", true)}
+  def wrap_function_handler(%{next: next}, _opts) do
+    send(test_pid(), {:hook, :function, :wrap_function_handler_before})
+
+    case next.() do
+      {:ok, output} ->
+        send(test_pid(), {:hook, :function, :wrap_function_handler_after})
+        {:ok, Map.put(output, "function_wrapper", true)}
+
+      result ->
+        result
+    end
   end
 
   @impl true
-  def before_response(_ctx, _input, response, _opts) do
-    send(test_pid(), {:hook, :function, :before_response})
+  def on_run_complete(_args, _opts) do
+    send(test_pid(), {:hook, :function, :on_run_complete})
+  end
 
+  @impl true
+  def wrap_request(%{next: next}, _opts) do
+    send(test_pid(), {:hook, :function, :wrap_request_before})
+    response = next.()
+    send(test_pid(), {:hook, :function, :wrap_request_after})
+    put_response_body(response, "function_response", true)
+  end
+
+  defp put_response_body(response, key, value) do
     body =
       response.body
       |> Jason.decode!()
-      |> Map.put("function_response", true)
+      |> Map.put(key, value)
       |> Jason.encode!()
 
     %{response | body: body}
@@ -99,37 +141,81 @@ defmodule Inngest.MiddlewareTest.EventMiddleware do
   @behaviour Inngest.Middleware
 
   @impl true
-  def before_send_events(events, context, opts) do
-    send(test_pid(), {:event_hook, :before_send_events, context.__struct__})
+  def transform_send_event(%{events: events, context: context} = args, opts) do
+    send(test_pid(), {:event_hook, :transform_send_event, context.ctx.__struct__})
     tag = Keyword.fetch!(opts, :tag)
 
-    Enum.map(events, fn event ->
-      update_in(event.data, &Map.put(&1, :middleware, tag))
-    end)
+    events =
+      Enum.map(events, fn event ->
+        update_in(event.data, &Map.put(&1, :middleware, tag))
+      end)
+
+    %{args | events: events}
   end
 
   @impl true
-  def after_send_events({:ok, response}, _events, _context, opts) do
-    send(test_pid(), {:event_hook, :after_send_events})
-    {:ok, Map.put(response, "middleware", Keyword.fetch!(opts, :tag))}
+  def wrap_send_event(%{next: next}, _opts) do
+    send(test_pid(), {:event_hook, :wrap_send_event_before})
+
+    case next.() do
+      {:ok, response} ->
+        send(test_pid(), {:event_hook, :wrap_send_event_after})
+        {:ok, Map.put(response, "middleware", "wrapped")}
+
+      result ->
+        result
+    end
   end
 
   defp test_pid, do: Application.fetch_env!(:inngest, :middleware_test_pid)
 end
 
-defmodule Inngest.MiddlewareTest.StepDataMiddleware do
+defmodule Inngest.MiddlewareTest.StepMiddleware do
   @moduledoc false
   @behaviour Inngest.Middleware
 
   @impl true
-  def after_memoization(_ctx, _step_id, value, _opts) do
-    Map.put(value, "after_memoization", true)
+  def transform_step_input(args, _opts) do
+    send(test_pid(), {:step_hook, :transform_step_input, args.step_type})
+    args
   end
 
   @impl true
-  def transform_step_data(_ctx, _step_id, value, _opts) do
-    Map.put(value, "transform_step_data", true)
+  def wrap_step(%{step_info: %{memoized: memoized}, next: next}, _opts) do
+    send(test_pid(), {:step_hook, :wrap_step_before, memoized})
+
+    value = next.()
+
+    send(test_pid(), {:step_hook, :wrap_step_after, memoized})
+
+    if is_map(value) do
+      Map.put(value, "wrap_step", memoized)
+    else
+      value
+    end
   end
+
+  @impl true
+  def on_step_start(args, _opts) do
+    send(test_pid(), {:step_hook, :on_step_start, args.step_info.step_type})
+  end
+
+  @impl true
+  def wrap_step_handler(%{next: next}, _opts) do
+    send(test_pid(), {:step_hook, :wrap_step_handler_before})
+
+    value = next.()
+
+    send(test_pid(), {:step_hook, :wrap_step_handler_after})
+    value
+  end
+
+  @impl true
+  def on_step_complete(args, _opts) do
+    send(test_pid(), {:step_hook, :on_step_complete, args.step_info.step_type})
+  end
+
+  defp test_pid, do: Application.fetch_env!(:inngest, :middleware_test_pid)
 end
 
 defmodule Inngest.MiddlewareTest.Function do
@@ -140,7 +226,7 @@ defmodule Inngest.MiddlewareTest.Function do
   @func %FnOpts{
     id: "middleware-test",
     name: "Middleware Test",
-    middleware: [Inngest.MiddlewareTest.FunctionLifecycleMiddleware]
+    middleware: [Inngest.MiddlewareTest.FunctionMiddleware]
   }
   @trigger %Trigger{event: "test/middleware"}
 
@@ -163,7 +249,7 @@ defmodule Inngest.MiddlewareTest.Client do
   use Inngest.Client,
     id: "middleware-app",
     funcs: [Inngest.MiddlewareTest.Function],
-    middleware: [Inngest.MiddlewareTest.ClientLifecycleMiddleware]
+    middleware: [Inngest.MiddlewareTest.ClientMiddleware]
 end
 
 defmodule Inngest.MiddlewareTest do
@@ -201,7 +287,7 @@ defmodule Inngest.MiddlewareTest do
     end)
   end
 
-  test "runs client middleware before function middleware through function lifecycle hooks" do
+  test "runs TS-style client middleware before function middleware" do
     {body, params} = invoke_body()
 
     conn =
@@ -211,59 +297,88 @@ defmodule Inngest.MiddlewareTest do
 
     assert conn.status == 200
 
-    assert_receive {:hook, :client, :transform_input}
-    assert_receive {:hook, :function, :transform_input}
-    assert_receive {:hook, :client, :before_execution}
-    assert_receive {:hook, :function, :before_execution}
+    assert_receive {:hook, :client, :on_register, nil}
+    assert_receive {:hook, :function, :on_register, Inngest.MiddlewareTest.Function}
+    assert_receive {:hook, :client, :wrap_request_before}
+    assert_receive {:hook, :function, :wrap_request_before}
+    assert_receive {:hook, :client, :transform_function_input}
+    assert_receive {:hook, :function, :transform_function_input}
+    assert_receive {:hook, :client, :on_memoization_end}
+    assert_receive {:hook, :function, :on_memoization_end}
+    assert_receive {:hook, :client, :on_run_start}
+    assert_receive {:hook, :function, :on_run_start}
+    assert_receive {:hook, :client, :wrap_function_handler_before}
+    assert_receive {:hook, :function, :wrap_function_handler_before}
 
     assert_receive {:exec, ctx_data, "/api/inngest", input_data}
 
     assert ctx_data == %{
-             client_before_execution: true,
-             client_transform_input: true,
-             function_before_execution: true,
-             function_transform_input: true
+             client_transform_function_input: true,
+             function_transform_function_input: true
            }
 
     assert input_data == %{"client" => "input", "function" => "input"}
 
-    assert_receive {:hook, :client, :after_execution}
-    assert_receive {:hook, :function, :after_execution}
-    assert_receive {:hook, :client, :transform_output}
-    assert_receive {:hook, :function, :transform_output}
-    assert_receive {:hook, :client, :before_response}
-    assert_receive {:hook, :function, :before_response}
+    assert_receive {:hook, :function, :wrap_function_handler_after}
+    assert_receive {:hook, :client, :wrap_function_handler_after}
+    assert_receive {:hook, :client, :on_run_complete}
+    assert_receive {:hook, :function, :on_run_complete}
+    assert_receive {:hook, :function, :wrap_request_after}
+    assert_receive {:hook, :client, :wrap_request_after}
 
     assert Jason.decode!(conn.resp_body) == %{
              "client" => "input",
-             "client_after" => true,
-             "client_output" => true,
              "client_response" => true,
+             "client_wrapper" => true,
              "function" => "input",
-             "function_after" => true,
-             "function_output" => true,
-             "function_response" => true
+             "function_response" => true,
+             "function_wrapper" => true
            }
   end
 
   test "function modules expose normalized middleware entries" do
     assert Inngest.MiddlewareTest.Function.middleware() == [
-             {Inngest.MiddlewareTest.FunctionLifecycleMiddleware, []}
+             {Inngest.MiddlewareTest.FunctionMiddleware, []}
            ]
   end
 
-  test "middleware can mutate memoized step data before user code sees it" do
+  test "wrap_step mutates memoized step data before user code sees it" do
     ctx =
       ctx(
         steps: %{hash("first") => %{"data" => %{"value" => 1}}},
-        middleware: [{Inngest.MiddlewareTest.StepDataMiddleware, []}]
+        middleware: [{Inngest.MiddlewareTest.StepMiddleware, []}]
       )
 
     assert StepTool.run(ctx, "first", fn -> flunk("step body should not run") end) == %{
-             "after_memoization" => true,
-             "transform_step_data" => true,
-             "value" => 1
+             "value" => 1,
+             "wrap_step" => true
            }
+
+    assert_receive {:step_hook, :transform_step_input, "run"}
+    assert_receive {:step_hook, :wrap_step_before, true}
+    assert_receive {:step_hook, :wrap_step_after, true}
+  end
+
+  test "fresh run steps use step lifecycle hooks" do
+    assert %Inngest.Function.GeneratorOpCode{
+             data: %{"ok" => true},
+             op: "StepRun"
+           } =
+             catch_throw(
+               StepTool.run(
+                 ctx(middleware: [{Inngest.MiddlewareTest.StepMiddleware, []}]),
+                 "first",
+                 fn -> %{"ok" => true} end
+               )
+             )
+
+    assert_receive {:step_hook, :transform_step_input, "run"}
+    assert_receive {:step_hook, :wrap_step_before, false}
+    assert_receive {:step_hook, :on_step_start, "run"}
+    assert_receive {:step_hook, :wrap_step_handler_before}
+    assert_receive {:step_hook, :wrap_step_handler_after}
+    assert_receive {:step_hook, :on_step_complete, "run"}
+    assert_receive {:step_hook, :wrap_step_after, false}
   end
 
   test "step send_event uses active invocation middleware" do
@@ -298,8 +413,9 @@ defmodule Inngest.MiddlewareTest do
                )
              )
 
-    assert_receive {:event_hook, :before_send_events, Context}
-    assert_receive {:event_hook, :after_send_events}
+    assert_receive {:event_hook, :transform_send_event, Context}
+    assert_receive {:event_hook, :wrap_send_event_before}
+    assert_receive {:event_hook, :wrap_send_event_after}
   end
 
   defp invoke_body do

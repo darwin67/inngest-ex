@@ -91,6 +91,7 @@ defmodule Inngest.Client do
       sdk_version: Config.sdk_version(),
       req_version: Config.req_version()
     }
+    |> register_middleware()
   end
 
   @doc false
@@ -121,29 +122,35 @@ defmodule Inngest.Client do
     client = httpclient(:event, opts)
     middleware = opts |> Keyword.get(:middleware, []) |> Middleware.normalize()
     context = Keyword.get(opts, :context, %{})
-    payload = Middleware.run_before_send_events(middleware, List.wrap(payload), context)
+    payload = Middleware.run_transform_send_event(middleware, List.wrap(payload), context)
 
-    result =
-      client
-      |> Tesla.post("/e/#{event_key}", payload)
-      |> decode_send_http_response()
-
-    Middleware.run_after_send_events(middleware, result, payload, context)
+    Middleware.run_wrap_send_event(
+      middleware,
+      %{events: payload, context: context, function: Map.get(context, :function)},
+      fn ->
+        client
+        |> Tesla.post("/e/#{event_key}", payload)
+        |> decode_send_http_response()
+      end
+    )
   end
 
   @spec send(t(), Event.t() | list(Event.t()), Keyword.t()) :: send_result()
   def send(%__MODULE__{} = client, payload, opts) do
     middleware = opts |> Keyword.get(:middleware, client.middleware) |> Middleware.normalize()
     context = Keyword.get(opts, :context, %{client: client})
-    payload = Middleware.run_before_send_events(middleware, List.wrap(payload), context)
+    payload = Middleware.run_transform_send_event(middleware, List.wrap(payload), context)
 
-    result =
-      client
-      |> client(:event, opts)
-      |> Tesla.post("/e/#{client.event_key}", payload)
-      |> decode_send_http_response()
-
-    Middleware.run_after_send_events(middleware, result, payload, context)
+    Middleware.run_wrap_send_event(
+      middleware,
+      %{events: payload, context: context, function: Map.get(context, :function)},
+      fn ->
+        client
+        |> client(:event, opts)
+        |> Tesla.post("/e/#{client.event_key}", payload)
+        |> decode_send_http_response()
+      end
+    )
   end
 
   # Retrieves the registration information from the Dev server.
@@ -585,6 +592,18 @@ defmodule Inngest.Client do
     opts
     |> Keyword.get(:middleware, Application.get_env(:inngest, :middleware, []))
     |> Middleware.normalize()
+  end
+
+  defp register_middleware(%__MODULE__{} = client) do
+    Middleware.run_on_register(client.middleware, %{client: client, function: nil})
+
+    Enum.each(client.funcs, fn func ->
+      func
+      |> Middleware.function_middleware()
+      |> Middleware.run_on_register(%{client: client, function: func})
+    end)
+
+    client
   end
 
   defp explicit_url(opts, keys) do

@@ -25,6 +25,9 @@ failing tests.
 - Middleware will be represented by behaviour modules with optional callbacks.
   Middleware configuration accepts modules and ={module, opts}= tuples so hooks
   remain named, discoverable, and testable.
+- Public middleware callbacks follow the current TypeScript SDK hook model:
+  ~on_register~, ~transform_*~, ~wrap_*~, and ~on_*~ lifecycle hooks. Elixir uses
+  behaviour modules and ={module, opts}= entries instead of TypeScript classes.
 - Middleware can be configured on first-class clients and per function through
   function options. Global application middleware may remain as a compatibility
   fallback, but the primary public API should be client-owned.
@@ -52,9 +55,12 @@ failing tests.
 - [X] Add function-level middleware registration.
 - [X] Ensure client middleware runs before function middleware.
 - [X] Ensure middleware runs in registration order.
-- [X] Add function lifecycle hooks for transform input, before execution, after execution, and transform output.
-- [X] Consider recommended hooks for after memoization and before response.
-- [X] Add event send lifecycle hooks for before send events and after send events.
+- [X] Add function lifecycle hooks for ~transform_function_input~,
+  ~wrap_function_handler~, ~wrap_request~, and ~on_run_*~.
+- [X] Add memoization and step lifecycle hooks for ~on_memoization_end~,
+  ~transform_step_input~, ~wrap_step~, ~wrap_step_handler~, and ~on_step_*~.
+- [X] Add event send lifecycle hooks for ~transform_send_event~ and
+  ~wrap_send_event~.
 
 ** Phase 2: Mutation And Capability Boundaries
 

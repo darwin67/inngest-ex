@@ -106,6 +106,17 @@ defmodule Inngest.StepTool do
   """
   @spec run(Context.t(), id(), fun(), [run_opt()]) :: any()
   def run(%{steps: steps} = ctx, step_id, func, opts) do
+    step_args =
+      transform_step_input(ctx, %{
+        ctx: ctx,
+        step_id: step_id,
+        step_type: "run",
+        input: [],
+        options: Map.new(opts),
+        memoized: false
+      })
+
+    step_id = step_args.step_id
     op = UnhashedOp.new(ctx, "Step", step_id)
     hashed_id = UnhashedOp.hash(op)
 
@@ -311,6 +322,18 @@ defmodule Inngest.StepTool do
   URL, event key, mode, and environment headers match the served app.
   """
   def send_event(%{steps: steps} = ctx, step_id, events) do
+    step_args =
+      transform_step_input(ctx, %{
+        ctx: ctx,
+        step_id: step_id,
+        step_type: "sendEvent",
+        input: [events],
+        options: %{},
+        memoized: false
+      })
+
+    step_id = step_args.step_id
+    events = step_args.input |> List.wrap() |> List.first(events)
     op = UnhashedOp.new(ctx, "Step", step_id)
     hashed_id = UnhashedOp.hash(op)
 
@@ -327,7 +350,10 @@ defmodule Inngest.StepTool do
 
         # Nested sends should use the same client as the invoked function so
         # event URLs, mode, env headers, and keys remain scoped to that app.
-        {:ok, %{"ids" => event_ids, "status" => 200}} = send_events(ctx, events)
+        {:ok, %{"ids" => event_ids, "status" => 200}} =
+          execute_step(ctx, hashed_id, step_id, "sendEvent", fn ->
+            send_events(ctx, events)
+          end)
 
         # Sending events is durable only after the executor stores this StepRun.
         throw(%GeneratorOpCode{
@@ -346,7 +372,7 @@ defmodule Inngest.StepTool do
   defp send_events(%{client: %Inngest.Client{} = client} = ctx, events) do
     Inngest.Client.send(client, events,
       middleware: Map.get(ctx, :middleware, client.middleware),
-      context: ctx
+      context: %{ctx: ctx, function: Map.get(ctx, :function)}
     )
   end
 
@@ -361,7 +387,7 @@ defmodule Inngest.StepTool do
       # The executor can ask for one specific hashed step ID. Only that step is
       # allowed to execute in this traversal.
       targeted_step?(ctx, hashed_id) ->
-        execute_run_step(hashed_id, step_id, func)
+        execute_run_step(ctx, hashed_id, step_id, func)
 
       targeted_execution?(ctx) ->
         step_not_found!(ctx)
@@ -375,13 +401,13 @@ defmodule Inngest.StepTool do
         })
 
       true ->
-        execute_run_step(hashed_id, step_id, func)
+        execute_run_step(ctx, hashed_id, step_id, func)
     end
   end
 
-  @spec execute_run_step(binary(), binary(), fun()) :: no_return()
-  defp execute_run_step(hashed_id, step_id, func) do
-    result = func.()
+  @spec execute_run_step(Context.t(), binary(), binary(), fun()) :: no_return()
+  defp execute_run_step(ctx, hashed_id, step_id, func) do
+    result = execute_step(ctx, hashed_id, step_id, "run", func)
 
     throw(%GeneratorOpCode{
       id: hashed_id,
@@ -389,21 +415,48 @@ defmodule Inngest.StepTool do
       op: "StepRun",
       data: result
     })
-  rescue
-    # These errors are explicit function-level controls, not ordinary step body
-    # failures, so preserve the existing retry semantics.
-    error in [Inngest.NonRetriableError, Inngest.RetryAfterError] ->
-      reraise error, __STACKTRACE__
+  end
 
-    # Other step body exceptions are reported as StepError opcodes so the
-    # executor can store the failed step result.
-    error ->
-      throw(%GeneratorOpCode{
-        id: hashed_id,
-        display_name: step_id,
-        op: "StepError",
-        error: error_payload(error, __STACKTRACE__)
-      })
+  defp execute_step(ctx, hashed_id, step_id, step_type, func) do
+    middleware = Map.get(ctx, :middleware, [])
+
+    args = %{
+      ctx: ctx,
+      step_id: step_id,
+      step_info: %{hashed_id: hashed_id, memoized: false, step_type: step_type}
+    }
+
+    Middleware.run_wrap_step(middleware, args, fn ->
+      try do
+        Middleware.run_on_step_start(middleware, args)
+
+        result =
+          Middleware.run_wrap_step_handler(middleware, args, fn ->
+            func.()
+          end)
+
+        Middleware.run_on_step_complete(middleware, Map.put(args, :output, result))
+        result
+      rescue
+        # These errors are explicit function-level controls, not ordinary step
+        # body failures, so preserve the existing retry semantics.
+        error in [Inngest.NonRetriableError, Inngest.RetryAfterError] ->
+          Middleware.run_on_step_error(middleware, Map.put(args, :error, error))
+          reraise error, __STACKTRACE__
+
+        # Other step body exceptions are reported as StepError opcodes so the
+        # executor can store the failed step result.
+        error ->
+          Middleware.run_on_step_error(middleware, Map.put(args, :error, error))
+
+          throw(%GeneratorOpCode{
+            id: hashed_id,
+            display_name: step_id,
+            op: "StepError",
+            error: error_payload(error, __STACKTRACE__)
+          })
+      end
+    end)
   end
 
   defp memoized_result!(ctx, hashed_id, value, opts \\ []) do
@@ -412,13 +465,22 @@ defmodule Inngest.StepTool do
     if memoized_step_allowed?(ctx, hashed_id) do
       middleware = Map.get(ctx, :middleware, [])
 
-      value
-      |> unwrap_memoized_result!(opts)
-      |> then(&Middleware.run_after_memoization(middleware, ctx, hashed_id, &1))
-      |> then(&Middleware.run_transform_step_data(middleware, ctx, hashed_id, &1))
+      Middleware.run_wrap_step(
+        middleware,
+        %{ctx: ctx, step_id: hashed_id, step_info: %{hashed_id: hashed_id, memoized: true}},
+        fn ->
+          unwrap_memoized_result!(value, opts)
+        end
+      )
     else
       step_not_found!(ctx)
     end
+  end
+
+  defp transform_step_input(ctx, args) do
+    ctx
+    |> Map.get(:middleware, [])
+    |> Middleware.run_transform_step_input(args)
   end
 
   defp unwrap_memoized_result!(%{"data" => value}, opts), do: decode_memoized_data!(value, opts)

@@ -19,27 +19,19 @@ defmodule Inngest.Middleware do
           {MyApp.Inngest.TenantMiddleware, tenant_header: "x-tenant-id"}
         ]
 
-  ## Function Lifecycle
+  ## Hook Shape
 
-  `transform_input/3` and `before_execution/3` receive the internal
-  `Inngest.Function.Context` and user-facing `Inngest.Function.Input`. Return
-  `{ctx, input}` or `{:ok, ctx, input}`.
+  Callbacks receive an `args` map and the middleware entry `opts`. Transform
+  hooks return the updated `args` map. Wrap hooks receive `args.next`, a
+  zero-arity function that continues the middleware chain, and return the
+  wrapped result.
 
-  `after_execution/4` and `transform_output/4` receive the function result
-  tuple before it is converted into an SDK response. Return the updated result
-  tuple, such as `{:ok, output}` or `{:error, reason}`.
+  Middleware modules only need to define the callbacks they use. All callbacks
+  are optional, so a middleware can implement a single hook without defining
+  no-op functions for the rest.
 
-  `before_response/4` receives the generated SDK response struct and can mutate
-  the final response body, status, or retry metadata before the router sends it.
-
-  ## Events And Steps
-
-  `before_send_events/3` can mutate events before they are sent to Inngest.
-  `after_send_events/4` can mutate and must return the `Inngest.Client.send/2`
-  result tuple.
-
-  `after_memoization/4` and `transform_step_data/4` run on memoized step data
-  before user code receives it.
+  This follows the current TypeScript SDK middleware model while using Elixir
+  behaviour modules instead of classes.
   """
 
   alias Inngest.Function.{Context, Input}
@@ -47,102 +39,137 @@ defmodule Inngest.Middleware do
   @type opts() :: Keyword.t()
   @type entry() :: module() | {module(), opts()}
   @type normalized_entry() :: {module(), opts()}
+  @type args() :: map()
   @type result() :: {:ok, term()} | {:error, term()}
 
   @doc """
-  Mutates the function context and input before execution setup continues.
+  Runs when middleware is registered on a client or function.
 
-  This is the earliest function lifecycle hook. Use it to normalize incoming
-  event data or add derived values to `Inngest.Function.Context.data` before
-  later middleware or function code runs.
+  `args.client` contains the runtime client. `args.function` is `nil` for
+  client-level registration and the function module for function-level
+  registration.
   """
-  @callback transform_input(Context.t(), Input.t(), opts()) ::
-              {Context.t(), Input.t()} | {:ok, Context.t(), Input.t()}
-
-  @doc """
-  Runs immediately before the user function is called.
-
-  This hook receives the context and input after `transform_input/3` has
-  completed for all middleware. Use it for request-aware setup, authorization,
-  tenancy, or tracing data that should be available to function code.
-  """
-  @callback before_execution(Context.t(), Input.t(), opts()) ::
-              {Context.t(), Input.t()} | {:ok, Context.t(), Input.t()}
-
-  @doc """
-  Mutates the raw function result after user code returns.
-
-  Return the updated result tuple directly, such as `{:ok, value}` or
-  `{:error, reason}`. This hook runs before `transform_output/4`.
-  """
-  @callback after_execution(Context.t(), Input.t(), result(), opts()) :: result()
-
-  @doc """
-  Mutates the function result before it is converted to an SDK response.
-
-  Use this hook for output normalization or error shaping that should happen
-  before the router serializes the response body and retry metadata.
-  """
-  @callback transform_output(Context.t(), Input.t(), result(), opts()) :: result()
-
-  @doc """
-  Mutates the SDK response immediately before the router sends it.
-
-  This hook can adjust the final status, body, or retry metadata after result
-  serialization. Return the response struct directly or `{:ok, response}`.
-  """
-  @callback before_response(Context.t(), Input.t(), term(), opts()) ::
-              term() | {:ok, term()}
+  @callback on_register(args(), opts()) :: term()
 
   @doc """
   Mutates outbound events before they are sent to Inngest.
 
   This hook runs for both `Inngest.Client.send/2` and
-  `Inngest.StepTool.send_event/3`. Return a list of events or
-  `{:ok, events}`.
+  `Inngest.StepTool.send_event/3`. Return the updated args map with an `:events`
+  key.
   """
-  @callback before_send_events([Inngest.Event.t()], term(), opts()) ::
-              [Inngest.Event.t()] | {:ok, [Inngest.Event.t()]}
+  @callback transform_send_event(args(), opts()) :: args() | {:ok, args()}
 
   @doc """
-  Mutates the event-send result after the HTTP request completes.
+  Wraps event sending.
 
-  Return the updated `Inngest.Client.send/2` result tuple directly. The second
-  argument contains the events after `before_send_events/3` mutations.
+  `args.next` sends the events and returns the normal `Inngest.Client.send/2`
+  result tuple. Use this hook for metrics, backups, or result shaping around the
+  HTTP send.
   """
-  @callback after_send_events(
-              Inngest.Client.send_result(),
-              [Inngest.Event.t()],
-              term(),
-              opts()
-            ) :: Inngest.Client.send_result()
+  @callback wrap_send_event(args(), opts()) :: Inngest.Client.send_result()
 
   @doc """
-  Mutates a memoized step value immediately after it is unwrapped.
+  Wraps an incoming function request.
 
-  This hook only runs when the executor has already memoized a step. Use it for
-  compatibility migrations or shared decoding before user code receives replayed
-  step data.
+  `args.request` contains the framework request information when available and
+  `args.next` returns the generated SDK response.
   """
-  @callback after_memoization(Context.t(), binary(), term(), opts()) :: term() | {:ok, term()}
+  @callback wrap_request(args(), opts()) :: term()
 
   @doc """
-  Mutates memoized step data before it is returned to user code.
+  Mutates the function context, input, and memoized step map for this request.
 
-  This hook runs after `after_memoization/4` and receives the hashed step ID and
-  current value. Return the transformed value directly or `{:ok, value}`.
+  Return the updated args map with `:ctx`, `:input`, and `:steps` keys.
   """
-  @callback transform_step_data(Context.t(), binary(), term(), opts()) :: term() | {:ok, term()}
+  @callback transform_function_input(args(), opts()) :: args() | {:ok, args()}
 
-  @optional_callbacks transform_input: 3,
-                      before_execution: 3,
-                      after_execution: 4,
-                      transform_output: 4,
-                      before_response: 4,
-                      before_send_events: 3,
-                      after_send_events: 4,
-                      after_memoization: 4,
-                      transform_step_data: 4
+  @doc """
+  Runs once when memoization replay has ended for this request.
+
+  In this SDK this hook fires after function input transformation, before fresh
+  function code starts.
+  """
+  @callback on_memoization_end(args(), opts()) :: term()
+
+  @doc """
+  Runs before fresh function code begins for this request.
+  """
+  @callback on_run_start(args(), opts()) :: term()
+
+  @doc """
+  Runs after function code completes successfully.
+  """
+  @callback on_run_complete(args(), opts()) :: term()
+
+  @doc """
+  Runs after function code returns or raises an error.
+  """
+  @callback on_run_error(args(), opts()) :: term()
+
+  @doc """
+  Wraps the user function handler.
+
+  `args.next` returns the function result tuple, such as `{:ok, value}` or
+  `{:error, reason}`.
+  """
+  @callback wrap_function_handler(args(), opts()) :: result()
+
+  @doc """
+  Mutates step metadata and arguments before the step ID is hashed.
+
+  Return the updated args map with `:step_id`, `:step_type`, `:input`, and
+  `:options` keys where applicable.
+  """
+  @callback transform_step_input(args(), opts()) :: args() | {:ok, args()}
+
+  @doc """
+  Wraps a step request.
+
+  This hook runs for both fresh and memoized step values. `args.next` returns
+  the step value visible to user code.
+  """
+  @callback wrap_step(args(), opts()) :: term()
+
+  @doc """
+  Runs before a fresh step handler executes.
+  """
+  @callback on_step_start(args(), opts()) :: term()
+
+  @doc """
+  Runs after a fresh step handler completes successfully.
+  """
+  @callback on_step_complete(args(), opts()) :: term()
+
+  @doc """
+  Runs after a fresh step handler raises.
+  """
+  @callback on_step_error(args(), opts()) :: term()
+
+  @doc """
+  Wraps a fresh step handler.
+
+  `args.next` executes the step body and returns its output. This hook does not
+  run for memoized step values.
+  """
+  @callback wrap_step_handler(args(), opts()) :: term()
+
+  @optional_callbacks on_register: 2,
+                      transform_send_event: 2,
+                      wrap_send_event: 2,
+                      wrap_request: 2,
+                      transform_function_input: 2,
+                      on_memoization_end: 2,
+                      on_run_start: 2,
+                      on_run_complete: 2,
+                      on_run_error: 2,
+                      wrap_function_handler: 2,
+                      transform_step_input: 2,
+                      wrap_step: 2,
+                      on_step_start: 2,
+                      on_step_complete: 2,
+                      on_step_error: 2,
+                      wrap_step_handler: 2
 
   @doc false
   @spec normalize(nil | entry() | [entry()]) :: [normalized_entry()]
@@ -171,93 +198,93 @@ defmodule Inngest.Middleware do
   end
 
   @doc false
-  @spec run_transform_input([normalized_entry()], Context.t(), Input.t()) ::
-          {Context.t(), Input.t()}
-  def run_transform_input(middleware, ctx, input) do
-    run_context_input(middleware, :transform_input, ctx, input)
-  end
+  @spec run_on_register([normalized_entry()], args()) :: :ok
+  def run_on_register(middleware, args), do: run_side_effect(middleware, :on_register, args)
 
   @doc false
-  @spec run_before_execution([normalized_entry()], Context.t(), Input.t()) ::
-          {Context.t(), Input.t()}
-  def run_before_execution(middleware, ctx, input) do
-    run_context_input(middleware, :before_execution, ctx, input)
-  end
-
-  @doc false
-  @spec run_after_execution([normalized_entry()], Context.t(), Input.t(), result()) :: result()
-  def run_after_execution(middleware, ctx, input, result) do
-    run_result(middleware, :after_execution, ctx, input, result)
-  end
-
-  @doc false
-  @spec run_transform_output([normalized_entry()], Context.t(), Input.t(), result()) :: result()
-  def run_transform_output(middleware, ctx, input, result) do
-    run_result(middleware, :transform_output, ctx, input, result)
-  end
-
-  @doc false
-  @spec run_before_response(
-          [normalized_entry()],
-          Context.t(),
-          Input.t(),
-          Inngest.SdkResponse.t()
-        ) :: Inngest.SdkResponse.t()
-  def run_before_response(middleware, ctx, input, response) do
-    Enum.reduce(middleware, response, fn {module, opts}, acc ->
-      if callback?(module, :before_response, 4) do
-        module
-        |> apply(:before_response, [ctx, input, acc, opts])
-        |> unwrap_value(:before_response)
-      else
-        acc
-      end
-    end)
-  end
-
-  @doc false
-  @spec run_before_send_events([normalized_entry()], [Inngest.Event.t()], term()) ::
+  @spec run_transform_send_event([normalized_entry()], [Inngest.Event.t()], term()) ::
           [Inngest.Event.t()]
-  def run_before_send_events(middleware, events, context) do
-    Enum.reduce(middleware, events, fn {module, opts}, acc ->
-      if callback?(module, :before_send_events, 3) do
-        module
-        |> apply(:before_send_events, [acc, context, opts])
-        |> unwrap_value(:before_send_events)
-        |> List.wrap()
-      else
-        acc
-      end
-    end)
+  def run_transform_send_event(middleware, events, context) do
+    args =
+      middleware
+      |> run_transform(:transform_send_event, %{events: events, context: context})
+
+    args.events |> List.wrap()
   end
 
   @doc false
-  @spec run_after_send_events(
-          [normalized_entry()],
-          Inngest.Client.send_result(),
-          [Inngest.Event.t()],
-          term()
-        ) :: Inngest.Client.send_result()
-  def run_after_send_events(middleware, result, events, context) do
-    Enum.reduce(middleware, result, fn {module, opts}, acc ->
-      if callback?(module, :after_send_events, 4) do
-        apply(module, :after_send_events, [acc, events, context, opts])
-      else
-        acc
-      end
-    end)
+  @spec run_wrap_send_event([normalized_entry()], args(), fun()) :: Inngest.Client.send_result()
+  def run_wrap_send_event(middleware, args, next) do
+    run_wrap(middleware, :wrap_send_event, args, next)
   end
 
   @doc false
-  @spec run_after_memoization([normalized_entry()], Context.t(), binary(), term()) :: term()
-  def run_after_memoization(middleware, ctx, step_id, value) do
-    run_step_value(middleware, :after_memoization, ctx, step_id, value)
+  @spec run_wrap_request([normalized_entry()], args(), fun()) :: term()
+  def run_wrap_request(middleware, args, next) do
+    run_wrap(middleware, :wrap_request, args, next)
   end
 
   @doc false
-  @spec run_transform_step_data([normalized_entry()], Context.t(), binary(), term()) :: term()
-  def run_transform_step_data(middleware, ctx, step_id, value) do
-    run_step_value(middleware, :transform_step_data, ctx, step_id, value)
+  @spec run_transform_function_input([normalized_entry()], args()) ::
+          {Context.t(), Input.t(), map()}
+  def run_transform_function_input(middleware, args) do
+    args = run_transform(middleware, :transform_function_input, args)
+    {args.ctx, args.input, Map.get(args, :steps, %{})}
+  end
+
+  @doc false
+  @spec run_on_memoization_end([normalized_entry()], args()) :: :ok
+  def run_on_memoization_end(middleware, args),
+    do: run_side_effect(middleware, :on_memoization_end, args)
+
+  @doc false
+  @spec run_on_run_start([normalized_entry()], args()) :: :ok
+  def run_on_run_start(middleware, args), do: run_side_effect(middleware, :on_run_start, args)
+
+  @doc false
+  @spec run_on_run_complete([normalized_entry()], args()) :: :ok
+  def run_on_run_complete(middleware, args),
+    do: run_side_effect(middleware, :on_run_complete, args)
+
+  @doc false
+  @spec run_on_run_error([normalized_entry()], args()) :: :ok
+  def run_on_run_error(middleware, args), do: run_side_effect(middleware, :on_run_error, args)
+
+  @doc false
+  @spec run_wrap_function_handler([normalized_entry()], args(), fun()) :: result()
+  def run_wrap_function_handler(middleware, args, next) do
+    run_wrap(middleware, :wrap_function_handler, args, next)
+  end
+
+  @doc false
+  @spec run_transform_step_input([normalized_entry()], args()) :: args()
+  def run_transform_step_input(middleware, args) do
+    run_transform(middleware, :transform_step_input, args)
+  end
+
+  @doc false
+  @spec run_wrap_step([normalized_entry()], args(), fun()) :: term()
+  def run_wrap_step(middleware, args, next) do
+    run_wrap(middleware, :wrap_step, args, next)
+  end
+
+  @doc false
+  @spec run_on_step_start([normalized_entry()], args()) :: :ok
+  def run_on_step_start(middleware, args), do: run_side_effect(middleware, :on_step_start, args)
+
+  @doc false
+  @spec run_on_step_complete([normalized_entry()], args()) :: :ok
+  def run_on_step_complete(middleware, args),
+    do: run_side_effect(middleware, :on_step_complete, args)
+
+  @doc false
+  @spec run_on_step_error([normalized_entry()], args()) :: :ok
+  def run_on_step_error(middleware, args), do: run_side_effect(middleware, :on_step_error, args)
+
+  @doc false
+  @spec run_wrap_step_handler([normalized_entry()], args(), fun()) :: term()
+  def run_wrap_step_handler(middleware, args, next) do
+    run_wrap(middleware, :wrap_step_handler, args, next)
   end
 
   defp normalize_entry(module) when is_atom(module), do: {module, []}
@@ -267,55 +294,52 @@ defmodule Inngest.Middleware do
     raise ArgumentError, "invalid Inngest middleware entry: #{inspect(entry)}"
   end
 
-  defp run_context_input(middleware, callback, ctx, input) do
-    Enum.reduce(middleware, {ctx, input}, fn {module, opts}, {ctx_acc, input_acc} ->
-      if callback?(module, callback, 3) do
+  defp run_transform(middleware, callback, args) do
+    Enum.reduce(middleware, args, fn {module, opts}, acc ->
+      if callback?(module, callback, 2) do
         module
-        |> apply(callback, [ctx_acc, input_acc, opts])
-        |> unwrap_context_input(callback)
-      else
-        {ctx_acc, input_acc}
-      end
-    end)
-  end
-
-  defp run_result(middleware, callback, ctx, input, result) do
-    Enum.reduce(middleware, result, fn {module, opts}, acc ->
-      if callback?(module, callback, 4) do
-        apply(module, callback, [ctx, input, acc, opts])
+        |> apply(callback, [acc, opts])
+        |> unwrap_transform(callback)
       else
         acc
       end
     end)
   end
 
-  defp run_step_value(middleware, callback, ctx, step_id, value) do
-    Enum.reduce(middleware, value, fn {module, opts}, acc ->
-      if callback?(module, callback, 4) do
-        module
-        |> apply(callback, [ctx, step_id, acc, opts])
-        |> unwrap_value(callback)
-      else
-        acc
+  defp run_wrap(middleware, callback, args, next) do
+    middleware
+    |> Enum.reverse()
+    |> Enum.reduce(next, &wrap_callback(&1, &2, callback, args))
+    |> then(& &1.())
+  end
+
+  defp wrap_callback({module, opts}, next, callback, args) do
+    if callback?(module, callback, 2) do
+      fn -> apply(module, callback, [Map.put(args, :next, next), opts]) end
+    else
+      next
+    end
+  end
+
+  defp run_side_effect(middleware, callback, args) do
+    Enum.each(middleware, fn {module, opts} ->
+      if callback?(module, callback, 2) do
+        apply(module, callback, [args, opts])
       end
     end)
+
+    :ok
   end
 
   defp callback?(module, callback, arity) do
     Code.ensure_loaded?(module) and function_exported?(module, callback, arity)
   end
 
-  defp unwrap_context_input({:ok, %Context{} = ctx, %Input{} = input}, _callback),
-    do: {ctx, input}
+  defp unwrap_transform({:ok, value}, _callback), do: value
+  defp unwrap_transform(value, _callback) when is_map(value), do: value
 
-  defp unwrap_context_input({%Context{} = ctx, %Input{} = input}, _callback),
-    do: {ctx, input}
-
-  defp unwrap_context_input(value, callback) do
+  defp unwrap_transform(value, callback) do
     raise ArgumentError,
           "#{inspect(callback)} middleware callback returned invalid value: #{inspect(value)}"
   end
-
-  defp unwrap_value({:ok, value}, _callback), do: value
-  defp unwrap_value(value, _callback), do: value
 end

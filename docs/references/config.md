@@ -68,8 +68,8 @@ Function-level middleware is configured on `Inngest.FnOpts`:
 }
 ```
 
-See `Inngest.Middleware` for the available lifecycle, event-send, and memoized
-step data callbacks.
+See `Inngest.Middleware` for the TypeScript-aligned `on_register`,
+`transform_*`, `wrap_*`, and `on_*` lifecycle hooks.
 
 ## Environment Variables
 

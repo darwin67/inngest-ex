@@ -71,12 +71,24 @@ defmodule Inngest.Router.Invoke do
       step: Inngest.StepTool
     }
 
-    {ctx, input} = Middleware.run_transform_input(middleware, ctx, input)
-    {ctx, input} = Middleware.run_before_execution(middleware, ctx, input)
-
     resp =
-      middleware
-      |> Middleware.run_before_response(ctx, input, invoke(func, ctx, input))
+      Middleware.run_wrap_request(
+        middleware,
+        %{ctx: ctx, input: input, function: func, request: conn},
+        fn ->
+          {ctx, input, steps} =
+            Middleware.run_transform_function_input(middleware, %{
+              ctx: ctx,
+              input: input,
+              function: func,
+              steps: ctx.steps
+            })
+
+          ctx = %{ctx | steps: steps}
+          Middleware.run_on_memoization_end(middleware, %{ctx: ctx, input: input, function: func})
+          invoke(func, ctx, input)
+        end
+      )
 
     conn
     |> put_resp_content_type(@content_type)
@@ -92,24 +104,59 @@ defmodule Inngest.Router.Invoke do
 
   defp invoke(func, ctx, input) do
     try do
-      result =
-        if failure?(input) do
-          func.handle_failure(ctx, input)
-        else
-          func.exec(ctx, input)
-        end
+      Middleware.run_on_run_start(ctx.middleware, %{ctx: ctx, input: input, function: func})
 
       result =
-        ctx.middleware
-        |> Middleware.run_after_execution(ctx, input, result)
-        |> then(&Middleware.run_transform_output(ctx.middleware, ctx, input, &1))
+        Middleware.run_wrap_function_handler(
+          ctx.middleware,
+          %{ctx: ctx, input: input, function: func},
+          fn ->
+            if failure?(input) do
+              func.handle_failure(ctx, input)
+            else
+              func.exec(ctx, input)
+            end
+          end
+        )
+
+      case result do
+        {:ok, output} ->
+          Middleware.run_on_run_complete(ctx.middleware, %{
+            ctx: ctx,
+            input: input,
+            function: func,
+            output: output
+          })
+
+        {:error, error} ->
+          Middleware.run_on_run_error(ctx.middleware, %{
+            ctx: ctx,
+            input: input,
+            function: func,
+            error: error
+          })
+      end
 
       result_response(result, ctx)
     rescue
       non_retry in Inngest.NonRetriableError ->
+        Middleware.run_on_run_error(ctx.middleware, %{
+          ctx: ctx,
+          input: input,
+          function: func,
+          error: non_retry
+        })
+
         SdkResponse.from_result({:error, non_retry}, retry: false, stacktrace: __STACKTRACE__)
 
       retry in Inngest.RetryAfterError ->
+        Middleware.run_on_run_error(ctx.middleware, %{
+          ctx: ctx,
+          input: input,
+          function: func,
+          error: retry
+        })
+
         delay = Map.get(retry, :seconds)
 
         SdkResponse.from_result({:error, retry},
@@ -118,12 +165,26 @@ defmodule Inngest.Router.Invoke do
         )
 
       step_error in Inngest.StepError ->
+        Middleware.run_on_run_error(ctx.middleware, %{
+          ctx: ctx,
+          input: input,
+          function: func,
+          error: step_error
+        })
+
         SdkResponse.from_result({:error, step_error},
           retry: false,
           stacktrace: __STACKTRACE__
         )
 
       error ->
+        Middleware.run_on_run_error(ctx.middleware, %{
+          ctx: ctx,
+          input: input,
+          function: func,
+          error: error
+        })
+
         SdkResponse.from_result({:error, error}, stacktrace: __STACKTRACE__)
     catch
       # Step tools throw GeneratorOpCode values to stop user code at the first

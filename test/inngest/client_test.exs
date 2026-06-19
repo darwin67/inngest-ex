@@ -16,17 +16,23 @@ defmodule Inngest.ClientTest do
     @behaviour Inngest.Middleware
 
     @impl true
-    def before_send_events(events, _context, opts) do
+    def transform_send_event(%{events: events} = args, opts) do
       tag = Keyword.fetch!(opts, :tag)
 
-      Enum.map(events, fn event ->
-        update_in(event.data, &Map.put(&1, :middleware, tag))
-      end)
+      events =
+        Enum.map(events, fn event ->
+          update_in(event.data, &Map.put(&1, :middleware, tag))
+        end)
+
+      %{args | events: events}
     end
 
     @impl true
-    def after_send_events({:ok, response}, _events, _context, opts) do
-      {:ok, Map.put(response, "middleware", Keyword.fetch!(opts, :tag))}
+    def wrap_send_event(%{next: next}, opts) do
+      case next.() do
+        {:ok, response} -> {:ok, Map.put(response, "middleware", Keyword.fetch!(opts, :tag))}
+        result -> result
+      end
     end
   end
 
