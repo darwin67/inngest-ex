@@ -123,7 +123,7 @@ end
 
 See the **[guides](https://hexdocs.pm/inngest)** and the
 **[function configuration reference](docs/references/function_configuration.md)** or
-**[steps reference](docs/references/steps.md)**
+the `Inngest.StepTool` module docs
 for more details regarding use cases and how each macro can be used.
 
 <!-- MDOC ! -->

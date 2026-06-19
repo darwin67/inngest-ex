@@ -40,6 +40,48 @@ defmodule Inngest.StepToolTest do
                "memoized"
     end
 
+    test "returns fresh step results without changing map keys" do
+      assert %GeneratorOpCode{
+               data: %{foo: "bar"}
+             } = catch_throw(StepTool.run(ctx(), "first", fn -> %{foo: "bar"} end))
+    end
+
+    test "returns memoized map data with string keys by default" do
+      ctx = ctx(steps: %{hash("first") => %{"data" => %{"foo" => "bar"}}})
+
+      assert StepTool.run(ctx, "first", fn -> flunk("step body should not run") end) ==
+               %{"foo" => "bar"}
+    end
+
+    test "converts memoized map data keys to existing atoms when requested" do
+      ctx =
+        ctx(
+          steps: %{
+            hash("first") => %{
+              "data" => %{
+                "foo" => [%{"bar" => "baz"}],
+                "string-key" => "kept"
+              }
+            }
+          }
+        )
+
+      assert StepTool.run(ctx, "first", fn -> flunk("step body should not run") end, keys: :atoms) ==
+               %{
+                 :"string-key" => "kept",
+                 foo: [%{bar: "baz"}]
+               }
+    end
+
+    test "raises a clear error when atom key conversion would create an atom" do
+      unknown_key = "inngest_unknown_key_#{System.unique_integer([:positive])}"
+      ctx = ctx(steps: %{hash("first") => %{"data" => %{unknown_key => "bar"}}})
+
+      assert_raise Inngest.StepError, ~r/cannot convert memoized step key/, fn ->
+        StepTool.run(ctx, "first", fn -> flunk("step body should not run") end, keys: :atoms)
+      end
+    end
+
     test "raises a step error for memoized run step errors" do
       error = %{"name" => "RuntimeError", "message" => "boom", "stack" => "stack"}
       ctx = ctx(steps: %{hash("first") => %{"error" => error}})

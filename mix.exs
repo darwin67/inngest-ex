@@ -32,7 +32,6 @@ defmodule Inngest.MixProject do
         main: "Inngest",
         authors: ["Darwin Wu <darwin@inngest.com>"],
         # source_ref: "v#{@version}",
-        assets: "docs/assets",
         logo: "docs/assets/logo.png",
         extras:
           ["CHANGELOG.md", "docs/**/*.md"]
@@ -53,7 +52,8 @@ defmodule Inngest.MixProject do
             Inngest.Trigger,
             Inngest.Function.Step,
             Inngest.Function.Context,
-            Inngest.Function.Input
+            Inngest.Function.Input,
+            Inngest.StepTool
           ],
           Router: [
             Inngest.Router,
