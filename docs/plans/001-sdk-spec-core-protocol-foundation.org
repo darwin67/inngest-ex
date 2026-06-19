@@ -1,0 +1,57 @@
+#+title: SDK Spec Core Protocol Foundation
+#+author: Darwin D. Wu
+#+date: 2026-06-19
+#+status: Draft
+
+* SDK Spec Core Protocol Foundation
+
+Source spec: https://github.com/inngest/inngest/blob/main/docs/SDK_SPEC.md
+
+** Goal
+
+Align the SDK's core configuration, modes, headers, and signing behavior with the
+Open Source SDK Spec before changing higher-level serve or step behavior.
+
+** Implementation Guide
+
+Before checking off any implementation item in any phase, decide any relevant
+open question, capture the current behavior if it matters, add or update a
+focused test that fails for the desired spec behavior, implement the smallest
+change, and leave the targeted test green. Do not end a phase with intentionally
+failing tests.
+
+** Open Questions
+
+- [ ] Decide whether ~INNGEST_DEV~ should fully replace ~:env, :dev~ or remain an additional supported switch.
+- [ ] Decide the canonical SDK header name: ~inngest-ex~, ~ex-inngest~, or ~darwin67/inngest-ex~.
+- [ ] Decide whether ~INNGEST_APP_HOST~ remains as a deprecated alias for ~INNGEST_SERVE_ORIGIN~.
+- [ ] Decide whether missing signing keys in cloud mode fail during config access or only while handling signed requests.
+- [ ] Decide whether fallback signing key usage should become sticky after a successful outbound retry.
+
+** Phase 1: Core Implementation
+
+- [ ] Add a local SDK spec compliance checklist that maps spec requirements to implementation status.
+- [ ] Normalize SDK mode handling around ~cloud~ and ~dev~, defaulting to ~cloud~.
+- [ ] Support required env vars: ~INNGEST_EVENT_KEY~, ~INNGEST_SIGNING_KEY~, ~INNGEST_SIGNING_KEY_FALLBACK~, and ~INNGEST_ENV~.
+- [ ] Support URL and mode env vars: ~INNGEST_DEV~, ~INNGEST_API_BASE_URL~, ~INNGEST_EVENT_API_BASE_URL~, ~INNGEST_BASE_URL~, ~INNGEST_SERVE_ORIGIN~, and ~INNGEST_SERVE_PATH~.
+- [ ] Preserve existing Elixir application config support while defining clear env-over-config precedence.
+- [ ] Change ~X-Inngest-Req-Version~ from ~1~ to spec-required ~2~.
+- [ ] Ensure all SDK responses to call requests include ~X-Inngest-Sdk~ and ~X-Inngest-Req-Version~.
+- [ ] Ensure all outbound requests to Inngest include required SDK headers and bearer authorization where required.
+- [ ] Add signature coverage for current key, fallback key, missing key, missing signature, expired timestamp, and invalid signature.
+
+** Phase 2: Edge Cases And Compatibility
+
+- [ ] Implement fallback signing key behavior for inbound signature verification.
+- [ ] Implement fallback signing key behavior for outbound REST API requests.
+- [ ] Keep dev mode permissive for unsigned requests while keeping cloud mode strict.
+- [ ] Preserve compatibility for existing application config keys or document any intentional deprecations.
+- [ ] Ensure ~INNGEST_ENV~ is sent as ~X-Inngest-Env~ only when configured.
+- [ ] Add regression tests for existing event key, signing key, URL, and SDK version behavior.
+
+** Phase 3: Verification
+
+- [ ] Run ~make fmt~.
+- [ ] Run targeted unit tests for config, headers, and signature behavior.
+- [ ] Run any affected router/client tests.
+- [ ] Update docs or compliance notes with implemented, deferred, and unsupported spec areas.

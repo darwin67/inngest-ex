@@ -1,0 +1,59 @@
+#+title: SDK Spec Serve API
+#+author: Darwin D. Wu
+#+date: 2026-06-19
+#+status: Draft
+
+* SDK Spec Serve API
+
+Source spec: https://github.com/inngest/inngest/blob/main/docs/SDK_SPEC.md
+
+** Goal
+
+Make the HTTP endpoint exposed by the SDK comply with the spec for sync,
+registration, and introspection requests.
+
+** Implementation Guide
+
+Before checking off any implementation item in any phase, decide any relevant
+open question, capture the current behavior if it matters, add or update a
+focused test that fails for the desired spec behavior, implement the smallest
+change, and leave the targeted test green. Do not end a phase with intentionally
+failing tests.
+
+** Open Questions
+
+- [ ] Decide whether sync registration remains publicly triggerable by any ~PUT~ request or requires stricter behavior for signed requests.
+- [ ] Decide whether in-band sync is explicitly unsupported for now or belongs in this plan.
+- [ ] Decide what local value maps to authenticated introspection ~app_id~.
+- [ ] Decide whether Plug and Phoenix should expose identical ~GET~ introspection behavior.
+- [ ] Decide whether framework values stay ~plug~ and ~phoenix~ or include framework versions.
+
+** Phase 1: Sync Implementation
+
+- [ ] Update ~PUT~ sync handling to return the spec response shape: ~{message, modified}~.
+- [ ] Return ~500~ with a spec-shaped payload when Inngest registration fails.
+- [ ] Preserve and forward incoming ~deployId~ to ~/fn/register~ query params.
+- [ ] Ensure ~deployId~ is not included in the registered app URL.
+- [ ] Forward incoming ~X-Inngest-Server-Kind~ to Inngest as ~X-Inngest-Expected-Server-Kind~.
+- [ ] Generate registered app URLs from serve origin and serve path rules.
+- [ ] Fix registered step runtime URLs to use ~stepId=step&fnId=...~.
+- [ ] Keep framework reporting for Plug and Phoenix routes.
+
+** Phase 2: Introspection And Compatibility
+
+- [ ] Add ~GET~ introspection handling on the same serve endpoint.
+- [ ] Return schema version ~2024-05-24~ introspection responses.
+- [ ] Return unauthenticated introspection when the request is unsigned.
+- [ ] Return unauthenticated introspection when signature validation fails.
+- [ ] Return authenticated introspection when signature validation succeeds.
+- [ ] Include key hashes, origins, mode, framework, SDK metadata, and function count where required.
+- [ ] Do not advertise optional capabilities until their implementations exist.
+- [ ] Ensure Plug and Phoenix route integrations share the same serve API behavior.
+
+** Phase 3: Verification
+
+- [ ] Run ~make fmt~.
+- [ ] Run targeted serve API unit tests.
+- [ ] Run existing Plug and Phoenix route tests.
+- [ ] Run a local dev-server sync smoke test if the dev server is available.
+- [ ] Update serve API docs or compliance notes for supported and deferred features.
