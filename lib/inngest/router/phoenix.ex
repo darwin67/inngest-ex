@@ -29,6 +29,7 @@ defmodule Inngest.Router.Phoenix do
 
     quote location: :keep, bind_quoted: binding() do
       scope path, alias: false, as: false do
+        get "/", Inngest.Router.Introspection, opts, router_opts
         post "/", Inngest.Router.Invoke, opts, router_opts
         put "/", Inngest.Router.Register, opts, router_opts
       end

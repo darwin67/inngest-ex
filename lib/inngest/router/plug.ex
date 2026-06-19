@@ -26,6 +26,14 @@ defmodule Inngest.Router.Plug do
       |> Macro.escape()
 
     quote location: :keep do
+      # introspection path
+      get unquote(path) do
+        opts = Inngest.Router.Introspection.init(unquote(opts))
+
+        var!(conn)
+        |> Inngest.Router.Introspection.call(opts)
+      end
+
       # invoke path
       post unquote(path) do
         opts = Inngest.Router.Invoke.init(unquote(opts))
