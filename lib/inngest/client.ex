@@ -5,6 +5,85 @@ defmodule Inngest.Client do
   alias Inngest.{Config, Event, Headers, Signature}
 
   @fallback_signing_key {__MODULE__, :fallback_signing_key}
+  @event_url "https://inn.gs"
+  @inngest_url "https://app.inngest.com"
+  @api_url "https://api.inngest.com"
+  @dev_server_url "http://127.0.0.1:8288"
+
+  @type mode() :: :cloud | :dev
+
+  @type t() :: %__MODULE__{
+          id: binary(),
+          funcs: [module()],
+          mode: mode(),
+          api_url: binary(),
+          event_url: binary(),
+          register_url: binary(),
+          inngest_url: binary(),
+          serve_origin: binary(),
+          serve_path: binary() | nil,
+          event_key: binary(),
+          signing_key: binary(),
+          signing_key_fallback: binary(),
+          env: binary() | nil,
+          sdk_version: binary(),
+          req_version: binary()
+        }
+
+  defstruct [
+    :id,
+    :env,
+    :serve_path,
+    funcs: [],
+    mode: :cloud,
+    api_url: @api_url,
+    event_url: @event_url,
+    register_url: @api_url,
+    inngest_url: @inngest_url,
+    serve_origin: "http://127.0.0.1:4000",
+    event_key: "test",
+    signing_key: "",
+    signing_key_fallback: "",
+    sdk_version: nil,
+    req_version: nil
+  ]
+
+  defmacro __using__(opts) do
+    quote location: :keep do
+      @inngest_client_opts unquote(opts)
+
+      @spec client() :: Inngest.Client.t()
+      def client() do
+        Inngest.Client.new(@inngest_client_opts)
+      end
+    end
+  end
+
+  @doc """
+  Builds a runtime Inngest client from explicit client options and environment.
+  """
+  @spec new(Keyword.t()) :: t()
+  def new(opts) when is_list(opts) do
+    mode = client_mode(opts)
+
+    %__MODULE__{
+      id: client_id!(opts),
+      funcs: Keyword.get(opts, :funcs, []),
+      mode: mode,
+      api_url: client_api_url(opts, mode),
+      event_url: client_event_url(opts, mode),
+      register_url: client_register_url(opts, mode),
+      inngest_url: client_inngest_url(opts, mode),
+      serve_origin: client_serve_origin(opts),
+      serve_path: client_serve_path(opts),
+      event_key: client_event_key(opts),
+      signing_key: client_signing_key(opts),
+      signing_key_fallback: client_signing_key_fallback(opts),
+      env: client_env(opts),
+      sdk_version: Config.sdk_version(),
+      req_version: Config.req_version()
+    }
+  end
 
   @doc """
   Send one or a batch of events to Inngest
@@ -240,6 +319,116 @@ defmodule Inngest.Client do
 
   defp fallback_signing_key?() do
     :persistent_term.get(@fallback_signing_key, false)
+  end
+
+  defp client_id!(opts) do
+    case Keyword.get(opts, :id) do
+      id when is_binary(id) and id != "" -> id
+      _ -> raise ArgumentError, "Inngest client requires a non-empty :id"
+    end
+  end
+
+  defp client_mode(opts) do
+    opts
+    |> Keyword.get(:mode)
+    |> normalize_mode()
+    |> case do
+      :unset -> env_mode()
+      mode -> mode
+    end
+  end
+
+  defp normalize_mode(mode) when mode in [:cloud, "cloud"], do: :cloud
+  defp normalize_mode(mode) when mode in [:dev, "dev"], do: :dev
+  defp normalize_mode(nil), do: :unset
+
+  defp normalize_mode(mode) do
+    raise ArgumentError, "invalid Inngest client mode: #{inspect(mode)}"
+  end
+
+  defp env_mode() do
+    case System.get_env("INNGEST_DEV") do
+      nil -> :cloud
+      value when value in ["", "0", "false", "FALSE", "False"] -> :cloud
+      _ -> :dev
+    end
+  end
+
+  defp client_api_url(opts, mode) do
+    explicit_url(opts, [:api_url, :api_base_url]) ||
+      System.get_env("INNGEST_API_BASE_URL") ||
+      System.get_env("INNGEST_BASE_URL") ||
+      default_url(mode, @api_url)
+  end
+
+  defp client_event_url(opts, mode) do
+    explicit_url(opts, [:event_url, :event_api_url, :event_api_base_url]) ||
+      System.get_env("INNGEST_EVENT_API_BASE_URL") ||
+      System.get_env("INNGEST_BASE_URL") ||
+      System.get_env("INNGEST_EVENT_URL") ||
+      default_url(mode, @event_url)
+  end
+
+  defp client_register_url(opts, mode) do
+    explicit_url(opts, [:register_url]) ||
+      System.get_env("INNGEST_REGISTER_URL") ||
+      System.get_env("INNGEST_API_BASE_URL") ||
+      System.get_env("INNGEST_BASE_URL") ||
+      default_url(mode, @api_url)
+  end
+
+  defp client_inngest_url(opts, mode) do
+    explicit_url(opts, [:inngest_url, :base_url]) ||
+      System.get_env("INNGEST_URL") ||
+      default_url(mode, @inngest_url)
+  end
+
+  defp client_serve_origin(opts) do
+    explicit_url(opts, [:serve_origin]) ||
+      System.get_env("INNGEST_SERVE_ORIGIN") ||
+      "http://127.0.0.1:4000"
+  end
+
+  defp client_serve_path(opts),
+    do: Keyword.get(opts, :serve_path) || System.get_env("INNGEST_SERVE_PATH")
+
+  defp client_event_key(opts),
+    do: Keyword.get(opts, :event_key) || System.get_env("INNGEST_EVENT_KEY") || "test"
+
+  defp client_signing_key(opts),
+    do: Keyword.get(opts, :signing_key) || System.get_env("INNGEST_SIGNING_KEY") || ""
+
+  defp client_signing_key_fallback(opts),
+    do:
+      Keyword.get(opts, :signing_key_fallback) ||
+        System.get_env("INNGEST_SIGNING_KEY_FALLBACK") ||
+        ""
+
+  defp client_env(opts), do: Keyword.get(opts, :env) || System.get_env("INNGEST_ENV")
+
+  defp explicit_url(opts, keys) do
+    keys
+    |> Enum.map(&Keyword.get(opts, &1))
+    |> Enum.find(&(&1 not in [nil, ""]))
+  end
+
+  defp default_url(:dev, _cloud_url), do: dev_server_url()
+  defp default_url(:cloud, cloud_url), do: cloud_url
+
+  defp dev_server_url() do
+    case System.get_env("INNGEST_DEV") do
+      url when is_binary(url) ->
+        uri = URI.parse(url)
+
+        if uri.scheme in ["http", "https"] && is_binary(uri.host) do
+          url
+        else
+          @dev_server_url
+        end
+
+      _ ->
+        @dev_server_url
+    end
   end
 
   defp merge_headers(headers, overrides) do

@@ -82,13 +82,13 @@ tests.
 
 ** Phase 1: Client API And Configuration Ownership
 
-- [ ] Add tests for defining a client module with app id, functions, and
+- [X] Add tests for defining a client module with app id, functions, and
   optional per-client config.
-- [ ] Implement the client module API and runtime client representation.
-- [ ] Add tests that client config resolves app identity, URLs, keys, mode, env,
+- [X] Implement the client module API and runtime client representation.
+- [X] Add tests that client config resolves app identity, URLs, keys, mode, env,
   and SDK metadata without relying only on global application config.
-- [ ] Implement client-aware config resolution with clear env precedence.
-- [ ] Add tests for multiple clients coexisting in the same VM without leaking
+- [X] Implement client-aware config resolution with clear env precedence.
+- [X] Add tests for multiple clients coexisting in the same VM without leaking
   function lists or app identity.
 
 ** Phase 2: Function Generation And Router Integration
