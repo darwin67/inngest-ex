@@ -1,7 +1,7 @@
 #+title: First-Class Client Architecture
 #+author: Darwin D. Wu
 #+date: 2026-06-19
-#+status: Draft
+#+status: Done
 
 * First-Class Client Architecture
 
@@ -114,11 +114,11 @@ tests.
 
 ** Phase 4: Verification And Documentation
 
-- [ ] Run ~make fmt~.
-- [ ] Run targeted client, config, router, register, invoke, introspection, and
+- [X] Run ~make fmt~.
+- [X] Run targeted client, config, router, register, invoke, introspection, and
   event-send tests.
-- [ ] Run ~make lint~.
-- [ ] Run ~make unit-test~ if the touched surface is broad.
+- [X] Run ~make lint~.
+- [X] Run ~make unit-test~ if the touched surface is broad.
 - [X] Document the first-class client API in user-facing docs.
 - [X] Update middleware planning notes to reference the client architecture
   dependency.
