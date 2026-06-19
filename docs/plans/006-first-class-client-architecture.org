@@ -96,7 +96,7 @@ tests.
 - [X] Add tests that registration payload generation uses the client function
   list and client app identity.
 - [X] Update registration payload generation to accept client context.
-- [ ] Add tests that call requests load functions from ~client:~.
+- [X] Add tests that call requests load functions from ~client:~.
 - [ ] Update Plug and Phoenix routers to require ~client:~.
 - [ ] Add tests that introspection reflects the selected client.
 - [ ] Update introspection to use client-owned app identity, function count,
