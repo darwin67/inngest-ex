@@ -290,8 +290,10 @@ defmodule Inngest.StepTool do
     String.to_existing_atom(key)
   rescue
     ArgumentError ->
-      raise Inngest.StepError,
-            "cannot convert memoized step key #{inspect(key)} to an existing atom"
+      reraise Inngest.StepError.exception(
+                "cannot convert memoized step key #{inspect(key)} to an existing atom"
+              ),
+              __STACKTRACE__
   end
 
   defp existing_atom_key!(key), do: key
