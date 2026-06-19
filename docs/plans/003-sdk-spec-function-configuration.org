@@ -27,6 +27,7 @@ failing tests.
 - Invalid function config raises during serve/registration payload generation, matching existing validation behavior. Module loading should remain side-effect-light.
 - ~batch_events.key~ does not change conflict semantics. Any non-nil ~batch_events~ config remains incompatible with ~rate_limit~ and ~cancel_on~.
 - New function config options use raw maps with atom keys, matching existing options. Do not add dedicated structs or keyword-list normalization in this plan.
+- ~singleton.mode~ uses atom values, ~:skip~ or ~:cancel~, in the public Elixir API and renders the corresponding spec string in registration payloads.
 - Update function configuration docs/examples to cover the full supported option set after this plan, including existing and new options, while avoiding unrelated documentation rewrites.
 
 ** Phase 1: Config Surface Implementation

@@ -176,10 +176,10 @@ defmodule Inngest.FnOpts do
   @typedoc """
   Ensure only one run per key executes at a time.
 
-  **mode** - `string` required
+  **mode** - `atom` required
 
   Determines what happens when a new run is triggered while one is already active.
-  Must be `"skip"` or `"cancel"`.
+  Must be `:skip` or `:cancel`.
 
   **key** - `string` optional
 
@@ -188,7 +188,7 @@ defmodule Inngest.FnOpts do
   @type singleton() ::
           %{
             key: binary() | nil,
-            mode: binary()
+            mode: :skip | :cancel
           }
           | nil
 
@@ -243,7 +243,7 @@ defmodule Inngest.FnOpts do
           }
           | nil
   @concurrency_scopes ["fn", "env", "account"]
-  @singleton_modes ["skip", "cancel"]
+  @singleton_modes [:skip, :cancel]
 
   @typedoc """
   Define an event that can be used to cancel a running or sleeping function ([reference](https://www.inngest.com/docs/functions/cancellation))
@@ -417,9 +417,10 @@ defmodule Inngest.FnOpts do
 
         if !Enum.member?(@singleton_modes, mode) do
           raise Inngest.SingletonConfigError,
-            message: "invalid mode '#{mode}', needs to be \"skip\"|\"cancel\""
+            message: "invalid mode '#{inspect(mode)}', needs to be :skip|:cancel"
         end
 
+        singleton = Map.put(singleton, :mode, Atom.to_string(mode))
         Map.put(config, :singleton, singleton)
     end
   end

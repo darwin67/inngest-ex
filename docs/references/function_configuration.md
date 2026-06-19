@@ -28,7 +28,7 @@ defmodule MyApp.InvoiceWorkflow do
     },
     singleton: %{
       key: "event.data.invoice_id",
-      mode: "skip"
+      mode: :skip
     },
     timeouts: %{
       start: "5m",
@@ -58,7 +58,7 @@ end
 | `batch_events` | `max_size`, `timeout` | `key` | `batchEvents` | Renders `max_size` as `maxSize`; incompatible with `rate_limit` and `cancel_on`. |
 | `rate_limit` | `limit`, `period` | `key` | `rateLimit` | `period` must be from 1 second to 60 seconds. |
 | `throttle` | `limit`, `period` | `key`, `burst` | `throttle` | `period` must be a valid duration. |
-| `singleton` | `mode` | `key` | `singleton` | `mode` must be `skip` or `cancel`. |
+| `singleton` | `mode` | `key` | `singleton` | `mode` must be `:skip` or `:cancel`; registration renders it as `skip` or `cancel`. |
 | `timeouts` | none | `start`, `finish` | `timeouts` | `start` and `finish` must be valid durations when set. |
 | `idempotency` | CEL expression string | none | `idempotency` | Prevents duplicate events from triggering a function more than once in 24 hours. |
 | `concurrency` | `limit` when using a map | `key`, `scope` | `concurrency` | May also be a number or a list of maps. `scope` must be `fn`, `env`, or `account`. |

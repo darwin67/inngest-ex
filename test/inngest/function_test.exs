@@ -28,7 +28,7 @@ defmodule Inngest.FunctionTest do
       },
       singleton: %{
         key: "event.data.account_id",
-        mode: "skip"
+        mode: :skip
       },
       timeouts: %{
         start: "1m",

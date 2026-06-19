@@ -293,7 +293,7 @@ defmodule Inngest.FnOptsTest do
       name: "Foobar",
       singleton: %{
         key: "event.data.account_id",
-        mode: "skip"
+        mode: :skip
       }
     }
 
@@ -304,6 +304,17 @@ defmodule Inngest.FnOptsTest do
                  mode: "skip"
                }
              } = FnOpts.validate_singleton(@fn_opts, @config)
+    end
+
+    test "should succeed with cancel mode" do
+      opts = update_at(@fn_opts, [:singleton, :mode], :cancel)
+
+      assert %{
+               singleton: %{
+                 key: "event.data.account_id",
+                 mode: "cancel"
+               }
+             } = FnOpts.validate_singleton(opts, @config)
     end
 
     test "should raise when mode is missing" do
@@ -320,7 +331,17 @@ defmodule Inngest.FnOptsTest do
       opts = update_at(@fn_opts, [:singleton, :mode], "replace")
 
       assert_raise Inngest.SingletonConfigError,
-                   "invalid mode 'replace', needs to be \"skip\"|\"cancel\"",
+                   "invalid mode '\"replace\"', needs to be :skip|:cancel",
+                   fn ->
+                     FnOpts.validate_singleton(opts, @config)
+                   end
+    end
+
+    test "should raise when mode is a string value" do
+      opts = update_at(@fn_opts, [:singleton, :mode], "skip")
+
+      assert_raise Inngest.SingletonConfigError,
+                   "invalid mode '\"skip\"', needs to be :skip|:cancel",
                    fn ->
                      FnOpts.validate_singleton(opts, @config)
                    end
