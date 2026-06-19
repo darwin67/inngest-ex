@@ -1,7 +1,7 @@
 #+title: SDK Spec Function Configuration
 #+author: Darwin D. Wu
 #+date: 2026-06-19
-#+status: Draft
+#+status: Done
 
 * SDK Spec Function Configuration
 
@@ -40,17 +40,21 @@ failing tests.
 
 ** Phase 2: Validation And Documentation
 
-- [ ] Validate required fields for new config options.
-- [ ] Validate time strings for new duration fields.
-- [ ] Validate enum values such as singleton mode and concurrency scope.
-- [ ] Keep conflict validation for incompatible options such as ~batch_events~ with ~rate_limit~ or ~cancel_on~.
-- [ ] Document any config fields intentionally not implemented yet.
-- [ ] Do not add checkpoint registration fields unless checkpointing itself is implemented.
-- [ ] Add targeted dev-server smoke tests for representative options when supported by the local Inngest dev server.
+- [X] Validate required fields for new config options.
+- [X] Validate time strings for new duration fields.
+- [X] Validate enum values such as singleton mode and concurrency scope.
+- [X] Keep conflict validation for incompatible options such as ~batch_events~ with ~rate_limit~ or ~cancel_on~.
+- [X] Document any config fields intentionally not implemented yet.
+- [X] Do not add checkpoint registration fields unless checkpointing itself is implemented.
+- [X] Add targeted dev-server smoke tests for representative options when supported by the local Inngest dev server.
 
 ** Phase 3: Verification
 
-- [ ] Run ~make fmt~.
-- [ ] Run targeted function configuration tests.
-- [ ] Run existing function case tests.
-- [ ] Update reference docs for function configuration examples.
+- [X] Run ~make fmt~.
+- [X] Run targeted function configuration tests.
+- [X] Run existing function case tests.
+- [X] Update reference docs for function configuration examples.
+
+** Verification Notes
+
+- The local dev-server e2e suite passed against the existing function case coverage. A representative smoke test for the newly added ~throttle~, ~singleton~, and ~timeouts~ fields was attempted but not kept because the current local dev server returned an event-send error for that config shape before creating a run. Runtime smoke coverage for those fields should be revisited when local dev-server support is confirmed.
