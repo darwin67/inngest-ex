@@ -2,7 +2,7 @@ defmodule Inngest.Client do
   @moduledoc """
   Module representing an Inngest client (subject to change).
   """
-  alias Inngest.{Config, Event}
+  alias Inngest.{Config, Event, Headers, Signature}
 
   @doc """
   Send one or a batch of events to Inngest
@@ -55,25 +55,66 @@ defmodule Inngest.Client do
   @spec httpclient(atom(), Keyword.t()) :: Tesla.Client.t()
   def httpclient(type, opts \\ [])
 
-  def httpclient(:event, opts), do: client(Config.event_url(), opts)
-  def httpclient(:register, opts), do: client(Config.register_url(), opts)
-  def httpclient(:api, opts), do: client(Config.api_url(), opts)
-  def httpclient(_, opts), do: client(Config.inngest_url(), opts)
+  def httpclient(:event, opts), do: client(Config.event_url(), :event, opts)
+  def httpclient(:register, opts), do: client(Config.register_url(), :register, opts)
+  def httpclient(:api, opts), do: client(Config.api_url(), :api, opts)
+  def httpclient(type, opts), do: client(Config.inngest_url(), type, opts)
 
-  defp client(base_url, opts) do
+  @doc false
+  @spec headers(atom(), Keyword.t()) :: [{binary(), binary()}]
+  def headers(type, opts \\ []) do
+    type
+    |> default_headers()
+    |> merge_headers(Keyword.get(opts, :headers, []))
+  end
+
+  defp client(base_url, type, opts) do
     middleware = [
       {Tesla.Middleware.BaseUrl, base_url},
       Tesla.Middleware.JSON
     ]
 
-    middleware =
-      if Keyword.get(opts, :headers) do
-        headers = Keyword.get(opts, :headers, [])
-        middleware ++ [{Tesla.Middleware.Headers, headers}]
-      else
-        middleware
-      end
+    middleware = middleware ++ [{Tesla.Middleware.Headers, headers(type, opts)}]
 
     Tesla.client(middleware)
   end
+
+  defp default_headers(type) do
+    [
+      {Headers.sdk_version(), Config.sdk_version()},
+      {Headers.req_version(), Config.req_version()}
+    ]
+    |> maybe_env_header()
+    |> maybe_auth_header(type)
+  end
+
+  defp maybe_env_header(headers) do
+    case Config.env() do
+      nil -> headers
+      env -> headers ++ [{Headers.env(), to_string(env)}]
+    end
+  end
+
+  defp maybe_auth_header(headers, type) when type in [:api, :register] do
+    case Signature.hashed_signing_key(Config.signing_key()) do
+      nil -> headers
+      key -> headers ++ [{"authorization", "Bearer " <> key}]
+    end
+  end
+
+  defp maybe_auth_header(headers, _type), do: headers
+
+  defp merge_headers(headers, overrides) do
+    override_names = MapSet.new(overrides, fn {name, _value} -> normalize_header(name) end)
+
+    headers =
+      Enum.reject(headers, fn {name, _value} -> normalize_header(name) in override_names end)
+
+    headers ++ overrides
+  end
+
+  defp normalize_header(name) when is_atom(name),
+    do: name |> Atom.to_string() |> String.downcase()
+
+  defp normalize_header(name), do: name |> to_string() |> String.downcase()
 end

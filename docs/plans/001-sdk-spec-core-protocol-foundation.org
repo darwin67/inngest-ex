@@ -35,13 +35,13 @@ None.
 ** Phase 1: Core Implementation
 
 - [X] Add a local SDK spec compliance checklist that maps spec requirements to implementation status.
-- [ ] Normalize SDK mode handling around ~cloud~ and ~dev~, defaulting to ~cloud~.
-- [ ] Support required env vars: ~INNGEST_EVENT_KEY~, ~INNGEST_SIGNING_KEY~, ~INNGEST_SIGNING_KEY_FALLBACK~, and ~INNGEST_ENV~.
-- [ ] Support URL and mode env vars: ~INNGEST_DEV~, ~INNGEST_API_BASE_URL~, ~INNGEST_EVENT_API_BASE_URL~, ~INNGEST_BASE_URL~, ~INNGEST_SERVE_ORIGIN~, and ~INNGEST_SERVE_PATH~.
-- [ ] Preserve existing Elixir application config support while defining clear env-over-config precedence.
-- [ ] Change ~X-Inngest-Req-Version~ from ~1~ to spec-required ~2~.
-- [ ] Ensure all SDK responses to call requests include ~X-Inngest-Sdk~ and ~X-Inngest-Req-Version~.
-- [ ] Ensure all outbound requests to Inngest include required SDK headers and bearer authorization where required.
+- [X] Normalize SDK mode handling around ~cloud~ and ~dev~, defaulting to ~cloud~.
+- [X] Support required env vars: ~INNGEST_EVENT_KEY~, ~INNGEST_SIGNING_KEY~, ~INNGEST_SIGNING_KEY_FALLBACK~, and ~INNGEST_ENV~.
+- [X] Support URL and mode env vars: ~INNGEST_DEV~, ~INNGEST_API_BASE_URL~, ~INNGEST_EVENT_API_BASE_URL~, ~INNGEST_BASE_URL~, ~INNGEST_SERVE_ORIGIN~, and ~INNGEST_SERVE_PATH~.
+- [X] Preserve existing Elixir application config support while defining clear env-over-config precedence.
+- [X] Change ~X-Inngest-Req-Version~ from ~1~ to spec-required ~2~.
+- [X] Ensure all SDK responses to call requests include ~X-Inngest-Sdk~ and ~X-Inngest-Req-Version~.
+- [X] Ensure all outbound requests to Inngest include required SDK headers and bearer authorization where required.
 - [ ] Add signature coverage for current key, fallback key, missing key, missing signature, expired timestamp, and invalid signature.
 
 ** Phase 2: Edge Cases And Compatibility
