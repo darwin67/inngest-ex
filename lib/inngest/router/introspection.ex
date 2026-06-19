@@ -55,8 +55,8 @@ defmodule Inngest.Router.Introspection do
       authentication_succeeded: authentication_succeeded,
       function_count: length(funcs),
       has_event_key: configured?(Config.event_key()),
-      has_signing_key: signing_key?(Config.signing_key()),
-      has_signing_key_fallback: signing_key?(Config.signing_key_fallback()),
+      has_signing_key: configured?(Config.signing_key()),
+      has_signing_key_fallback: configured?(Config.signing_key_fallback()),
       mode: mode(),
       schema_version: @schema_version
     }
@@ -76,8 +76,8 @@ defmodule Inngest.Router.Introspection do
            framework: framework,
            function_count: length(funcs),
            has_event_key: configured?(Config.event_key()),
-           has_signing_key: signing_key?(Config.signing_key()),
-           has_signing_key_fallback: signing_key?(Config.signing_key_fallback()),
+           has_signing_key: configured?(Config.signing_key()),
+           has_signing_key_fallback: configured?(Config.signing_key_fallback()),
            mode: mode(),
            schema_version: @schema_version,
            sdk_language: @sdk_language,
@@ -95,14 +95,13 @@ defmodule Inngest.Router.Introspection do
 
   defp app_id do
     case Config.app_name() do
-      app_id when is_binary(app_id) and app_id != "" -> {:ok, app_id}
-      _ -> {:error, "app_id must not be empty"}
+      "" -> {:error, "app_id must not be empty"}
+      app_id -> {:ok, app_id}
     end
   end
 
-  defp configured?(value), do: is_binary(value) and value != ""
-
-  defp signing_key?(value), do: not is_nil(Signature.hashed_signing_key(value))
+  defp configured?(""), do: false
+  defp configured?(_value), do: true
 
   defp hash(value) do
     if configured?(value) do
