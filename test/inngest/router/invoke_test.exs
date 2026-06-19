@@ -129,6 +129,31 @@ defmodule Inngest.Router.InvokeTest do
       assert Plug.Conn.get_resp_header(conn, Headers.no_retry()) == ["true"]
     end
 
+    test "rejects an unsigned cloud mode request before fetching a full payload" do
+      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      System.put_env("INNGEST_SIGNING_KEY", @signing_key)
+      System.put_env("INNGEST_API_BASE_URL", "https://api.example")
+
+      test_pid = self()
+
+      Tesla.Mock.mock(fn %{method: :get, url: url} ->
+        send(test_pid, {:api_fetch, url})
+        %Tesla.Env{status: 500, body: %{"error" => "should not fetch"}}
+      end)
+
+      {body, params} =
+        invoke_body(ctx: %{"run_id" => "run-unsigned-full", "attempt" => 0, "use_api" => true})
+
+      conn =
+        body
+        |> invoke_conn(params)
+        |> Invoke.call(%{funcs: [Inngest.Router.InvokeTestFn]})
+
+      assert conn.status == 400
+      assert Plug.Conn.get_resp_header(conn, Headers.no_retry()) == ["true"]
+      refute_received {:api_fetch, _url}
+    end
+
     test "accepts an unsigned dev mode request" do
       System.put_env("INNGEST_DEV", "1")
 

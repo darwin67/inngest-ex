@@ -12,9 +12,12 @@ defmodule Inngest.Router.Invoke do
 
   @spec call(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def call(%{params: params} = conn, opts) do
-    case maybe_retrieve_full_payload(params) do
-      {:ok, params} ->
-        exec(conn, Map.merge(opts, params))
+    with :ok <- verify_signature(conn),
+         {:ok, params} <- maybe_retrieve_full_payload(params) do
+      exec(conn, Map.merge(opts, params))
+    else
+      {:error, :invalid_signature} ->
+        send_signature_error(conn)
 
       {:error, error} ->
         send_error(conn, error)
@@ -22,7 +25,7 @@ defmodule Inngest.Router.Invoke do
   end
 
   defp exec(
-         %{private: %{raw_body: [body]}} = conn,
+         conn,
          %{"event" => event, "events" => events, "ctx" => request_ctx, "fnId" => fn_slug} = params
        ) do
     func =
@@ -54,22 +57,7 @@ defmodule Inngest.Router.Invoke do
       step: Inngest.StepTool
     }
 
-    resp =
-      case Config.dev?() do
-        true ->
-          invoke(func, ctx, input)
-
-        false ->
-          with sig <- conn |> Plug.Conn.get_req_header(Headers.signature()) |> List.first(),
-               signing_keys <- [Config.signing_key(), Config.signing_key_fallback()],
-               true <- Signature.signing_key_valid?(sig, signing_keys, body) do
-            invoke(func, ctx, input)
-          else
-            _ ->
-              error = RuntimeError.exception("unable to verify signature")
-              SdkResponse.from_result({:error, error}, retry: false)
-          end
-      end
+    resp = invoke(func, ctx, input)
 
     conn
     |> put_resp_content_type(@content_type)
@@ -134,6 +122,24 @@ defmodule Inngest.Router.Invoke do
   defp fn_run_steps(run_id), do: fn_run_data("/v0/runs/#{run_id}/actions")
   defp fn_run_batch(run_id), do: fn_run_data("/v0/runs/#{run_id}/batch")
 
+  defp verify_signature(conn) do
+    if Config.dev?() do
+      :ok
+    else
+      sig = conn |> Plug.Conn.get_req_header(Headers.signature()) |> List.first()
+      signing_keys = [Config.signing_key(), Config.signing_key_fallback()]
+
+      if Signature.signing_key_valid?(sig, signing_keys, raw_body(conn)) do
+        :ok
+      else
+        {:error, :invalid_signature}
+      end
+    end
+  end
+
+  defp raw_body(%{private: %{raw_body: body}}) when is_list(body), do: Enum.join(body)
+  defp raw_body(_conn), do: ""
+
   defp maybe_retrieve_full_payload(%{"ctx" => %{"use_api" => true, "run_id" => run_id}} = params) do
     retrieve_steps = Task.async(fn -> fn_run_steps(run_id) end)
     retrieve_batch = Task.async(fn -> fn_run_batch(run_id) end)
@@ -173,6 +179,19 @@ defmodule Inngest.Router.Invoke do
       {:error, error} ->
         {:error, error}
     end
+  end
+
+  defp send_signature_error(conn) do
+    error = RuntimeError.exception("unable to verify signature")
+    resp = SdkResponse.from_result({:error, error}, retry: false)
+
+    conn
+    |> put_resp_content_type(@content_type)
+    |> put_resp_header(Headers.sdk_version(), Config.sdk_version())
+    |> put_resp_header(Headers.req_version(), Config.req_version())
+    |> SdkResponse.maybe_retry_header(resp)
+    |> send_resp(resp.status, resp.body)
+    |> halt()
   end
 
   defp send_error(conn, error, stacktrace \\ []) do
