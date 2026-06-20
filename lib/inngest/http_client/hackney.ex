@@ -16,7 +16,7 @@ defmodule Inngest.HTTPClient.Hackney do
     # Hackney is a supported non-default adapter and a practical bridge for
     # early Connect transport experiments, but request/response HTTP still goes
     # through the same SDK-owned request and response structs.
-    body = HTTPClient.encode_body(request.body)
+    body = HTTPClient.encode_body(request.body) || ""
     headers = HTTPClient.ensure_json_headers(request.headers, request.body)
 
     request.method
