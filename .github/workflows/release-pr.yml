@@ -19,13 +19,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      release_token_available: ${{ steps.release-token.outputs.available }}
+    steps:
+      - name: Check release token
+        id: release-token
+        env:
+          RELEASE_APP_ID: ${{ secrets.RELEASE_APP_ID }}
+          RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "${RELEASE_APP_ID}" ] && [ -n "${RELEASE_APP_PRIVATE_KEY}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::error title=Missing release app secrets::Configure RELEASE_APP_ID and RELEASE_APP_PRIVATE_KEY repository secrets."
+            exit 1
+          fi
+
+          echo "::notice title=Release automation skipped::Configure RELEASE_APP_ID and RELEASE_APP_PRIVATE_KEY to enable release PR creation. GITHUB_TOKEN is intentionally not used because pushes made with it do not trigger downstream workflows."
+          echo "available=false" >> "$GITHUB_OUTPUT"
+
   create-release-pr:
+    needs: preflight
+    if: needs.preflight.outputs.release_token_available == 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Create release app token
+        id: release-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
+          token: ${{ steps.release-token.outputs.token }}
 
       - name: Skip release commits
         id: skip
@@ -204,7 +238,7 @@ jobs:
           steps.version-check.outputs.skip == 'false'
         id: existing-pr
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.release-token.outputs.token }}
         run: |
           pr_number="$(gh pr list \
             --base "${{ github.event.repository.default_branch }}" \
@@ -222,7 +256,7 @@ jobs:
           steps.version-check.outputs.skip == 'false' &&
           steps.existing-pr.outputs.pr_number == ''
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.release-token.outputs.token }}
           RELEASE_TAG: ${{ steps.next-version.outputs.content }}
         run: |
           gh pr create \
@@ -238,7 +272,7 @@ jobs:
           steps.version-check.outputs.skip == 'false' &&
           steps.existing-pr.outputs.pr_number != ''
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.release-token.outputs.token }}
           RELEASE_TAG: ${{ steps.next-version.outputs.content }}
         run: |
           gh pr edit "${{ steps.existing-pr.outputs.pr_number }}" \
