@@ -31,6 +31,19 @@ defmodule MyApp.Inngest do
 end
 ```
 
+When Hackney is configured globally, the SDK does not start its Finch pool:
+
+```elixir
+config :inngest, http_client: Inngest.HTTPClient.Hackney
+```
+
+If you only use Hackney through per-client configuration and want to avoid the
+SDK-owned Finch process entirely, disable it explicitly:
+
+```elixir
+config :inngest, start_finch: false
+```
+
 For custom HTTP clients, implement the behaviour and configure it on the
 first-class client:
 

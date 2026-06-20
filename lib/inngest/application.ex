@@ -5,14 +5,35 @@ defmodule Inngest.Application do
 
   @impl true
   def start(_type, _args) do
-    # Finch requires a supervised process. Starting an SDK-owned instance keeps
-    # the default HTTP adapter usable without forcing each consumer application
-    # to add its own child spec before sending events.
-    children = [
-      {Finch, finch_options()}
-    ]
+    children =
+      []
+      |> maybe_finch()
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Inngest.Supervisor)
+  end
+
+  @doc false
+  @spec finch_children() :: [Supervisor.child_spec()]
+  def finch_children() do
+    []
+    |> maybe_finch()
+  end
+
+  defp maybe_finch(children) do
+    if start_finch?() do
+      # Finch requires a supervised process. Starting an SDK-owned instance keeps
+      # the default HTTP adapter usable without forcing each consumer application
+      # to add its own child spec before sending events.
+      children ++ [{Finch, finch_options()}]
+    else
+      children
+    end
+  end
+
+  defp start_finch? do
+    Application.get_env(:inngest, :start_finch, true) &&
+      Application.get_env(:inngest, :http_client, Inngest.HTTPClient.Finch) ==
+        Inngest.HTTPClient.Finch
   end
 
   defp finch_options do
