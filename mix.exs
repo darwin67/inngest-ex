@@ -45,6 +45,10 @@ defmodule Inngest.MixProject do
           Changes: ["CHANGELOG.md"]
         ],
         groups_for_modules: [
+          Client: [
+            Inngest.Client,
+            Inngest.Middleware
+          ],
           Function: [
             Inngest.Event,
             Inngest.Function,

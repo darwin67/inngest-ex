@@ -36,9 +36,40 @@ inngest("/api/inngest", client: MyApp.Inngest)
 | `inngest_url`          | Dev server metadata origin.                      |
 | `serve_origin`         | Public origin serving the Inngest endpoint.      |
 | `serve_path`           | Public path serving the Inngest endpoint.        |
+| `middleware`           | Client-level `Inngest.Middleware` entries.       |
 
 Explicit client options take precedence over SDK environment variables. Environment
 variables fill missing client options, and defaults apply after both are absent.
+
+## Middleware
+
+Client-level middleware runs before function-level middleware and follows the
+registration order declared in `middleware`.
+
+```elixir
+defmodule MyApp.Inngest do
+  use Inngest.Client,
+    id: "my-app",
+    funcs: [MyApp.Functions.SyncUser],
+    middleware: [
+      MyApp.Inngest.RequestLogger,
+      {MyApp.Inngest.TenantMiddleware, header: "x-tenant-id"}
+    ]
+end
+```
+
+Function-level middleware is configured on `Inngest.FnOpts`:
+
+```elixir
+@func %FnOpts{
+  id: "sync-user",
+  name: "Sync User",
+  middleware: [MyApp.Inngest.FunctionAudit]
+}
+```
+
+See `Inngest.Middleware` for the TypeScript-aligned `on_register`,
+`transform_*`, `wrap_*`, and `on_*` lifecycle hooks.
 
 ## Environment Variables
 

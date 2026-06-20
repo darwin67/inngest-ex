@@ -9,6 +9,15 @@ defmodule Inngest.StepToolTest do
     def slug(), do: "legacy-invoke-target"
   end
 
+  defmodule StepOptionsMiddleware do
+    @behaviour Inngest.Middleware
+
+    @impl true
+    def transform_step_input(%{options: options} = args, _opts) do
+      %{args | options: Map.put(options, :keys, :atoms)}
+    end
+  end
+
   setup do
     tesla_adapter = Application.fetch_env(:tesla, :adapter)
 
@@ -87,6 +96,17 @@ defmodule Inngest.StepToolTest do
                  :"string-key" => "kept",
                  foo: [%{bar: "baz"}]
                }
+    end
+
+    test "uses transformed options when replaying memoized step data" do
+      ctx =
+        ctx(
+          middleware: [{StepOptionsMiddleware, []}],
+          steps: %{hash("first") => %{"data" => %{"foo" => "bar"}}}
+        )
+
+      assert StepTool.run(ctx, "first", fn -> flunk("step body should not run") end) ==
+               %{foo: "bar"}
     end
 
     test "raises a clear error when atom key conversion would create an atom" do
