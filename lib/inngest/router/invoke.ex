@@ -5,6 +5,7 @@ defmodule Inngest.Router.Invoke do
   import Inngest.Router.Helper
   alias Inngest.{Client, Config, Headers, Middleware, Signature, SdkResponse}
   alias Inngest.Function.GeneratorOpCode
+  alias Inngest.HTTPClient.Response
 
   @content_type "application/json"
 
@@ -259,7 +260,7 @@ defmodule Inngest.Router.Invoke do
 
   defp fn_run_data(client, path) do
     case Client.get(client, :api, path, []) do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
+      {:ok, %Response{status: 200, body: body}} ->
         # parse result just in case it isn't already parsed
         result =
           case body do
@@ -270,7 +271,7 @@ defmodule Inngest.Router.Invoke do
 
         {:ok, result}
 
-      {:ok, %Tesla.Env{body: error}} ->
+      {:ok, %Response{body: error}} ->
         {:error, error}
 
       {:error, error} ->

@@ -47,6 +47,9 @@ defmodule Inngest.MixProject do
         groups_for_modules: [
           Client: [
             Inngest.Client,
+            Inngest.HTTPClient,
+            Inngest.HTTPClient.Finch,
+            Inngest.HTTPClient.Hackney,
             Inngest.Middleware
           ],
           Function: [
@@ -96,7 +99,8 @@ defmodule Inngest.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:tesla, "~> 1.4"},
+      {:finch, "~> 0.19", optional: true},
+      {:hackney, "~> 1.25", optional: true},
       {:jason, "~> 1.4"},
       {:plug, "~> 1.14"},
       {:timex, "~> 3.7"},

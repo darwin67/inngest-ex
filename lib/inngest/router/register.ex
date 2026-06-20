@@ -4,6 +4,7 @@ defmodule Inngest.Router.Register do
   import Plug.Conn
   import Inngest.Router.Helper
   alias Inngest.{Client, Headers, Signature}
+  alias Inngest.HTTPClient.Response
 
   @content_type "application/json"
 
@@ -52,16 +53,16 @@ defmodule Inngest.Router.Register do
     case Client.post(client, :register, register_path(conn), payload,
            headers: register_headers(conn)
          ) do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
+      {:ok, %Response{status: 200, body: body}} ->
         {:ok, registration_modified(body)}
 
-      {:ok, %Tesla.Env{status: 201, body: body}} ->
+      {:ok, %Response{status: 201, body: body}} ->
         {:ok, registration_modified(body)}
 
-      {:ok, %Tesla.Env{status: 202, body: body}} ->
+      {:ok, %Response{status: 202, body: body}} ->
         {:ok, registration_modified(body)}
 
-      {:ok, %Tesla.Env{status: _, body: error}} ->
+      {:ok, %Response{status: _, body: error}} ->
         {:error, error}
 
       {:error, error} ->

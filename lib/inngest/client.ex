@@ -3,6 +3,7 @@ defmodule Inngest.Client do
   Module representing an Inngest client (subject to change).
   """
   alias Inngest.{Config, Event, Headers, Middleware, Signature}
+  alias Inngest.HTTPClient.{Request, Response}
 
   @fallback_signing_key {__MODULE__, :fallback_signing_key}
   @event_url "https://inn.gs"
@@ -27,6 +28,11 @@ defmodule Inngest.Client do
           signing_key_fallback: binary(),
           env: binary() | nil,
           middleware: [Middleware.normalized_entry()],
+          http_client: module(),
+          http_client_opts: Keyword.t(),
+          http_pool_timeout: timeout(),
+          http_receive_timeout: timeout(),
+          http_request_timeout: timeout(),
           sdk_version: binary(),
           req_version: binary()
         }
@@ -46,6 +52,11 @@ defmodule Inngest.Client do
     signing_key: "",
     signing_key_fallback: "",
     middleware: [],
+    http_client: Inngest.HTTPClient.Finch,
+    http_client_opts: [],
+    http_pool_timeout: 5_000,
+    http_receive_timeout: 10_000,
+    http_request_timeout: 15_000,
     sdk_version: nil,
     req_version: nil
   ]
@@ -88,6 +99,11 @@ defmodule Inngest.Client do
       signing_key_fallback: client_signing_key_fallback(opts),
       env: client_env(opts),
       middleware: client_middleware(opts),
+      http_client: client_http_client(opts),
+      http_client_opts: client_http_client_opts(opts),
+      http_pool_timeout: client_http_timeout(opts, :http_pool_timeout, 5_000),
+      http_receive_timeout: client_http_timeout(opts, :http_receive_timeout, 10_000),
+      http_request_timeout: client_http_timeout(opts, :http_request_timeout, 15_000),
       sdk_version: Config.sdk_version(),
       req_version: Config.req_version()
     }
@@ -119,7 +135,6 @@ defmodule Inngest.Client do
   @spec send(Event.t() | list(Event.t()), Keyword.t()) :: send_result()
   def send(payload, opts) when not is_struct(payload, __MODULE__) do
     event_key = Config.event_key()
-    client = httpclient(:event, opts)
     middleware = opts |> Keyword.get(:middleware, []) |> Middleware.normalize()
     context = Keyword.get(opts, :context, %{})
     payload = Middleware.run_transform_send_event(middleware, List.wrap(payload), context)
@@ -128,8 +143,8 @@ defmodule Inngest.Client do
       middleware,
       %{events: payload, context: context, function: Map.get(context, :function)},
       fn ->
-        client
-        |> Tesla.post("/e/#{event_key}", payload)
+        :event
+        |> do_request(:post, "/e/#{event_key}", payload, opts)
         |> decode_send_http_response()
       end
     )
@@ -146,8 +161,7 @@ defmodule Inngest.Client do
       %{events: payload, context: context, function: Map.get(context, :function)},
       fn ->
         client
-        |> client(:event, opts)
-        |> Tesla.post("/e/#{client.event_key}", payload)
+        |> do_request(:event, :post, "/e/#{client.event_key}", payload, opts)
         |> decode_send_http_response()
       end
     )
@@ -156,26 +170,14 @@ defmodule Inngest.Client do
   # Retrieves the registration information from the Dev server.
   @doc false
   def dev_info() do
-    client = httpclient(:inngest)
-
-    case Tesla.get(client, "/dev") do
-      {:ok, %Tesla.Env{status: 200, body: body} = _resp} ->
+    case do_request(:inngest, :get, "/dev", nil, []) do
+      {:ok, %Response{status: 200, body: body}} ->
         {:ok, body}
 
       _ ->
         {:error, "failed to retrieve dev server info"}
     end
   end
-
-  # Returns an HTTP client for making requests against Inngest.
-  @doc false
-  @spec httpclient(atom(), Keyword.t()) :: Tesla.Client.t()
-  def httpclient(type, opts \\ [])
-
-  def httpclient(:event, opts), do: client(Config.event_url(), :event, opts)
-  def httpclient(:register, opts), do: client(Config.register_url(), :register, opts)
-  def httpclient(:api, opts), do: client(Config.api_url(), :api, opts)
-  def httpclient(type, opts), do: client(Config.inngest_url(), type, opts)
 
   @doc false
   @spec headers(t(), atom(), Keyword.t()) :: [{binary(), binary()}]
@@ -193,14 +195,14 @@ defmodule Inngest.Client do
   end
 
   @doc false
-  @spec get(atom(), binary(), Keyword.t()) :: {:ok, Tesla.Env.t()} | {:error, term()}
+  @spec get(atom(), binary(), Keyword.t()) :: {:ok, Response.t()} | {:error, term()}
   def get(%__MODULE__{} = client, type, path, opts),
     do: request(client, type, :get, path, nil, opts)
 
   def get(type, path, opts \\ []), do: request(type, :get, path, nil, opts)
 
   @doc false
-  @spec post(atom(), binary(), term(), Keyword.t()) :: {:ok, Tesla.Env.t()} | {:error, term()}
+  @spec post(atom(), binary(), term(), Keyword.t()) :: {:ok, Response.t()} | {:error, term()}
   def post(%__MODULE__{} = client, type, path, payload, opts),
     do: request(client, type, :post, path, payload, opts)
 
@@ -213,39 +215,18 @@ defmodule Inngest.Client do
     :ok
   end
 
-  defp client(%__MODULE__{} = client, type, opts) do
-    middleware = [
-      {Tesla.Middleware.BaseUrl, client_base_url(client, type)},
-      Tesla.Middleware.JSON
-    ]
-
-    middleware = middleware ++ [{Tesla.Middleware.Headers, headers(client, type, opts)}]
-
-    Tesla.client(middleware)
-  end
-
-  defp client(base_url, type, opts) when is_binary(base_url) do
-    middleware = [
-      {Tesla.Middleware.BaseUrl, base_url},
-      Tesla.Middleware.JSON
-    ]
-
-    middleware = middleware ++ [{Tesla.Middleware.Headers, headers(type, opts)}]
-
-    Tesla.client(middleware)
-  end
-
   # Inngest may return send responses as parsed JSON or text/plain JSON.
-  defp decode_send_http_response({:ok, %Tesla.Env{status: 200, body: resp}}),
-    do: decode_send_response(resp)
+  defp decode_send_http_response({:ok, %Response{status: status, body: resp}})
+       when status in 200..299,
+       do: decode_send_response(resp)
 
-  defp decode_send_http_response({:ok, %Tesla.Env{status: 400}}),
+  defp decode_send_http_response({:ok, %Response{status: 400}}),
     do: {:error, "invalid event data"}
 
-  defp decode_send_http_response({:ok, %Tesla.Env{status: 401}}),
+  defp decode_send_http_response({:ok, %Response{status: 401}}),
     do: {:error, "unknown ingest key"}
 
-  defp decode_send_http_response({:ok, %Tesla.Env{status: 403}}),
+  defp decode_send_http_response({:ok, %Response{status: 403}}),
     do: {:error, "this ingest key is not authorized to send this event"}
 
   defp decode_send_http_response(_), do: {:error, "unknown error"}
@@ -294,32 +275,22 @@ defmodule Inngest.Client do
     do_request(type, method, path, payload, opts)
   end
 
-  defp do_request(type, :get, path, _payload, opts) do
-    type
-    |> httpclient(opts)
-    |> Tesla.get(path)
+  defp do_request(type, method, path, payload, opts) do
+    adapter = http_client(opts)
+    request = request_struct(type, method, path, payload, opts)
+
+    adapter.request(request)
   end
 
-  defp do_request(type, :post, path, payload, opts) do
-    type
-    |> httpclient(opts)
-    |> Tesla.post(path, payload)
-  end
+  defp do_request(%__MODULE__{} = client, type, method, path, payload, opts) do
+    adapter = http_client(client, opts)
+    request = request_struct(client, type, method, path, payload, opts)
 
-  defp do_request(%__MODULE__{} = client, type, :get, path, _payload, opts) do
-    client
-    |> client(type, opts)
-    |> Tesla.get(path)
-  end
-
-  defp do_request(%__MODULE__{} = client, type, :post, path, payload, opts) do
-    client
-    |> client(type, opts)
-    |> Tesla.post(path, payload)
+    adapter.request(request)
   end
 
   defp maybe_retry_with_client_fallback(
-         {:ok, %Tesla.Env{status: status}} = resp,
+         {:ok, %Response{status: status}} = resp,
          client,
          type,
          method,
@@ -341,7 +312,7 @@ defmodule Inngest.Client do
     do: resp
 
   defp maybe_retry_with_fallback(
-         {:ok, %Tesla.Env{status: status}} = resp,
+         {:ok, %Response{status: status}} = resp,
          :primary,
          type,
          method,
@@ -372,13 +343,101 @@ defmodule Inngest.Client do
     end
   end
 
-  defp mark_fallback_on_success({:ok, %Tesla.Env{status: status}} = resp)
+  defp mark_fallback_on_success({:ok, %Response{status: status}} = resp)
        when status in 200..299 do
     :persistent_term.put(@fallback_signing_key, true)
     resp
   end
 
   defp mark_fallback_on_success(resp), do: resp
+
+  defp request_struct(type, method, path, payload, opts) do
+    base_url = base_url(type)
+    query = Keyword.get(opts, :query)
+
+    # Preserve both structured request parts and final URL. Adapters execute
+    # with url; tests and custom adapters can assert against base_url/path/query.
+    %Request{
+      method: method,
+      base_url: base_url,
+      path: path,
+      query: query,
+      url: build_url(base_url, path, query),
+      headers: headers(type, opts),
+      body: payload,
+      pool_timeout: http_timeout(opts, :http_pool_timeout, 5_000),
+      receive_timeout: http_timeout(opts, :http_receive_timeout, 10_000),
+      request_timeout: http_timeout(opts, :http_request_timeout, 15_000),
+      adapter_opts: http_client_opts(opts)
+    }
+  end
+
+  defp request_struct(%__MODULE__{} = client, type, method, path, payload, opts) do
+    base_url = client_base_url(client, type)
+    query = Keyword.get(opts, :query)
+
+    # Client-owned requests carry client-specific headers, adapter, and timeout
+    # settings while keeping the same transport contract as global requests.
+    %Request{
+      method: method,
+      base_url: base_url,
+      path: path,
+      query: query,
+      url: build_url(base_url, path, query),
+      headers: headers(client, type, opts),
+      body: payload,
+      pool_timeout: http_timeout(client, opts, :http_pool_timeout),
+      receive_timeout: http_timeout(client, opts, :http_receive_timeout),
+      request_timeout: http_timeout(client, opts, :http_request_timeout),
+      adapter_opts: http_client_opts(client, opts)
+    }
+  end
+
+  defp http_client(%__MODULE__{} = client, opts) do
+    Keyword.get(opts, :http_client) || client.http_client || http_client(opts)
+  end
+
+  defp http_client(opts) do
+    Keyword.get(opts, :http_client) ||
+      Application.get_env(:inngest, :http_client, Inngest.HTTPClient.Finch)
+  end
+
+  defp http_client_opts(%__MODULE__{} = client, opts) do
+    Keyword.get(opts, :http_client_opts, client.http_client_opts)
+  end
+
+  defp http_client_opts(opts) do
+    Keyword.get(opts, :http_client_opts, Application.get_env(:inngest, :http_client_opts, []))
+  end
+
+  defp http_timeout(%__MODULE__{} = client, opts, key) do
+    Keyword.get(opts, key) || Map.fetch!(client, key)
+  end
+
+  defp http_timeout(opts, key, default) do
+    Keyword.get(opts, key) || Application.get_env(:inngest, key, default)
+  end
+
+  defp base_url(:event), do: Config.event_url()
+  defp base_url(:register), do: Config.register_url()
+  defp base_url(:api), do: Config.api_url()
+  defp base_url(_type), do: Config.inngest_url()
+
+  defp build_url(base_url, path, nil), do: build_url(base_url, path, [])
+
+  defp build_url(base_url, path, query) do
+    url =
+      base_url
+      |> String.trim_trailing("/")
+      |> Kernel.<>(normalize_path(path))
+
+    case URI.encode_query(query) do
+      "" -> url
+      encoded_query -> url <> query_separator(url) <> encoded_query
+    end
+  end
+
+  defp query_separator(url), do: if(String.contains?(url, "?"), do: "&", else: "?")
 
   defp default_headers(type, opts) do
     [
@@ -592,6 +651,19 @@ defmodule Inngest.Client do
     opts
     |> Keyword.get(:middleware, Application.get_env(:inngest, :middleware, []))
     |> Middleware.normalize()
+  end
+
+  defp client_http_client(opts) do
+    Keyword.get(opts, :http_client) ||
+      Application.get_env(:inngest, :http_client, Inngest.HTTPClient.Finch)
+  end
+
+  defp client_http_client_opts(opts) do
+    Keyword.get(opts, :http_client_opts, Application.get_env(:inngest, :http_client_opts, []))
+  end
+
+  defp client_http_timeout(opts, key, default) do
+    Keyword.get(opts, key) || Application.get_env(:inngest, key, default)
   end
 
   defp register_middleware(%__MODULE__{} = client) do

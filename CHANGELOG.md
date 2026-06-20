@@ -21,7 +21,7 @@ All notable changes to this project will be documented in this file.
 - The `Test.Application` is causing apps that included this library to
 - Crash on boot, because it's not compiled as part of the release.
 - Remove it so it no longer attempts to boot with
-- `Inngest.Test.Application`.
+- the test application module
 - `v0.2.0` is essentially useless at this point, so it should be yanked
 - Once this fix is out.
 - Update with some minor changes to make it comply to the latest spec.

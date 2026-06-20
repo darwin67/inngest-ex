@@ -71,22 +71,25 @@ defmodule Inngest.Router.InvokeTest do
 
   alias Inngest.{Config, Headers, Signature}
   alias Inngest.Router.Invoke
+  alias Inngest.Test.HTTPClient, as: TestHTTPClient
 
   @signing_key "signkey-test-8ee2262a15e8d3c42d6a840db7af3de2aab08ef632b32a37a687f24b34dba3ff"
   @fallback_signing_key "signkey-fallback-746573742d66616c6c6261636b2d7369676e696e672d6b657921"
 
   @env_vars ~w(INNGEST_API_BASE_URL INNGEST_DEV INNGEST_SIGNING_KEY INNGEST_SIGNING_KEY_FALLBACK)
-  @config_keys ~w(app_name env signing_key signing_key_fallback invoke_test_pid)a
+  @config_keys ~w(app_name env signing_key signing_key_fallback invoke_test_pid http_client)a
 
   setup do
     env = Map.new(@env_vars, &{&1, System.get_env(&1)})
     config = Map.new(@config_keys, &{&1, Application.fetch_env(:inngest, &1)})
-    tesla_adapter = Application.fetch_env(:tesla, :adapter)
 
     Enum.each(@env_vars, &System.delete_env/1)
     Enum.each(@config_keys, &Application.delete_env(:inngest, &1))
+    TestHTTPClient.reset!()
 
     on_exit(fn ->
+      TestHTTPClient.reset!()
+
       Enum.each(env, fn
         {key, nil} -> System.delete_env(key)
         {key, value} -> System.put_env(key, value)
@@ -96,11 +99,6 @@ defmodule Inngest.Router.InvokeTest do
         {key, {:ok, value}} -> Application.put_env(:inngest, key, value)
         {key, :error} -> Application.delete_env(:inngest, key)
       end)
-
-      case tesla_adapter do
-        {:ok, adapter} -> Application.put_env(:tesla, :adapter, adapter)
-        :error -> Application.delete_env(:tesla, :adapter)
-      end
     end)
   end
 
@@ -143,15 +141,15 @@ defmodule Inngest.Router.InvokeTest do
     end
 
     test "rejects an unsigned cloud mode request before fetching a full payload" do
-      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
       System.put_env("INNGEST_SIGNING_KEY", @signing_key)
       System.put_env("INNGEST_API_BASE_URL", "https://api.example")
 
       test_pid = self()
 
-      Tesla.Mock.mock(fn %{method: :get, url: url} ->
+      TestHTTPClient.mock(fn %{method: :get, url: url} ->
         send(test_pid, {:api_fetch, url})
-        %Tesla.Env{status: 500, body: %{"error" => "should not fetch"}}
+        TestHTTPClient.response(500, %{"error" => "should not fetch"})
       end)
 
       {body, params} =
@@ -226,19 +224,19 @@ defmodule Inngest.Router.InvokeTest do
 
     test "retrieves full events and steps when ctx.use_api is true" do
       Application.put_env(:inngest, :invoke_test_pid, self())
-      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
       System.put_env("INNGEST_DEV", "1")
       System.put_env("INNGEST_API_BASE_URL", "https://api.example")
 
       fetched_event = %{"name" => "test/router.invoke.context", "data" => %{"fetched" => true}}
       fetched_steps = %{"step-hash" => %{"data" => "memoized"}}
 
-      Tesla.Mock.mock(fn
+      TestHTTPClient.mock(fn
         %{method: :get, url: "https://api.example/v0/runs/run-full/actions"} ->
-          %Tesla.Env{status: 200, body: fetched_steps}
+          TestHTTPClient.response(200, fetched_steps)
 
         %{method: :get, url: "https://api.example/v0/runs/run-full/batch"} ->
-          %Tesla.Env{status: 200, body: [fetched_event]}
+          TestHTTPClient.response(200, [fetched_event])
       end)
 
       trimmed_event = %{"name" => "test/router.trimmed", "data" => %{}}
@@ -265,16 +263,16 @@ defmodule Inngest.Router.InvokeTest do
     end
 
     test "returns 500 when a required full payload fetch fails" do
-      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
       System.put_env("INNGEST_DEV", "1")
       System.put_env("INNGEST_API_BASE_URL", "https://api.example")
 
-      Tesla.Mock.mock(fn
+      TestHTTPClient.mock(fn
         %{method: :get, url: "https://api.example/v0/runs/run-fetch-fail/actions"} ->
-          %Tesla.Env{status: 500, body: %{"error" => "boom"}}
+          TestHTTPClient.response(500, %{"error" => "boom"})
 
         %{method: :get, url: "https://api.example/v0/runs/run-fetch-fail/batch"} ->
-          %Tesla.Env{status: 200, body: []}
+          TestHTTPClient.response(200, [])
       end)
 
       {body, params} =

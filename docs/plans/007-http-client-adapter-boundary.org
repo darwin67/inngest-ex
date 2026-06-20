@@ -1,0 +1,173 @@
+#+title: HTTP Client Adapter Boundary
+#+author: Darwin D. Wu
+#+date: <2026-06-19 Fri>
+#+status: Done
+
+* HTTP Client Adapter Boundary
+
+Source context: https://andrealeopardi.com/posts/breakdown-of-http-clients-in-elixir/
+
+** Goal
+
+Remove Tesla as a hard runtime dependency by introducing an SDK-owned HTTP
+client boundary, shipping a Finch-backed high-throughput default adapter,
+including a Hackney-backed adapter/transport option, and allowing applications
+to opt into their preferred HTTP client without changing SDK call sites.
+
+** Motivation
+
+The SDK currently uses Tesla directly for outbound event, registration, and REST
+API calls. That keeps the implementation concise, but it forces every SDK
+consumer to accept Tesla and its adapter model even when their application
+already standardizes on a different HTTP stack.
+
+Because this SDK is a library, outbound HTTP should be represented by a small
+Inngest-owned behaviour and response shape. The SDK should provide a pooled
+default implementation suitable for expected high-throughput event sending,
+while also keeping Hackney available as a supported adapter and practical bridge
+for early Connect transport work. Applications that need custom telemetry, proxy
+support, tuning, or a specific client can still provide a custom adapter.
+
+** Implementation Guide
+
+Before checking off any implementation item in any phase, capture the current
+behavior when it matters, add or update a focused test that fails for the desired
+behavior, implement the smallest change, and leave targeted tests green. Do not
+end a phase with intentionally failing tests.
+
+** Decisions
+
+- Tesla will be removed from required dependencies and from SDK return/match
+  types. Internal code should not match on ~%Tesla.Env{}~ after this plan.
+- Add an SDK-owned HTTP behaviour such as ~Inngest.HTTPClient~ with a single
+  request callback.
+- Add SDK-owned request and response structs, for example
+  ~Inngest.HTTPClient.Request~ and ~Inngest.HTTPClient.Response~. Responses
+  should expose at least ~status~, ~body~, and ~headers~.
+- HTTP request structs should preserve structured fields for ~method~,
+  ~base_url~, ~path~, ~query~, ~url~, ~headers~, ~body~, and request options.
+  ~Inngest.Client~ resolves the final URL before invoking the adapter. Adapters
+  may execute with ~request.url~, while tests and custom adapters can inspect
+  structured fields without reparsing URLs.
+- The SDK expects high-throughput use cases. Finch will be the built-in HTTP
+  adapter and a required SDK dependency because it is designed around connection
+  pooling and performance.
+- Hackney will also be included as a required dependency and supported adapter
+  option, but Finch remains the default for request-response HTTP traffic.
+- Do not add an Erlang/OTP ~:httpc~ fallback in this plan. A lower-throughput
+  fallback path would make production behavior harder to reason about.
+- The default adapter must explicitly handle JSON encoding/decoding at the SDK
+  boundary instead of relying on Tesla middleware.
+- Custom adapters may wrap Req, Mint, Tesla, or another client, but those
+  packages must remain application-owned dependencies.
+- Ship maintained Finch and Hackney adapter modules in this plan. Do not ship
+  optional Req, Tesla, or other adapter modules yet. Documentation may include
+  minimal custom adapter examples, but additional maintained adapter modules
+  should wait for concrete user demand and a testable support commitment.
+- First-class clients should support an ~:http_client~ option. Existing global
+  config may provide a compatibility fallback, but client-owned configuration is
+  the primary public path.
+- HTTP client resolution precedence is per-call opts, first-class client config,
+  application config, then the built-in Finch adapter. Documentation should
+  present first-class client configuration first and application config as
+  compatibility/test support.
+- Timeout configuration is SDK-owned. Support top-level client options such as
+  ~:http_pool_timeout~, ~:http_receive_timeout~, and ~:http_request_timeout~,
+  plus per-call overrides. Store normalized timeout values in the request struct
+  and let adapters translate them to client-specific options. Adapter-specific
+  tuning such as Finch pool size/count belongs under ~:http_client_opts~.
+  Timeout precedence is per-call opts, first-class client config, application
+  config, then SDK defaults.
+- Tests should use a small in-repo test adapter instead of ~Tesla.Mock~.
+- Keep retry and fallback signing-key behavior in ~Inngest.Client~. HTTP
+  adapters should execute requests, not decide Inngest authentication policy.
+- Do not introduce automatic retries in the default adapter in this plan. Retry
+  policy is a separate behavioral feature and can conflict with Inngest
+  execution semantics if added implicitly.
+- Connect/WebSocket support is out of scope for this HTTP request-response
+  adapter plan. Future Connect work should introduce a separate transport
+  boundary instead of forcing WebSocket traffic through the HTTP adapter.
+- Future Connect work should use a separate behaviour such as
+  ~Inngest.ConnectTransport~. Finch remains the default request-response HTTP
+  adapter. Hackney may be used to quickly build and validate the Connect
+  transport interface while a Mint-based WebSocket client is designed and
+  evaluated. Do not force WebSocket traffic through the HTTP adapter.
+
+** Phase 1: Adapter Contract
+
+- [X] Add ~Inngest.HTTPClient~ behaviour.
+- [X] Add request and response structs for method, URL, path, query, headers,
+  body, status, and decoded response body.
+- [X] Add tests for request construction that currently happens through Tesla
+  base URL, headers, and JSON middleware.
+- [X] Add a test adapter under test support that records requests and returns
+  configured responses.
+- [X] Add client configuration tests for selecting the default HTTP adapter and
+  overriding it through ~use Inngest.Client, http_client: ...~.
+
+** Phase 2: High-Throughput Default Adapter
+
+- [X] Add Finch and Hackney as required SDK dependencies.
+- [X] Implement the built-in Finch-backed adapter.
+- [X] Implement the built-in Hackney-backed adapter as a supported non-default
+  HTTP adapter.
+- [X] Add supervision guidance for the Finch process and pool configuration.
+- [X] Add default pool sizing appropriate for event, register, and API traffic.
+- [X] Ensure HTTPS requests verify peers and use reasonable timeout options.
+- [X] Encode request bodies as JSON when a map or list payload is provided.
+- [X] Decode JSON response bodies when the response content type is JSON or when
+  the body contains JSON returned as text.
+- [X] Preserve non-JSON response bodies as binaries.
+- [X] Normalize adapter errors into ~{:error, term()}~ without leaking
+  client-specific tuples where practical.
+
+** Phase 3: Replace Tesla Call Sites
+
+- [X] Update ~Inngest.Client.send/2~, ~send/3~, ~get/3~, and ~post/4~ to route
+  through the HTTP behaviour.
+- [X] Replace all ~%Tesla.Env{}~ matches in ~Inngest.Client~ with
+  SDK-owned response structs.
+- [X] Replace router registration response handling with SDK-owned response
+  structs.
+- [X] Replace full-payload fetch response handling in invoke routing with
+  SDK-owned response structs.
+- [X] Keep public send return values unchanged:
+  ~{:ok, map()} | {:error, binary()}~.
+- [X] Decide whether ~Client.get/post~ remain private/internal APIs or expose
+  the new response struct as the supported return type.
+
+** Phase 4: Test Migration
+
+- [X] Replace ~Application.put_env(:tesla, :adapter, Tesla.Mock)~ in client
+  tests with the in-repo test adapter.
+- [X] Replace Tesla mocks in router register tests.
+- [X] Replace Tesla mocks in router invoke tests.
+- [X] Replace Tesla mocks in middleware and step tool tests.
+- [X] Update test setup helpers so HTTP adapter state is isolated per test.
+- [X] Remove all direct references to Tesla from tests.
+
+** Phase 5: Dependency And Documentation Cleanup
+
+- [X] Remove ~{:tesla, ...}~ from ~mix.exs~.
+- [X] Remove ~config :tesla, ...~ from application config.
+- [X] Remove unused Tesla transitive lock entries after running dependency
+  cleanup.
+- [X] Add Finch and Hackney dependency metadata.
+- [X] Rewrite installation docs to explain the built-in HTTP adapter and custom
+  adapter configuration.
+- [X] Document that Finch is the default HTTP adapter and Hackney is a supported
+  non-default adapter.
+- [X] Document the custom HTTP adapter behaviour with a minimal example.
+- [X] Add migration notes for users who were configuring Tesla adapters.
+
+** Phase 6: Verification
+
+- [X] Run ~make fmt~.
+- [X] Run targeted client, router register, router invoke, middleware, and step
+  tool tests.
+- [X] Run ~make lint~.
+- [X] Run ~make unit-test~.
+- [X] Run ~mix hex.build~ to verify Tesla is no longer included in package
+  metadata.
+- [X] Run ~make test-e2e~ because the default HTTP adapter affects local dev
+  server communication.

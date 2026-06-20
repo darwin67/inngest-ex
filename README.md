@@ -66,7 +66,7 @@ end
 ```
 
 And just like that, you have an Inngest function that will react to an event called `func/awesome`.
-`Inngest.Function.exec/2` will then be called by the SDK to run and execute the logic.
+The function module's `exec/2` callback will then be called by the SDK to run and execute the logic.
 
 Create a first-class client module to own your app ID and served functions:
 

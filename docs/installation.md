@@ -7,32 +7,105 @@ in `mix.exs`:
 # mix.exs
 def deps do
   [
-    {:inngest, "~> 0.2"}
+    {:inngest, "~> 0.2"},
+    {:finch, "~> 0.19"}
   ]
 end
 ```
 
 Then run `mix deps.get` to download the package.
 
-## Note
+## HTTP client
 
-### HTTP client
+The SDK uses a small `Inngest.HTTPClient` behaviour for outbound HTTP. The
+default adapter is `Inngest.HTTPClient.Finch`. Finch is an optional dependency
+of the SDK, so applications using the default adapter should include it directly
+and add a Finch process to their supervision tree:
 
-The Elixir SDK currently uses `Tesla` for handling HTTP requests. While this might
-not be ideal for some folks, it's the only option that can swap out the underlying HTTP
-libraries while still providing a similar interface.
-And it was the easiest to get something out quickly while still providing that portability.
+```elixir
+children = [
+  {Finch, name: Inngest.Finch}
+]
+```
 
-We will be looking into removing this dependency completely in the future with
-[`Mint`](https://hexdocs.pm/mint/api-reference.html) or just pure
-[`:httpc`](https://www.erlang.org/doc/man/httpc.html).
+To use a different Finch process name, configure the adapter options on your
+client:
 
-### Tesla adapters
+```elixir
+children = [
+  {Finch, name: MyApp.InngestFinch}
+]
 
-If you currently have a preferred adapter you want to use, please take a look at their
-[Adapters][tesla-adapters] page.
+defmodule MyApp.Inngest do
+  use Inngest.Client,
+    id: "my-app",
+    funcs: [MyApp.Function],
+    http_client_opts: [name: MyApp.InngestFinch]
+end
+```
 
-Otherwise, it will utilize the default `Hackney` adapter.
+Hackney is also available as a supported non-default adapter. Add it to your
+application dependencies before selecting it:
+
+```elixir
+def deps do
+  [
+    {:inngest, "~> 0.2"},
+    {:hackney, "~> 1.25"}
+  ]
+end
+```
+
+```elixir
+defmodule MyApp.Inngest do
+  use Inngest.Client,
+    id: "my-app",
+    funcs: [MyApp.Function],
+    http_client: Inngest.HTTPClient.Hackney
+end
+```
+
+Hackney does not require Finch supervision. It can also be configured globally:
+
+```elixir
+config :inngest, http_client: Inngest.HTTPClient.Hackney
+```
+
+For custom HTTP clients, implement the behaviour and configure it on the
+first-class client:
+
+```elixir
+defmodule MyApp.InngestHTTPClient do
+  @behaviour Inngest.HTTPClient
+
+  @impl true
+  def request(%Inngest.HTTPClient.Request{} = request) do
+    # Execute request.url with your preferred HTTP library and return:
+    {:ok,
+     %Inngest.HTTPClient.Response{
+       status: 200,
+       headers: [],
+       body: %{}
+     }}
+  end
+end
+
+defmodule MyApp.Inngest do
+  use Inngest.Client,
+    id: "my-app",
+    funcs: [MyApp.Function],
+    http_client: MyApp.InngestHTTPClient
+end
+```
+
+Application config is still supported as a compatibility/test fallback:
+
+```elixir
+config :inngest, http_client: MyApp.InngestHTTPClient
+```
+
+If you previously configured Tesla adapters, move that configuration into a
+custom `Inngest.HTTPClient` implementation or switch to the built-in Finch or
+Hackney adapters.
 
 [hex]: https://hex.pm/packages/inngest
-[tesla-adapters]: https://hexdocs.pm/tesla/1.7.0/readme.html#adapters

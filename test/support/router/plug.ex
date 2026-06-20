@@ -4,6 +4,7 @@ defmodule Inngest.Test.Client do
   use Inngest.Client,
     id: "test",
     mode: :dev,
+    http_client: Inngest.HTTPClient.Finch,
     funcs: [
       Inngest.Test.Case.BatchFn,
       Inngest.Test.Case.CancelOnFn,
