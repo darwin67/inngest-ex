@@ -18,9 +18,31 @@ Then run `mix deps.get` to download the package.
 ## HTTP client
 
 The SDK uses a small `Inngest.HTTPClient` behaviour for outbound HTTP. The
-default adapter is `Inngest.HTTPClient.Finch`, which uses a supervised Finch
-pool started by the SDK application. Finch is an optional dependency of the SDK,
-so applications using the default adapter should include it directly.
+default adapter is `Inngest.HTTPClient.Finch`. Finch is an optional dependency
+of the SDK, so applications using the default adapter should include it directly
+and add a Finch process to their supervision tree:
+
+```elixir
+children = [
+  {Finch, name: Inngest.Finch}
+]
+```
+
+To use a different Finch process name, configure the adapter options on your
+client:
+
+```elixir
+children = [
+  {Finch, name: MyApp.InngestFinch}
+]
+
+defmodule MyApp.Inngest do
+  use Inngest.Client,
+    id: "my-app",
+    funcs: [MyApp.Function],
+    http_client_opts: [name: MyApp.InngestFinch]
+end
+```
 
 Hackney is also available as a supported non-default adapter. Add it to your
 application dependencies before selecting it:
@@ -43,17 +65,10 @@ defmodule MyApp.Inngest do
 end
 ```
 
-When Hackney is configured globally, the SDK does not start its Finch pool:
+Hackney does not require Finch supervision. It can also be configured globally:
 
 ```elixir
 config :inngest, http_client: Inngest.HTTPClient.Hackney
-```
-
-If you only use Hackney through per-client configuration and want to avoid the
-SDK-owned Finch process entirely, disable it explicitly:
-
-```elixir
-config :inngest, start_finch: false
 ```
 
 For custom HTTP clients, implement the behaviour and configure it on the
