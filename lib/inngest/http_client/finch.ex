@@ -52,8 +52,6 @@ defmodule Inngest.HTTPClient.Finch do
     {:error, Exception.message(error)}
   end
 
-  defp normalize_response({:error, error}), do: {:error, error}
-
   defp ensure_finch! do
     unless Code.ensure_loaded?(Finch) do
       raise """

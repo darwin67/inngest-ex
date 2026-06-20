@@ -13,7 +13,7 @@ defmodule Inngest.Application do
   end
 
   @doc false
-  @spec finch_children() :: [Supervisor.child_spec()]
+  @spec finch_children() :: [{module(), Keyword.t()}]
   def finch_children() do
     []
     |> maybe_finch()
