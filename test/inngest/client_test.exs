@@ -2,6 +2,8 @@ defmodule Inngest.ClientTest do
   use ExUnit.Case, async: false
 
   alias Inngest.{Client, Config, Event, Headers, Signature}
+  alias Inngest.HTTPClient.Response
+  alias Inngest.Test.HTTPClient, as: TestHTTPClient
 
   @signing_key "signkey-test-8ee2262a15e8d3c42d6a840db7af3de2aab08ef632b32a37a687f24b34dba3ff"
   @fallback_signing_key "signkey-fallback-746573742d66616c6c6261636b2d7369676e696e672d6b657921"
@@ -73,6 +75,17 @@ defmodule Inngest.ClientTest do
       funcs: []
   end
 
+  defmodule CustomHTTPClient do
+    use Inngest.Client,
+      id: "custom-http-client",
+      funcs: [],
+      http_client: TestHTTPClient,
+      http_client_opts: [pool_size: 8],
+      http_pool_timeout: 1_000,
+      http_receive_timeout: 2_000,
+      http_request_timeout: 3_000
+  end
+
   @env_vars ~w(
     INNGEST_API_BASE_URL
     INNGEST_BASE_URL
@@ -100,19 +113,25 @@ defmodule Inngest.ClientTest do
     serve_path
     signing_key
     signing_key_fallback
+    http_client
+    http_client_opts
+    http_pool_timeout
+    http_receive_timeout
+    http_request_timeout
   )a
 
   setup do
     env = Map.new(@env_vars, &{&1, System.get_env(&1)})
     config = Map.new(@config_keys, &{&1, Application.fetch_env(:inngest, &1)})
-    tesla_adapter = Application.fetch_env(:tesla, :adapter)
 
     Enum.each(@env_vars, &System.delete_env/1)
     Enum.each(@config_keys, &Application.delete_env(:inngest, &1))
     Client.reset_signing_key_fallback!()
+    TestHTTPClient.reset!()
 
     on_exit(fn ->
       Client.reset_signing_key_fallback!()
+      TestHTTPClient.reset!()
 
       Enum.each(env, fn
         {key, nil} -> System.delete_env(key)
@@ -123,11 +142,6 @@ defmodule Inngest.ClientTest do
         {key, {:ok, value}} -> Application.put_env(:inngest, key, value)
         {key, :error} -> Application.delete_env(:inngest, key)
       end)
-
-      case tesla_adapter do
-        {:ok, adapter} -> Application.put_env(:tesla, :adapter, adapter)
-        :error -> Application.delete_env(:tesla, :adapter)
-      end
     end)
   end
 
@@ -223,20 +237,48 @@ defmodule Inngest.ClientTest do
       assert second.funcs == [SecondFunction]
       assert second.env == "second-env"
     end
+
+    test "defaults to the built-in Finch HTTP adapter" do
+      client = EnvBackedClient.client()
+
+      assert client.http_client == Inngest.HTTPClient.Finch
+    end
+
+    test "supports client-owned HTTP adapter and timeout configuration" do
+      client = CustomHTTPClient.client()
+
+      assert client.http_client == TestHTTPClient
+      assert client.http_client_opts == [pool_size: 8]
+      assert client.http_pool_timeout == 1_000
+      assert client.http_receive_timeout == 2_000
+      assert client.http_request_timeout == 3_000
+    end
+
+    test "uses application HTTP adapter config as a compatibility fallback" do
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
+      Application.put_env(:inngest, :http_client_opts, pool_size: 4)
+      Application.put_env(:inngest, :http_pool_timeout, 4_000)
+
+      client = EnvBackedClient.client()
+
+      assert client.http_client == TestHTTPClient
+      assert client.http_client_opts == [pool_size: 4]
+      assert client.http_pool_timeout == 4_000
+    end
   end
 
   describe "client-owned event sending" do
     test "macro-backed client modules expose send/1" do
-      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
 
-      Tesla.Mock.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
+      TestHTTPClient.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
         assert url == "https://client-events.example/e/client-event-key"
-        [event] = Jason.decode!(body)
-        assert event["name"] == "test/client.send"
-        assert event["data"] == %{"ok" => true}
+        [event] = body
+        assert event.name == "test/client.send"
+        assert event.data == %{ok: true}
         assert {Headers.env(), "client-env"} in headers
 
-        %Tesla.Env{status: 200, body: %{"ids" => ["event-id"], "status" => 200}}
+        TestHTTPClient.response(200, %{"ids" => ["event-id"], "status" => 200})
       end)
 
       assert {:ok, %{"ids" => ["event-id"], "status" => 200}} =
@@ -244,7 +286,7 @@ defmodule Inngest.ClientTest do
     end
 
     test "runtime client structs can send events directly" do
-      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
 
       client =
         Client.new(
@@ -254,14 +296,14 @@ defmodule Inngest.ClientTest do
           env: "send-env"
         )
 
-      Tesla.Mock.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
+      TestHTTPClient.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
         assert url == "https://events.example/e/send-key"
-        [event] = Jason.decode!(body)
-        assert event["name"] == "test/runtime.send"
-        assert event["data"] == %{}
+        [event] = body
+        assert event.name == "test/runtime.send"
+        assert event.data == %{}
         assert {Headers.env(), "send-env"} in headers
 
-        %Tesla.Env{status: 200, body: ~s({"ids":["runtime-id"],"status":200})}
+        TestHTTPClient.response(200, ~s({"ids":["runtime-id"],"status":200}))
       end)
 
       assert {:ok, %{"ids" => ["runtime-id"], "status" => 200}} =
@@ -269,7 +311,7 @@ defmodule Inngest.ClientTest do
     end
 
     test "client middleware mutates sent events and send results" do
-      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
 
       client =
         Client.new(
@@ -279,11 +321,11 @@ defmodule Inngest.ClientTest do
           middleware: [{ClientMiddleware, tag: "runtime"}]
         )
 
-      Tesla.Mock.mock(fn %{method: :post, body: body} ->
-        [event] = Jason.decode!(body)
-        assert event["data"] == %{"middleware" => "runtime"}
+      TestHTTPClient.mock(fn %{method: :post, body: body} ->
+        [event] = body
+        assert event.data == %{middleware: "runtime"}
 
-        %Tesla.Env{status: 200, body: %{"ids" => ["runtime-id"], "status" => 200}}
+        TestHTTPClient.response(200, %{"ids" => ["runtime-id"], "status" => 200})
       end)
 
       assert {:ok,
@@ -292,6 +334,39 @@ defmodule Inngest.ClientTest do
                 "middleware" => "runtime",
                 "status" => 200
               }} = Client.send(client, %Event{name: "test/runtime.middleware"})
+    end
+
+    test "passes structured request metadata and per-call timeout overrides to adapters" do
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
+
+      TestHTTPClient.mock(fn request ->
+        assert request.method == :post
+        assert request.base_url == "https://events.example"
+        assert request.path == "/e/send-key"
+        assert request.query == nil
+        assert request.url == "https://events.example/e/send-key"
+        assert request.pool_timeout == 11
+        assert request.receive_timeout == 22
+        assert request.request_timeout == 33
+        assert request.adapter_opts == [pool_size: 2]
+
+        TestHTTPClient.response(200, %{"ids" => ["event-id"], "status" => 200})
+      end)
+
+      client =
+        Client.new(
+          id: "request-client",
+          event_url: "https://events.example",
+          event_key: "send-key",
+          http_client_opts: [pool_size: 2]
+        )
+
+      assert {:ok, %{"ids" => ["event-id"], "status" => 200}} =
+               Client.send(client, %Event{name: "test/request.metadata"},
+                 http_pool_timeout: 11,
+                 http_receive_timeout: 22,
+                 http_request_timeout: 33
+               )
     end
   end
 
@@ -356,21 +431,21 @@ defmodule Inngest.ClientTest do
     end
 
     test "allows unsigned API requests in dev mode" do
-      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
       System.put_env("INNGEST_DEV", "1")
       System.put_env("INNGEST_API_BASE_URL", "https://api.example")
 
-      Tesla.Mock.mock(fn %{headers: headers} ->
+      TestHTTPClient.mock(fn %{headers: headers} ->
         refute List.keyfind(headers, "authorization", 0)
 
-        %Tesla.Env{status: 200, body: %{"ok" => true}}
+        TestHTTPClient.response(200, %{"ok" => true})
       end)
 
-      assert {:ok, %Tesla.Env{status: 200}} = Client.get(:api, "/v0/runs/run/actions")
+      assert {:ok, %Response{status: 200}} = Client.get(:api, "/v0/runs/run/actions")
     end
 
     test "retries with fallback signing key and sticks after a successful fallback request" do
-      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
       System.put_env("INNGEST_API_BASE_URL", "https://api.example")
       System.put_env("INNGEST_SIGNING_KEY", @signing_key)
       System.put_env("INNGEST_SIGNING_KEY_FALLBACK", @fallback_signing_key)
@@ -379,17 +454,17 @@ defmodule Inngest.ClientTest do
       primary_auth = "Bearer " <> Signature.hashed_signing_key(@signing_key)
       fallback_auth = "Bearer " <> Signature.hashed_signing_key(@fallback_signing_key)
 
-      Tesla.Mock.mock(fn %{headers: headers} ->
+      TestHTTPClient.mock(fn %{headers: headers} ->
         auth = List.keyfind(headers, "authorization", 0) |> elem(1)
         send(parent, {:auth, auth})
 
         case auth do
-          ^primary_auth -> %Tesla.Env{status: 401, body: "unauthorized"}
-          ^fallback_auth -> %Tesla.Env{status: 200, body: %{"ok" => true}}
+          ^primary_auth -> TestHTTPClient.response(401, "unauthorized")
+          ^fallback_auth -> TestHTTPClient.response(200, %{"ok" => true})
         end
       end)
 
-      assert {:ok, %Tesla.Env{status: 200}} = Client.get(:api, "/v0/runs/run/actions")
+      assert {:ok, %Response{status: 200}} = Client.get(:api, "/v0/runs/run/actions")
 
       assert_receive {:auth, ^primary_auth}
       assert_receive {:auth, ^fallback_auth}

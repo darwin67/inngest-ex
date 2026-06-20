@@ -3,6 +3,8 @@ defmodule Inngest.Test.DevServer do
 
   use GenServer
 
+  alias Inngest.HTTPClient.{Request, Response}
+
   @base_url "http://127.0.0.1:8288"
   @app_url "http://127.0.0.1:4000/api/inngest"
   @startup_retries 100
@@ -53,31 +55,31 @@ defmodule Inngest.Test.DevServer do
   def terminate(_reason, _state), do: :ok
 
   def run_ids(event_id) do
-    client()
-    |> Tesla.get("/v1/events/#{event_id}/runs", query: cache_bust())
+    get("/v1/events/#{event_id}/runs", query: cache_bust())
     |> parse_resp()
   end
 
   def fn_run(run_id) do
-    client()
-    |> Tesla.get("/v1/runs/#{run_id}", query: cache_bust())
+    get("/v1/runs/#{run_id}", query: cache_bust())
     |> parse_resp()
   end
 
   def list_events() do
-    client()
-    |> Tesla.get("/v1/events", query: cache_bust())
+    get("/v1/events", query: cache_bust())
     |> parse_resp()
   end
 
-  defp client() do
-    middleware = [
-      {Tesla.Middleware.BaseUrl, @base_url},
-      {Tesla.Middleware.Headers, [{"cache-control", "no-cache"}]},
-      Tesla.Middleware.JSON
-    ]
+  defp get(path, opts \\ []) do
+    query = Keyword.get(opts, :query)
 
-    Tesla.client(middleware)
+    Inngest.HTTPClient.Finch.request(%Request{
+      method: :get,
+      base_url: @base_url,
+      path: path,
+      query: query,
+      url: build_url(path, query),
+      headers: [{"cache-control", "no-cache"}]
+    })
   end
 
   defp executable do
@@ -91,8 +93,8 @@ defmodule Inngest.Test.DevServer do
   defp wait_until_ready(0), do: raise("inngest-cli dev server did not start")
 
   defp wait_until_ready(retries) do
-    case Tesla.get(client(), "/v1/events") do
-      {:ok, %Tesla.Env{status: 200}} ->
+    case get("/v1/events") do
+      {:ok, %Response{status: 200}} ->
         :ok
 
       _ ->
@@ -119,17 +121,17 @@ defmodule Inngest.Test.DevServer do
 
   defp parse_resp(result) do
     case result do
-      {:ok, %Tesla.Env{status: 200, body: resp}} ->
+      {:ok, %Response{status: 200, body: resp}} ->
         if is_binary(resp) do
           Jason.decode(resp)
         else
           {:ok, resp}
         end
 
-      {:ok, %Tesla.Env{status: 404}} ->
+      {:ok, %Response{status: 404}} ->
         {:error, :not_found}
 
-      {:ok, %Tesla.Env{status: 400, body: resp}} ->
+      {:ok, %Response{status: 400, body: resp}} ->
         with true <- is_binary(resp),
              {:ok, body} <- Jason.decode(resp) do
           {:error, Map.get(body, "error")}
@@ -137,6 +139,17 @@ defmodule Inngest.Test.DevServer do
           false -> {:error, Map.get(resp, "error")}
           _ -> {:error, :unknown_error}
         end
+    end
+  end
+
+  defp build_url(path, nil), do: build_url(path, [])
+
+  defp build_url(path, query) do
+    url = @base_url <> path
+
+    case URI.encode_query(query) do
+      "" -> url
+      encoded_query -> url <> "?" <> encoded_query
     end
   end
 end

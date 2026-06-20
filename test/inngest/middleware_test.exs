@@ -289,16 +289,20 @@ defmodule Inngest.MiddlewareTest do
   alias Inngest.Function.Context
   alias Inngest.Router.Invoke
   alias Inngest.StepTool
+  alias Inngest.Test.HTTPClient, as: TestHTTPClient
 
   setup do
     env = System.get_env("INNGEST_DEV")
     app_pid = Application.fetch_env(:inngest, :middleware_test_pid)
-    adapter = Application.fetch_env(:tesla, :adapter)
+    http_client = Application.fetch_env(:inngest, :http_client)
 
     Application.put_env(:inngest, :middleware_test_pid, self())
     System.put_env("INNGEST_DEV", "1")
+    TestHTTPClient.reset!()
 
     on_exit(fn ->
+      TestHTTPClient.reset!()
+
       case env do
         nil -> System.delete_env("INNGEST_DEV")
         value -> System.put_env("INNGEST_DEV", value)
@@ -309,9 +313,9 @@ defmodule Inngest.MiddlewareTest do
         :error -> Application.delete_env(:inngest, :middleware_test_pid)
       end
 
-      case adapter do
-        {:ok, value} -> Application.put_env(:tesla, :adapter, value)
-        :error -> Application.delete_env(:tesla, :adapter)
+      case http_client do
+        {:ok, value} -> Application.put_env(:inngest, :http_client, value)
+        :error -> Application.delete_env(:inngest, :http_client)
       end
     end)
   end
@@ -411,7 +415,7 @@ defmodule Inngest.MiddlewareTest do
   end
 
   test "step send_event uses active invocation middleware" do
-    Application.put_env(:tesla, :adapter, Tesla.Mock)
+    Application.put_env(:inngest, :http_client, TestHTTPClient)
 
     client =
       Inngest.Client.new(
@@ -420,11 +424,11 @@ defmodule Inngest.MiddlewareTest do
         event_key: "event-key"
       )
 
-    Tesla.Mock.mock(fn %{method: :post, body: body} ->
-      [event] = Jason.decode!(body)
-      assert event["data"] == %{"middleware" => "step"}
+    TestHTTPClient.mock(fn %{method: :post, body: body} ->
+      [event] = body
+      assert event.data == %{middleware: "step"}
 
-      %Tesla.Env{status: 200, body: %{"ids" => ["event-id"], "status" => 200}}
+      TestHTTPClient.response(200, %{"ids" => ["event-id"], "status" => 200})
     end)
 
     assert %Inngest.Function.GeneratorOpCode{
@@ -449,13 +453,13 @@ defmodule Inngest.MiddlewareTest do
   end
 
   test "step send_event middleware receives current function during invocation" do
-    Application.put_env(:tesla, :adapter, Tesla.Mock)
+    Application.put_env(:inngest, :http_client, TestHTTPClient)
 
-    Tesla.Mock.mock(fn %{method: :post, body: body} ->
-      [event] = Jason.decode!(body)
-      assert event["data"] == %{"middleware" => "step"}
+    TestHTTPClient.mock(fn %{method: :post, body: body} ->
+      [event] = body
+      assert event.data == %{middleware: "step"}
 
-      %Tesla.Env{status: 200, body: %{"ids" => ["event-id"], "status" => 200}}
+      TestHTTPClient.response(200, %{"ids" => ["event-id"], "status" => 200})
     end)
 
     {body, params} =

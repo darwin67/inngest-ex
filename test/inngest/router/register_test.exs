@@ -28,6 +28,7 @@ defmodule Inngest.Router.RegisterTest do
 
   alias Inngest.{Config, Headers, Signature}
   alias Inngest.Router.Register
+  alias Inngest.Test.HTTPClient, as: TestHTTPClient
 
   @signing_key "signkey-test-8ee2262a15e8d3c42d6a840db7af3de2aab08ef632b32a37a687f24b34dba3ff"
 
@@ -44,19 +45,22 @@ defmodule Inngest.Router.RegisterTest do
     env
     serve_path
     signing_key
+    http_client
   )a
 
   setup do
     env = Map.new(@env_vars, &{&1, System.get_env(&1)})
     config = Map.new(@config_keys, &{&1, Application.fetch_env(:inngest, &1)})
-    tesla_adapter = Application.fetch_env(:tesla, :adapter)
 
     Enum.each(@env_vars, &System.delete_env/1)
     Enum.each(@config_keys, &Application.delete_env(:inngest, &1))
 
-    Application.put_env(:tesla, :adapter, Tesla.Mock)
+    Application.put_env(:inngest, :http_client, TestHTTPClient)
+    TestHTTPClient.reset!()
 
     on_exit(fn ->
+      TestHTTPClient.reset!()
+
       Enum.each(env, fn
         {key, nil} -> System.delete_env(key)
         {key, value} -> System.put_env(key, value)
@@ -66,18 +70,13 @@ defmodule Inngest.Router.RegisterTest do
         {key, {:ok, value}} -> Application.put_env(:inngest, key, value)
         {key, :error} -> Application.delete_env(:inngest, key)
       end)
-
-      case tesla_adapter do
-        {:ok, adapter} -> Application.put_env(:tesla, :adapter, adapter)
-        :error -> Application.delete_env(:tesla, :adapter)
-      end
     end)
   end
 
   describe "call/2" do
     test "allows unsigned sync and returns the spec success shape" do
-      Tesla.Mock.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
-        payload = Jason.decode!(body)
+      TestHTTPClient.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
+        payload = json_body(body)
 
         assert url == "https://register.example/fn/register"
         assert payload["url"] == "https://serve.example/api/inngest"
@@ -92,7 +91,7 @@ defmodule Inngest.Router.RegisterTest do
         assert get_in(function, ["steps", "step", "runtime", "url"]) ==
                  "https://serve.example/api/inngest?stepId=step&fnId=register-app-register-test"
 
-        %Tesla.Env{status: 200, body: %{}}
+        TestHTTPClient.response(200, %{})
       end)
 
       conn =
@@ -105,7 +104,7 @@ defmodule Inngest.Router.RegisterTest do
     end
 
     test "preserves an unchanged registration response" do
-      Tesla.Mock.mock(fn _env -> %Tesla.Env{status: 200, body: %{"modified" => false}} end)
+      TestHTTPClient.mock(fn _request -> TestHTTPClient.response(200, %{"modified" => false}) end)
 
       conn =
         ""
@@ -117,7 +116,7 @@ defmodule Inngest.Router.RegisterTest do
     end
 
     test "rejects an invalid signed sync before registration" do
-      Tesla.Mock.mock(fn _env -> flunk("registration should not be called") end)
+      TestHTTPClient.mock(fn _request -> flunk("registration should not be called") end)
 
       conn =
         ""
@@ -132,7 +131,7 @@ defmodule Inngest.Router.RegisterTest do
     test "accepts a valid signed sync request" do
       System.put_env("INNGEST_SIGNING_KEY", @signing_key)
 
-      Tesla.Mock.mock(fn _env -> %Tesla.Env{status: 200, body: %{}} end)
+      TestHTTPClient.mock(fn _request -> TestHTTPClient.response(200, %{}) end)
 
       signature =
         System.os_time(:second)
@@ -149,14 +148,14 @@ defmodule Inngest.Router.RegisterTest do
     end
 
     test "forwards deployId query and server kind header without adding deployId to the app URL" do
-      Tesla.Mock.mock(fn %{url: url, body: body, headers: headers} ->
-        payload = Jason.decode!(body)
+      TestHTTPClient.mock(fn %{url: url, body: body, headers: headers} ->
+        payload = json_body(body)
 
         assert url == "https://register.example/fn/register?deployId=deploy-123"
         assert payload["url"] == "https://serve.example/api/inngest"
         assert {"x-inngest-expected-server-kind", "cloud"} in headers
 
-        %Tesla.Env{status: 202, body: %{}}
+        TestHTTPClient.response(202, %{})
       end)
 
       conn =
@@ -169,12 +168,12 @@ defmodule Inngest.Router.RegisterTest do
     end
 
     test "keeps Phoenix framework identifier stable" do
-      Tesla.Mock.mock(fn %{body: body} ->
-        payload = Jason.decode!(body)
+      TestHTTPClient.mock(fn %{body: body} ->
+        payload = json_body(body)
 
         assert payload["framework"] == "phoenix"
 
-        %Tesla.Env{status: 200, body: %{}}
+        TestHTTPClient.response(200, %{})
       end)
 
       conn =
@@ -186,7 +185,7 @@ defmodule Inngest.Router.RegisterTest do
     end
 
     test "returns a spec error shape when registration fails" do
-      Tesla.Mock.mock(fn _env -> %Tesla.Env{status: 500, body: %{"error" => "boom"}} end)
+      TestHTTPClient.mock(fn _request -> TestHTTPClient.response(500, %{"error" => "boom"}) end)
 
       conn =
         ""
@@ -216,8 +215,8 @@ defmodule Inngest.Router.RegisterTest do
           mode: :dev
         )
 
-      Tesla.Mock.mock(fn %{body: body} ->
-        payload = Jason.decode!(body)
+      TestHTTPClient.mock(fn %{body: body} ->
+        payload = json_body(body)
 
         assert payload["url"] == "https://serve.example/custom/inngest"
 
@@ -226,7 +225,7 @@ defmodule Inngest.Router.RegisterTest do
         assert get_in(function, ["steps", "step", "runtime", "url"]) ==
                  "https://serve.example/custom/inngest?stepId=step&fnId=register-app-register-test"
 
-        %Tesla.Env{status: 200, body: %{}}
+        TestHTTPClient.response(200, %{})
       end)
 
       conn =
@@ -251,5 +250,11 @@ defmodule Inngest.Router.RegisterTest do
 
   defp header_values(headers, header) do
     Enum.filter(headers, fn {name, _value} -> name == header end)
+  end
+
+  defp json_body(body) do
+    body
+    |> Jason.encode!()
+    |> Jason.decode!()
   end
 end

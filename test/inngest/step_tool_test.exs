@@ -1,8 +1,9 @@
 defmodule Inngest.StepToolTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Inngest.Function.GeneratorOpCode
   alias Inngest.StepTool
+  alias Inngest.Test.HTTPClient, as: TestHTTPClient
 
   defmodule InvokeTarget do
     def slug(app_id), do: "#{app_id}-invoke-target"
@@ -19,12 +20,15 @@ defmodule Inngest.StepToolTest do
   end
 
   setup do
-    tesla_adapter = Application.fetch_env(:tesla, :adapter)
+    http_client = Application.fetch_env(:inngest, :http_client)
+    TestHTTPClient.reset!()
 
     on_exit(fn ->
-      case tesla_adapter do
-        {:ok, adapter} -> Application.put_env(:tesla, :adapter, adapter)
-        :error -> Application.delete_env(:tesla, :adapter)
+      TestHTTPClient.reset!()
+
+      case http_client do
+        {:ok, adapter} -> Application.put_env(:inngest, :http_client, adapter)
+        :error -> Application.delete_env(:inngest, :http_client)
       end
     end)
   end
@@ -242,7 +246,7 @@ defmodule Inngest.StepToolTest do
 
   describe "send_event/3" do
     test "uses invocation client when available" do
-      Application.put_env(:tesla, :adapter, Tesla.Mock)
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
 
       client =
         Inngest.Client.new(
@@ -252,14 +256,14 @@ defmodule Inngest.StepToolTest do
           env: "step-env"
         )
 
-      Tesla.Mock.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
+      TestHTTPClient.mock(fn %{method: :post, url: url, body: body, headers: headers} ->
         assert url == "https://step-events.example/e/step-key"
-        [event] = Jason.decode!(body)
-        assert event["name"] == "test/step.send"
-        assert event["data"] == %{"ok" => true}
+        [event] = body
+        assert event.name == "test/step.send"
+        assert event.data == %{ok: true}
         assert {Inngest.Headers.env(), "step-env"} in headers
 
-        %Tesla.Env{status: 200, body: %{"ids" => ["step-event-id"], "status" => 200}}
+        TestHTTPClient.response(200, %{"ids" => ["step-event-id"], "status" => 200})
       end)
 
       assert %GeneratorOpCode{
