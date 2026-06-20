@@ -48,6 +48,10 @@ defmodule Inngest.HTTPClient.Finch do
      }}
   end
 
+  defp normalize_response({:error, %{__exception__: true} = error}) do
+    {:error, Exception.message(error)}
+  end
+
   defp normalize_response({:error, error}), do: {:error, error}
 
   defp ensure_finch! do

@@ -196,6 +196,36 @@ defmodule Inngest.Router.RegisterTest do
       assert Jason.decode!(conn.resp_body) == %{"error" => %{"error" => "boom"}}
     end
 
+    test "returns a JSON error response when default Finch transport fails" do
+      finch_name = Inngest.Router.RegisterTest.Finch
+      start_supervised!({Finch, name: finch_name})
+
+      client =
+        Inngest.Client.new(
+          id: "register-app",
+          funcs: [Inngest.Router.RegisterTestFn],
+          register_url: "http://127.0.0.1:9",
+          serve_origin: "https://serve.example",
+          mode: :dev,
+          http_client: Inngest.HTTPClient.Finch,
+          http_client_opts: [name: finch_name],
+          http_pool_timeout: 50,
+          http_receive_timeout: 50,
+          http_request_timeout: 50
+        )
+
+      conn =
+        ""
+        |> register_conn()
+        |> Register.call(%{register_opts() | client: client})
+
+      assert conn.status == 500
+
+      assert %{"error" => error} = Jason.decode!(conn.resp_body)
+      assert is_binary(error)
+      assert error != ""
+    end
+
     test "requires a first-class client" do
       assert_raise ArgumentError, "Inngest router requires :client", fn ->
         ""
