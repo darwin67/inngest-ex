@@ -1,0 +1,144 @@
+#+title: HTTP Client Adapter Boundary
+#+author: Darwin D. Wu
+#+date: <2026-06-19 Fri>
+#+status: Draft
+
+* HTTP Client Adapter Boundary
+
+Source context: https://andrealeopardi.com/posts/breakdown-of-http-clients-in-elixir/
+
+** Goal
+
+Remove Tesla as a hard runtime dependency by introducing an SDK-owned HTTP
+client boundary, shipping a dependency-free default adapter, and allowing
+applications to opt into their preferred HTTP client without changing SDK call
+sites.
+
+** Motivation
+
+The SDK currently uses Tesla directly for outbound event, registration, and REST
+API calls. That keeps the implementation concise, but it forces every SDK
+consumer to accept Tesla and its adapter model even when their application
+already standardizes on a different HTTP stack.
+
+Because this SDK is a library, outbound HTTP should be represented by a small
+Inngest-owned behaviour and response shape. The SDK can provide a default
+implementation for zero-configuration installs, while applications that need
+pooling, telemetry, retries, proxy support, or a specific client can provide a
+custom adapter.
+
+** Implementation Guide
+
+Before checking off any implementation item in any phase, capture the current
+behavior when it matters, add or update a focused test that fails for the desired
+behavior, implement the smallest change, and leave targeted tests green. Do not
+end a phase with intentionally failing tests.
+
+** Decisions
+
+- Tesla will be removed from required dependencies and from SDK return/match
+  types. Internal code should not match on ~%Tesla.Env{}~ after this plan.
+- Add an SDK-owned HTTP behaviour such as ~Inngest.HTTPClient~ with a single
+  request callback.
+- Add SDK-owned request and response structs, for example
+  ~Inngest.HTTPClient.Request~ and ~Inngest.HTTPClient.Response~. Responses
+  should expose at least ~status~, ~body~, and ~headers~.
+- The default adapter will use Erlang/OTP ~:httpc~ so the package does not force
+  an additional HTTP dependency.
+- The default adapter must explicitly handle JSON encoding/decoding at the SDK
+  boundary instead of relying on Tesla middleware.
+- Custom adapters may wrap Req, Finch, Mint, Hackney, Tesla, or another client,
+  but those packages must remain application-owned dependencies.
+- First-class clients should support an ~:http_client~ option. Existing global
+  config may provide a compatibility fallback, but client-owned configuration is
+  the primary public path.
+- Tests should use a small in-repo test adapter instead of ~Tesla.Mock~.
+- Keep retry and fallback signing-key behavior in ~Inngest.Client~. HTTP
+  adapters should execute requests, not decide Inngest authentication policy.
+- Do not introduce automatic retries in the default adapter in this plan. Retry
+  policy is a separate behavioral feature and can conflict with Inngest
+  execution semantics if added implicitly.
+
+** Phase 1: Adapter Contract
+
+- [ ] Add ~Inngest.HTTPClient~ behaviour.
+- [ ] Add request and response structs for method, URL, path, query, headers,
+  body, status, and decoded response body.
+- [ ] Add tests for request construction that currently happens through Tesla
+  base URL, headers, and JSON middleware.
+- [ ] Add a test adapter under test support that records requests and returns
+  configured responses.
+- [ ] Add client configuration tests for selecting the default HTTP adapter and
+  overriding it through ~use Inngest.Client, http_client: ...~.
+
+** Phase 2: Default :httpc Adapter
+
+- [ ] Implement the default ~:httpc~ adapter.
+- [ ] Ensure HTTPS requests verify peers on supported OTP versions and use
+  reasonable timeout options.
+- [ ] Encode request bodies as JSON when a map or list payload is provided.
+- [ ] Decode JSON response bodies when the response content type is JSON or when
+  the body contains JSON returned as text.
+- [ ] Preserve non-JSON response bodies as binaries.
+- [ ] Normalize adapter errors into ~{:error, term()}~ without leaking
+  client-specific tuples where practical.
+
+** Phase 3: Replace Tesla Call Sites
+
+- [ ] Update ~Inngest.Client.send/2~, ~send/3~, ~get/3~, and ~post/4~ to route
+  through the HTTP behaviour.
+- [ ] Replace all ~%Tesla.Env{}~ matches in ~Inngest.Client~ with
+  SDK-owned response structs.
+- [ ] Replace router registration response handling with SDK-owned response
+  structs.
+- [ ] Replace full-payload fetch response handling in invoke routing with
+  SDK-owned response structs.
+- [ ] Keep public send return values unchanged:
+  ~{:ok, map()} | {:error, binary()}~.
+- [ ] Decide whether ~Client.get/post~ remain private/internal APIs or expose
+  the new response struct as the supported return type.
+
+** Phase 4: Test Migration
+
+- [ ] Replace ~Application.put_env(:tesla, :adapter, Tesla.Mock)~ in client
+  tests with the in-repo test adapter.
+- [ ] Replace Tesla mocks in router register tests.
+- [ ] Replace Tesla mocks in router invoke tests.
+- [ ] Replace Tesla mocks in middleware and step tool tests.
+- [ ] Update test setup helpers so HTTP adapter state is isolated per test.
+- [ ] Remove all direct references to Tesla from tests, except optional adapter
+  compatibility tests if a Tesla wrapper is intentionally kept as dev/test-only.
+
+** Phase 5: Dependency And Documentation Cleanup
+
+- [ ] Remove ~{:tesla, ...}~ from ~mix.exs~.
+- [ ] Remove ~config :tesla, ...~ from application config.
+- [ ] Remove unused transitive lock entries after running dependency cleanup.
+- [ ] Rewrite installation docs to explain the built-in HTTP adapter and custom
+  adapter configuration.
+- [ ] Document the custom HTTP adapter behaviour with a minimal example.
+- [ ] Add migration notes for users who were configuring Tesla adapters.
+
+** Phase 6: Verification
+
+- [ ] Run ~make fmt~.
+- [ ] Run targeted client, router register, router invoke, middleware, and step
+  tool tests.
+- [ ] Run ~make lint~.
+- [ ] Run ~make unit-test~.
+- [ ] Run ~mix hex.build~ to verify Tesla is no longer included in package
+  metadata.
+- [ ] Run ~make test-e2e~ if the default ~:httpc~ adapter affects local dev
+  server communication.
+
+** Open Questions
+
+- Should global application config support ~:http_client~ as a compatibility
+  fallback, or should this be client-only because the first-class client API is
+  now the primary setup path?
+- Should the adapter callback accept a fully-qualified URL only, or preserve
+  base URL plus path/query separately for testability and adapter convenience?
+- Should timeout configuration belong to the HTTP adapter option, a top-level
+  client option, or both?
+- Should the SDK provide optional adapter modules for popular clients such as Req
+  or Finch, or should examples be documentation-only until demand is clear?
