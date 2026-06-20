@@ -52,6 +52,7 @@ defmodule Inngest.Router.Invoke do
       attempt: Map.get(request_ctx, "attempt", 0),
       run_id: Map.get(request_ctx, "run_id"),
       client: client,
+      function: func,
       request: conn,
       disable_immediate_execution: Map.get(request_ctx, "disable_immediate_execution", false),
       stack: Map.get(request_ctx, "stack"),

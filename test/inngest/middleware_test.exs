@@ -143,6 +143,7 @@ defmodule Inngest.MiddlewareTest.EventMiddleware do
   @impl true
   def transform_send_event(%{events: events, context: context} = args, opts) do
     send(test_pid(), {:event_hook, :transform_send_event, context.ctx.__struct__})
+    send(test_pid(), {:event_hook, :transform_send_event_function, Map.get(context, :function)})
     tag = Keyword.fetch!(opts, :tag)
 
     events =
@@ -250,6 +251,34 @@ defmodule Inngest.MiddlewareTest.Client do
     id: "middleware-app",
     funcs: [Inngest.MiddlewareTest.Function],
     middleware: [Inngest.MiddlewareTest.ClientMiddleware]
+end
+
+defmodule Inngest.MiddlewareTest.StepSendFunction do
+  @moduledoc false
+
+  use Inngest.Function
+
+  @func %FnOpts{
+    id: "middleware-step-send-test",
+    name: "Middleware Step Send Test",
+    middleware: [{Inngest.MiddlewareTest.EventMiddleware, tag: "step"}]
+  }
+  @trigger %Trigger{event: "test/middleware.step.send"}
+
+  @impl true
+  def exec(ctx, _input) do
+    Inngest.StepTool.send_event(ctx, "send", %Inngest.Event{name: "test/step.middleware"})
+  end
+end
+
+defmodule Inngest.MiddlewareTest.StepSendClient do
+  @moduledoc false
+
+  use Inngest.Client,
+    id: "middleware-step-send-app",
+    funcs: [Inngest.MiddlewareTest.StepSendFunction],
+    event_url: "https://events.example",
+    event_key: "event-key"
 end
 
 defmodule Inngest.MiddlewareTest do
@@ -414,16 +443,52 @@ defmodule Inngest.MiddlewareTest do
              )
 
     assert_receive {:event_hook, :transform_send_event, Context}
+    assert_receive {:event_hook, :transform_send_event_function, nil}
     assert_receive {:event_hook, :wrap_send_event_before}
     assert_receive {:event_hook, :wrap_send_event_after}
   end
 
-  defp invoke_body do
+  test "step send_event middleware receives current function during invocation" do
+    Application.put_env(:tesla, :adapter, Tesla.Mock)
+
+    Tesla.Mock.mock(fn %{method: :post, body: body} ->
+      [event] = Jason.decode!(body)
+      assert event["data"] == %{"middleware" => "step"}
+
+      %Tesla.Env{status: 200, body: %{"ids" => ["event-id"], "status" => 200}}
+    end)
+
+    {body, params} =
+      invoke_body(
+        Inngest.MiddlewareTest.StepSendFunction,
+        Inngest.MiddlewareTest.StepSendClient.client().id
+      )
+
+    conn =
+      body
+      |> invoke_conn(params)
+      |> Invoke.call(%{client: Inngest.MiddlewareTest.StepSendClient})
+
+    assert conn.status == 206
+
+    assert_receive {:event_hook, :transform_send_event, Context}
+
+    assert_receive {
+      :event_hook,
+      :transform_send_event_function,
+      Inngest.MiddlewareTest.StepSendFunction
+    }
+  end
+
+  defp invoke_body(
+         function \\ Inngest.MiddlewareTest.Function,
+         client_id \\ Inngest.MiddlewareTest.Client.client().id
+       ) do
     params = %{
-      "event" => %{"name" => "test/middleware", "data" => %{}},
-      "events" => [%{"name" => "test/middleware", "data" => %{}}],
+      "event" => %{"name" => function.trigger().event, "data" => %{}},
+      "events" => [%{"name" => function.trigger().event, "data" => %{}}],
       "ctx" => %{"run_id" => "run-1", "attempt" => 0, "use_api" => false},
-      "fnId" => Inngest.MiddlewareTest.Function.slug(Inngest.MiddlewareTest.Client.client().id),
+      "fnId" => function.slug(client_id),
       "steps" => %{}
     }
 
