@@ -7,7 +7,8 @@ in `mix.exs`:
 # mix.exs
 def deps do
   [
-    {:inngest, "~> 0.2"}
+    {:inngest, "~> 0.2"},
+    {:finch, "~> 0.19"}
   ]
 end
 ```
@@ -18,9 +19,20 @@ Then run `mix deps.get` to download the package.
 
 The SDK uses a small `Inngest.HTTPClient` behaviour for outbound HTTP. The
 default adapter is `Inngest.HTTPClient.Finch`, which uses a supervised Finch
-pool started by the SDK application.
+pool started by the SDK application. Finch is an optional dependency of the SDK,
+so applications using the default adapter should include it directly.
 
-Hackney is also included as a supported non-default adapter:
+Hackney is also available as a supported non-default adapter. Add it to your
+application dependencies before selecting it:
+
+```elixir
+def deps do
+  [
+    {:inngest, "~> 0.2"},
+    {:hackney, "~> 1.25"}
+  ]
+end
+```
 
 ```elixir
 defmodule MyApp.Inngest do

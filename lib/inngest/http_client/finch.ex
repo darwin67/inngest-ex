@@ -11,6 +11,8 @@ defmodule Inngest.HTTPClient.Finch do
   @impl true
   @spec request(Request.t()) :: {:ok, Response.t()} | {:error, term()}
   def request(%Request{} = request) do
+    ensure_finch!()
+
     # This adapter deliberately performs one request and returns the transport
     # result. Retry/auth policy belongs to Inngest.Client, not the transport.
     body = HTTPClient.encode_body(request.body)
@@ -35,7 +37,7 @@ defmodule Inngest.HTTPClient.Finch do
     |> Enum.reject(fn {_key, value} -> is_nil(value) end)
   end
 
-  defp normalize_response({:ok, %Finch.Response{} = response}) do
+  defp normalize_response({:ok, %{__struct__: Finch.Response} = response}) do
     headers = normalize_headers(response.headers)
 
     {:ok,
@@ -47,6 +49,17 @@ defmodule Inngest.HTTPClient.Finch do
   end
 
   defp normalize_response({:error, error}), do: {:error, error}
+
+  defp ensure_finch! do
+    unless Code.ensure_loaded?(Finch) do
+      raise """
+      Inngest.HTTPClient.Finch requires the optional :finch dependency.
+
+      Add {:finch, "~> 0.19"} to your dependencies or configure another
+      Inngest.HTTPClient adapter.
+      """
+    end
+  end
 
   defp normalize_headers(headers) do
     Enum.map(headers, fn {name, value} -> {to_string(name), to_string(value)} end)

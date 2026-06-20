@@ -24,7 +24,7 @@ defmodule Inngest.Application do
       # Finch requires a supervised process. Starting an SDK-owned instance keeps
       # the default HTTP adapter usable without forcing each consumer application
       # to add its own child spec before sending events.
-      children ++ [{Finch, finch_options()}]
+      children ++ [{finch_module!(), finch_options()}]
     else
       children
     end
@@ -42,5 +42,18 @@ defmodule Inngest.Application do
     :inngest
     |> Application.get_env(:http_client_opts, [])
     |> Keyword.put_new(:name, Inngest.Finch)
+  end
+
+  defp finch_module! do
+    if Code.ensure_loaded?(Finch) do
+      Finch
+    else
+      raise """
+      Inngest is configured to use the default Finch HTTP adapter, but :finch is not installed.
+
+      Add {:finch, "~> 0.19"} to your dependencies, configure a different :http_client,
+      or set config :inngest, start_finch: false when Finch supervision is not needed.
+      """
+    end
   end
 end

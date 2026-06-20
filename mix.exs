@@ -100,8 +100,8 @@ defmodule Inngest.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:finch, "~> 0.19"},
-      {:hackney, "~> 1.25"},
+      {:finch, "~> 0.19", optional: true},
+      {:hackney, "~> 1.25", optional: true},
       {:jason, "~> 1.4"},
       {:plug, "~> 1.14"},
       {:timex, "~> 3.7"},

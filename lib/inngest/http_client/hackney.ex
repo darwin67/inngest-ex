@@ -11,6 +11,8 @@ defmodule Inngest.HTTPClient.Hackney do
   @impl true
   @spec request(Request.t()) :: {:ok, Response.t()} | {:error, term()}
   def request(%Request{} = request) do
+    ensure_hackney!()
+
     # Hackney is a supported non-default adapter and a practical bridge for
     # early Connect transport experiments, but request/response HTTP still goes
     # through the same SDK-owned request and response structs.
@@ -47,6 +49,17 @@ defmodule Inngest.HTTPClient.Hackney do
   end
 
   defp normalize_response({:error, error}), do: {:error, error}
+
+  defp ensure_hackney! do
+    unless Code.ensure_loaded?(:hackney) do
+      raise """
+      Inngest.HTTPClient.Hackney requires the optional :hackney dependency.
+
+      Add {:hackney, "~> 1.25"} to your dependencies or configure another
+      Inngest.HTTPClient adapter.
+      """
+    end
+  end
 
   defp normalize_headers(headers) do
     Enum.map(headers, fn {name, value} -> {to_string(name), to_string(value)} end)
