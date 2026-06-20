@@ -1,7 +1,7 @@
 #+title: HTTP Client Adapter Boundary
 #+author: Darwin D. Wu
 #+date: <2026-06-19 Fri>
-#+status: Draft
+#+status: Done
 
 * HTTP Client Adapter Boundary
 
@@ -95,79 +95,79 @@ end a phase with intentionally failing tests.
 
 ** Phase 1: Adapter Contract
 
-- [ ] Add ~Inngest.HTTPClient~ behaviour.
-- [ ] Add request and response structs for method, URL, path, query, headers,
+- [X] Add ~Inngest.HTTPClient~ behaviour.
+- [X] Add request and response structs for method, URL, path, query, headers,
   body, status, and decoded response body.
-- [ ] Add tests for request construction that currently happens through Tesla
+- [X] Add tests for request construction that currently happens through Tesla
   base URL, headers, and JSON middleware.
-- [ ] Add a test adapter under test support that records requests and returns
+- [X] Add a test adapter under test support that records requests and returns
   configured responses.
-- [ ] Add client configuration tests for selecting the default HTTP adapter and
+- [X] Add client configuration tests for selecting the default HTTP adapter and
   overriding it through ~use Inngest.Client, http_client: ...~.
 
 ** Phase 2: High-Throughput Default Adapter
 
-- [ ] Add Finch and Hackney as required SDK dependencies.
-- [ ] Implement the built-in Finch-backed adapter.
-- [ ] Implement the built-in Hackney-backed adapter as a supported non-default
+- [X] Add Finch and Hackney as required SDK dependencies.
+- [X] Implement the built-in Finch-backed adapter.
+- [X] Implement the built-in Hackney-backed adapter as a supported non-default
   HTTP adapter.
-- [ ] Add supervision guidance for the Finch process and pool configuration.
-- [ ] Add default pool sizing appropriate for event, register, and API traffic.
-- [ ] Ensure HTTPS requests verify peers and use reasonable timeout options.
-- [ ] Encode request bodies as JSON when a map or list payload is provided.
-- [ ] Decode JSON response bodies when the response content type is JSON or when
+- [X] Add supervision guidance for the Finch process and pool configuration.
+- [X] Add default pool sizing appropriate for event, register, and API traffic.
+- [X] Ensure HTTPS requests verify peers and use reasonable timeout options.
+- [X] Encode request bodies as JSON when a map or list payload is provided.
+- [X] Decode JSON response bodies when the response content type is JSON or when
   the body contains JSON returned as text.
-- [ ] Preserve non-JSON response bodies as binaries.
-- [ ] Normalize adapter errors into ~{:error, term()}~ without leaking
+- [X] Preserve non-JSON response bodies as binaries.
+- [X] Normalize adapter errors into ~{:error, term()}~ without leaking
   client-specific tuples where practical.
 
 ** Phase 3: Replace Tesla Call Sites
 
-- [ ] Update ~Inngest.Client.send/2~, ~send/3~, ~get/3~, and ~post/4~ to route
+- [X] Update ~Inngest.Client.send/2~, ~send/3~, ~get/3~, and ~post/4~ to route
   through the HTTP behaviour.
-- [ ] Replace all ~%Tesla.Env{}~ matches in ~Inngest.Client~ with
+- [X] Replace all ~%Tesla.Env{}~ matches in ~Inngest.Client~ with
   SDK-owned response structs.
-- [ ] Replace router registration response handling with SDK-owned response
+- [X] Replace router registration response handling with SDK-owned response
   structs.
-- [ ] Replace full-payload fetch response handling in invoke routing with
+- [X] Replace full-payload fetch response handling in invoke routing with
   SDK-owned response structs.
-- [ ] Keep public send return values unchanged:
+- [X] Keep public send return values unchanged:
   ~{:ok, map()} | {:error, binary()}~.
-- [ ] Decide whether ~Client.get/post~ remain private/internal APIs or expose
+- [X] Decide whether ~Client.get/post~ remain private/internal APIs or expose
   the new response struct as the supported return type.
 
 ** Phase 4: Test Migration
 
-- [ ] Replace ~Application.put_env(:tesla, :adapter, Tesla.Mock)~ in client
+- [X] Replace ~Application.put_env(:tesla, :adapter, Tesla.Mock)~ in client
   tests with the in-repo test adapter.
-- [ ] Replace Tesla mocks in router register tests.
-- [ ] Replace Tesla mocks in router invoke tests.
-- [ ] Replace Tesla mocks in middleware and step tool tests.
-- [ ] Update test setup helpers so HTTP adapter state is isolated per test.
-- [ ] Remove all direct references to Tesla from tests.
+- [X] Replace Tesla mocks in router register tests.
+- [X] Replace Tesla mocks in router invoke tests.
+- [X] Replace Tesla mocks in middleware and step tool tests.
+- [X] Update test setup helpers so HTTP adapter state is isolated per test.
+- [X] Remove all direct references to Tesla from tests.
 
 ** Phase 5: Dependency And Documentation Cleanup
 
-- [ ] Remove ~{:tesla, ...}~ from ~mix.exs~.
-- [ ] Remove ~config :tesla, ...~ from application config.
-- [ ] Remove unused Tesla transitive lock entries after running dependency
+- [X] Remove ~{:tesla, ...}~ from ~mix.exs~.
+- [X] Remove ~config :tesla, ...~ from application config.
+- [X] Remove unused Tesla transitive lock entries after running dependency
   cleanup.
-- [ ] Add Finch and Hackney dependency metadata.
-- [ ] Rewrite installation docs to explain the built-in HTTP adapter and custom
+- [X] Add Finch and Hackney dependency metadata.
+- [X] Rewrite installation docs to explain the built-in HTTP adapter and custom
   adapter configuration.
-- [ ] Document that Finch is the default HTTP adapter and Hackney is a supported
+- [X] Document that Finch is the default HTTP adapter and Hackney is a supported
   non-default adapter.
-- [ ] Document the custom HTTP adapter behaviour with a minimal example.
-- [ ] Add migration notes for users who were configuring Tesla adapters.
+- [X] Document the custom HTTP adapter behaviour with a minimal example.
+- [X] Add migration notes for users who were configuring Tesla adapters.
 
 ** Phase 6: Verification
 
-- [ ] Run ~make fmt~.
-- [ ] Run targeted client, router register, router invoke, middleware, and step
+- [X] Run ~make fmt~.
+- [X] Run targeted client, router register, router invoke, middleware, and step
   tool tests.
-- [ ] Run ~make lint~.
-- [ ] Run ~make unit-test~.
-- [ ] Run ~mix hex.build~ to verify Tesla is no longer included in package
+- [X] Run ~make lint~.
+- [X] Run ~make unit-test~.
+- [X] Run ~mix hex.build~ to verify Tesla is no longer included in package
   metadata.
-- [ ] Run ~make test-e2e~ because the default HTTP adapter affects local dev
+- [X] Run ~make test-e2e~ because the default HTTP adapter affects local dev
   server communication.

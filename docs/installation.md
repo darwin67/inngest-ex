@@ -14,25 +14,58 @@ end
 
 Then run `mix deps.get` to download the package.
 
-## Note
+## HTTP client
 
-### HTTP client
+The SDK uses a small `Inngest.HTTPClient` behaviour for outbound HTTP. The
+default adapter is `Inngest.HTTPClient.Finch`, which uses a supervised Finch
+pool started by the SDK application.
 
-The Elixir SDK currently uses `Tesla` for handling HTTP requests. While this might
-not be ideal for some folks, it's the only option that can swap out the underlying HTTP
-libraries while still providing a similar interface.
-And it was the easiest to get something out quickly while still providing that portability.
+Hackney is also included as a supported non-default adapter:
 
-We will be looking into removing this dependency completely in the future with
-[`Mint`](https://hexdocs.pm/mint/api-reference.html) or just pure
-[`:httpc`](https://www.erlang.org/doc/man/httpc.html).
+```elixir
+defmodule MyApp.Inngest do
+  use Inngest.Client,
+    id: "my-app",
+    funcs: [MyApp.Function],
+    http_client: Inngest.HTTPClient.Hackney
+end
+```
 
-### Tesla adapters
+For custom HTTP clients, implement the behaviour and configure it on the
+first-class client:
 
-If you currently have a preferred adapter you want to use, please take a look at their
-[Adapters][tesla-adapters] page.
+```elixir
+defmodule MyApp.InngestHTTPClient do
+  @behaviour Inngest.HTTPClient
 
-Otherwise, it will utilize the default `Hackney` adapter.
+  @impl true
+  def request(%Inngest.HTTPClient.Request{} = request) do
+    # Execute request.url with your preferred HTTP library and return:
+    {:ok,
+     %Inngest.HTTPClient.Response{
+       status: 200,
+       headers: [],
+       body: %{}
+     }}
+  end
+end
+
+defmodule MyApp.Inngest do
+  use Inngest.Client,
+    id: "my-app",
+    funcs: [MyApp.Function],
+    http_client: MyApp.InngestHTTPClient
+end
+```
+
+Application config is still supported as a compatibility/test fallback:
+
+```elixir
+config :inngest, http_client: MyApp.InngestHTTPClient
+```
+
+If you previously configured Tesla adapters, move that configuration into a
+custom `Inngest.HTTPClient` implementation or switch to the built-in Finch or
+Hackney adapters.
 
 [hex]: https://hex.pm/packages/inngest
-[tesla-adapters]: https://hexdocs.pm/tesla/1.7.0/readme.html#adapters
