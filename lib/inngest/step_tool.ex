@@ -117,6 +117,7 @@ defmodule Inngest.StepTool do
       })
 
     step_id = step_args.step_id
+    opts = Map.to_list(step_args.options)
     op = UnhashedOp.new(ctx, "Step", step_id)
     hashed_id = UnhashedOp.hash(op)
 
