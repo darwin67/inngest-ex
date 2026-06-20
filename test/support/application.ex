@@ -7,6 +7,7 @@ defmodule Inngest.Test.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {Finch, name: Inngest.Finch},
       Inngest.Test.PlugRouter
     ]
 

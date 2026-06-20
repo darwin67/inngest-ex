@@ -310,6 +310,24 @@ defmodule Inngest.ClientTest do
                Client.send(client, %Event{name: "test/runtime.send"})
     end
 
+    test "treats non-200 success statuses as successful event sends" do
+      Application.put_env(:inngest, :http_client, TestHTTPClient)
+
+      client =
+        Client.new(
+          id: "send-client",
+          event_url: "https://events.example",
+          event_key: "send-key"
+        )
+
+      TestHTTPClient.mock(fn %{method: :post} ->
+        TestHTTPClient.response(202, %{"ids" => ["accepted-id"], "status" => 202})
+      end)
+
+      assert {:ok, %{"ids" => ["accepted-id"], "status" => 202}} =
+               Client.send(client, %Event{name: "test/runtime.accepted"})
+    end
+
     test "client middleware mutates sent events and send results" do
       Application.put_env(:inngest, :http_client, TestHTTPClient)
 

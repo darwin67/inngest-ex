@@ -216,8 +216,9 @@ defmodule Inngest.Client do
   end
 
   # Inngest may return send responses as parsed JSON or text/plain JSON.
-  defp decode_send_http_response({:ok, %Response{status: 200, body: resp}}),
-    do: decode_send_response(resp)
+  defp decode_send_http_response({:ok, %Response{status: status, body: resp}})
+       when status in 200..299,
+       do: decode_send_response(resp)
 
   defp decode_send_http_response({:ok, %Response{status: 400}}),
     do: {:error, "invalid event data"}
