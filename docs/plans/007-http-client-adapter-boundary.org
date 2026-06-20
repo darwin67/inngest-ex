@@ -10,9 +10,9 @@ Source context: https://andrealeopardi.com/posts/breakdown-of-http-clients-in-el
 ** Goal
 
 Remove Tesla as a hard runtime dependency by introducing an SDK-owned HTTP
-client boundary, shipping a dependency-free default adapter, and allowing
-applications to opt into their preferred HTTP client without changing SDK call
-sites.
+client boundary, shipping a Finch-backed high-throughput default adapter,
+including a Hackney-backed adapter/transport option, and allowing applications
+to opt into their preferred HTTP client without changing SDK call sites.
 
 ** Motivation
 
@@ -22,10 +22,11 @@ consumer to accept Tesla and its adapter model even when their application
 already standardizes on a different HTTP stack.
 
 Because this SDK is a library, outbound HTTP should be represented by a small
-Inngest-owned behaviour and response shape. The SDK can provide a default
-implementation for zero-configuration installs, while applications that need
-pooling, telemetry, retries, proxy support, or a specific client can provide a
-custom adapter.
+Inngest-owned behaviour and response shape. The SDK should provide a pooled
+default implementation suitable for expected high-throughput event sending,
+while also keeping Hackney available as a supported adapter and practical bridge
+for early Connect transport work. Applications that need custom telemetry, proxy
+support, tuning, or a specific client can still provide a custom adapter.
 
 ** Implementation Guide
 
@@ -43,21 +44,54 @@ end a phase with intentionally failing tests.
 - Add SDK-owned request and response structs, for example
   ~Inngest.HTTPClient.Request~ and ~Inngest.HTTPClient.Response~. Responses
   should expose at least ~status~, ~body~, and ~headers~.
-- The default adapter will use Erlang/OTP ~:httpc~ so the package does not force
-  an additional HTTP dependency.
+- HTTP request structs should preserve structured fields for ~method~,
+  ~base_url~, ~path~, ~query~, ~url~, ~headers~, ~body~, and request options.
+  ~Inngest.Client~ resolves the final URL before invoking the adapter. Adapters
+  may execute with ~request.url~, while tests and custom adapters can inspect
+  structured fields without reparsing URLs.
+- The SDK expects high-throughput use cases. Finch will be the built-in HTTP
+  adapter and a required SDK dependency because it is designed around connection
+  pooling and performance.
+- Hackney will also be included as a required dependency and supported adapter
+  option, but Finch remains the default for request-response HTTP traffic.
+- Do not add an Erlang/OTP ~:httpc~ fallback in this plan. A lower-throughput
+  fallback path would make production behavior harder to reason about.
 - The default adapter must explicitly handle JSON encoding/decoding at the SDK
   boundary instead of relying on Tesla middleware.
-- Custom adapters may wrap Req, Finch, Mint, Hackney, Tesla, or another client,
-  but those packages must remain application-owned dependencies.
+- Custom adapters may wrap Req, Mint, Tesla, or another client, but those
+  packages must remain application-owned dependencies.
+- Ship maintained Finch and Hackney adapter modules in this plan. Do not ship
+  optional Req, Tesla, or other adapter modules yet. Documentation may include
+  minimal custom adapter examples, but additional maintained adapter modules
+  should wait for concrete user demand and a testable support commitment.
 - First-class clients should support an ~:http_client~ option. Existing global
   config may provide a compatibility fallback, but client-owned configuration is
   the primary public path.
+- HTTP client resolution precedence is per-call opts, first-class client config,
+  application config, then the built-in Finch adapter. Documentation should
+  present first-class client configuration first and application config as
+  compatibility/test support.
+- Timeout configuration is SDK-owned. Support top-level client options such as
+  ~:http_pool_timeout~, ~:http_receive_timeout~, and ~:http_request_timeout~,
+  plus per-call overrides. Store normalized timeout values in the request struct
+  and let adapters translate them to client-specific options. Adapter-specific
+  tuning such as Finch pool size/count belongs under ~:http_client_opts~.
+  Timeout precedence is per-call opts, first-class client config, application
+  config, then SDK defaults.
 - Tests should use a small in-repo test adapter instead of ~Tesla.Mock~.
 - Keep retry and fallback signing-key behavior in ~Inngest.Client~. HTTP
   adapters should execute requests, not decide Inngest authentication policy.
 - Do not introduce automatic retries in the default adapter in this plan. Retry
   policy is a separate behavioral feature and can conflict with Inngest
   execution semantics if added implicitly.
+- Connect/WebSocket support is out of scope for this HTTP request-response
+  adapter plan. Future Connect work should introduce a separate transport
+  boundary instead of forcing WebSocket traffic through the HTTP adapter.
+- Future Connect work should use a separate behaviour such as
+  ~Inngest.ConnectTransport~. Finch remains the default request-response HTTP
+  adapter. Hackney may be used to quickly build and validate the Connect
+  transport interface while a Mint-based WebSocket client is designed and
+  evaluated. Do not force WebSocket traffic through the HTTP adapter.
 
 ** Phase 1: Adapter Contract
 
@@ -71,11 +105,15 @@ end a phase with intentionally failing tests.
 - [ ] Add client configuration tests for selecting the default HTTP adapter and
   overriding it through ~use Inngest.Client, http_client: ...~.
 
-** Phase 2: Default :httpc Adapter
+** Phase 2: High-Throughput Default Adapter
 
-- [ ] Implement the default ~:httpc~ adapter.
-- [ ] Ensure HTTPS requests verify peers on supported OTP versions and use
-  reasonable timeout options.
+- [ ] Add Finch and Hackney as required SDK dependencies.
+- [ ] Implement the built-in Finch-backed adapter.
+- [ ] Implement the built-in Hackney-backed adapter as a supported non-default
+  HTTP adapter.
+- [ ] Add supervision guidance for the Finch process and pool configuration.
+- [ ] Add default pool sizing appropriate for event, register, and API traffic.
+- [ ] Ensure HTTPS requests verify peers and use reasonable timeout options.
 - [ ] Encode request bodies as JSON when a map or list payload is provided.
 - [ ] Decode JSON response bodies when the response content type is JSON or when
   the body contains JSON returned as text.
@@ -106,16 +144,19 @@ end a phase with intentionally failing tests.
 - [ ] Replace Tesla mocks in router invoke tests.
 - [ ] Replace Tesla mocks in middleware and step tool tests.
 - [ ] Update test setup helpers so HTTP adapter state is isolated per test.
-- [ ] Remove all direct references to Tesla from tests, except optional adapter
-  compatibility tests if a Tesla wrapper is intentionally kept as dev/test-only.
+- [ ] Remove all direct references to Tesla from tests.
 
 ** Phase 5: Dependency And Documentation Cleanup
 
 - [ ] Remove ~{:tesla, ...}~ from ~mix.exs~.
 - [ ] Remove ~config :tesla, ...~ from application config.
-- [ ] Remove unused transitive lock entries after running dependency cleanup.
+- [ ] Remove unused Tesla transitive lock entries after running dependency
+  cleanup.
+- [ ] Add Finch and Hackney dependency metadata.
 - [ ] Rewrite installation docs to explain the built-in HTTP adapter and custom
   adapter configuration.
+- [ ] Document that Finch is the default HTTP adapter and Hackney is a supported
+  non-default adapter.
 - [ ] Document the custom HTTP adapter behaviour with a minimal example.
 - [ ] Add migration notes for users who were configuring Tesla adapters.
 
@@ -128,17 +169,5 @@ end a phase with intentionally failing tests.
 - [ ] Run ~make unit-test~.
 - [ ] Run ~mix hex.build~ to verify Tesla is no longer included in package
   metadata.
-- [ ] Run ~make test-e2e~ if the default ~:httpc~ adapter affects local dev
+- [ ] Run ~make test-e2e~ because the default HTTP adapter affects local dev
   server communication.
-
-** Open Questions
-
-- Should global application config support ~:http_client~ as a compatibility
-  fallback, or should this be client-only because the first-class client API is
-  now the primary setup path?
-- Should the adapter callback accept a fully-qualified URL only, or preserve
-  base URL plus path/query separately for testability and adapter convenience?
-- Should timeout configuration belong to the HTTP adapter option, a top-level
-  client option, or both?
-- Should the SDK provide optional adapter modules for popular clients such as Req
-  or Finch, or should examples be documentation-only until demand is clear?
