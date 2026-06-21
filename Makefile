@@ -18,9 +18,11 @@ unit-test:
 test:
 	MIX_ENV=test mix test
 
+E2E_ROUTER ?= plug
+
 .PHONY: test-e2e
 test-e2e:
-	MIX_ENV=test mix test --only integration --max-cases 1
+	MIX_ENV=test INNGEST_TEST_ROUTER=$(E2E_ROUTER) mix test --only integration --max-cases 1
 
 .PHONY: test-cover
 test-cover:
