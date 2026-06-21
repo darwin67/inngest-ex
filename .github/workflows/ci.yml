@@ -70,8 +70,12 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   e2e:
-    name: E2E Test
+    name: E2E Test (${{ matrix.router }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        router: [plug, phoenix]
 
     steps:
       - uses: actions/checkout@v6.0.3
@@ -101,7 +105,7 @@ jobs:
         run: nix develop -c make build
 
       - name: Run e2e tests
-        run: nix develop -c make test-e2e
+        run: nix develop -c make test-e2e E2E_ROUTER=${{ matrix.router }}
 
   formatter:
     name: Formatter
