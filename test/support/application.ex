@@ -8,7 +8,7 @@ defmodule Inngest.Test.Application do
   def start(_type, _args) do
     children = [
       {Finch, name: Inngest.Finch},
-      Inngest.Test.PlugRouter
+      router()
     ]
 
     children =
@@ -18,6 +18,14 @@ defmodule Inngest.Test.Application do
 
     opts = [strategy: :one_for_one, name: Inngest.Test.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp router do
+    case System.get_env("INNGEST_TEST_ROUTER", "plug") do
+      "plug" -> Inngest.Test.PlugRouter
+      "phoenix" -> Inngest.Test.PhoenixRouter
+      other -> raise "unsupported INNGEST_TEST_ROUTER=#{inspect(other)}"
+    end
   end
 
   defp start_dev_server? do

@@ -63,18 +63,17 @@ defmodule Inngest.Test.PlugRouter do
   end
 
   def start_link() do
-    task =
-      Task.async(fn ->
-        webserver =
-          {Plug.Cowboy, plug: Inngest.Test.PlugRouter, scheme: :http, options: [port: 4000]}
+    webserver =
+      {Plug.Cowboy, plug: Inngest.Test.PlugRouter, scheme: :http, options: [port: 4000]}
 
-        {:ok, _} = Supervisor.start_link([webserver], strategy: :one_for_one)
+    case Supervisor.start_link([webserver], strategy: :one_for_one) do
+      {:ok, _pid} = result ->
         Logger.info("Server listening on 127.0.0.1:4000")
+        result
 
-        Process.sleep(:infinity)
-      end)
-
-    {:ok, task.pid}
+      error ->
+        error
+    end
   end
 
   def child_spec(_) do

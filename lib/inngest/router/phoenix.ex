@@ -3,7 +3,29 @@ defmodule Inngest.Router.Phoenix do
   Router module expected to be used with a `Phoenix` router.
 
   ## Examples
-      use Inngest.Router, :phoenix
+      defmodule MyAppWeb.Router do
+        use MyAppWeb, :router
+        use Inngest.Router, :phoenix
+
+        scope "/" do
+          pipe_through(:api)
+
+          inngest("/api/inngest", client: MyApp.Inngest)
+        end
+      end
+
+  Inngest verifies inbound request signatures against the raw request body. In
+  Phoenix applications, configure `Plug.Parsers` with
+  `Inngest.CacheBodyReader` in your endpoint so the router can verify signed
+  requests:
+
+      plug Plug.Parsers,
+        parsers: [:urlencoded, :multipart, :json],
+        pass: ["*/*"],
+        body_reader: {Inngest.CacheBodyReader, :read_body, []},
+        json_decoder: Phoenix.json_library()
+
+      plug MyAppWeb.Router
   """
   @framework "phoenix"
 
