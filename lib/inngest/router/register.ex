@@ -112,6 +112,5 @@ defmodule Inngest.Router.Register do
     end
   end
 
-  defp raw_body(%{private: %{raw_body: body}}) when is_list(body), do: Enum.join(body)
-  defp raw_body(_conn), do: ""
+  defp raw_body(conn), do: Inngest.CacheBodyReader.read_cached_body(conn)
 end

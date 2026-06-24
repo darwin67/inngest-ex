@@ -394,7 +394,7 @@ defmodule Inngest.Router.InvokeTest do
   defp invoke_conn(body, params) do
     :post
     |> conn("/api/inngest", body)
-    |> Plug.Conn.put_private(:raw_body, [body])
+    |> Plug.Conn.put_private(:inngest_raw_body, [body])
     |> Map.put(:params, params)
   end
 

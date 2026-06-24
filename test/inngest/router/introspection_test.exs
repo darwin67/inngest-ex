@@ -266,7 +266,7 @@ defmodule Inngest.Router.IntrospectionTest do
   defp introspection_conn do
     :get
     |> conn("/api/inngest", "")
-    |> Plug.Conn.put_private(:raw_body, [""])
+    |> Plug.Conn.put_private(:inngest_raw_body, [""])
   end
 
   defp unauthenticated_keys do

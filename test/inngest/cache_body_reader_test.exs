@@ -18,19 +18,54 @@ defmodule Inngest.CacheBodyReaderTest do
   end
 
   describe "read_body/2" do
-    test "should cache body in assigns", %{conn: conn} do
+    test "caches body in private data", %{conn: conn} do
       assert {:ok, _body,
               %{
-                private: %{raw_body: [raw]}
+                private: %{inngest_raw_body: [raw]}
               }} = CacheBodyReader.read_body(conn, [])
 
       assert {:ok, body} = Jason.decode(raw)
       assert body == @body
     end
+
+    test "caches multi-read bodies in request order" do
+      conn =
+        conn(:post, "/api/inngest", "abcdef")
+        |> put_req_header("content-type", "application/json")
+
+      assert {:more, "abc", conn} = CacheBodyReader.read_body(conn, read_length: 3, length: 3)
+      assert {:ok, "def", conn} = CacheBodyReader.read_body(conn, read_length: 3, length: 3)
+
+      assert "abcdef" == CacheBodyReader.read_cached_body(conn)
+    end
+  end
+
+  describe "read_body/3" do
+    test "caches matching request paths", %{conn: conn, raw: raw} do
+      assert {:ok, _body, conn} = CacheBodyReader.read_body(conn, [], paths: ["/api/inngest"])
+      assert raw == CacheBodyReader.read_cached_body(conn)
+    end
+
+    test "caches matching request paths with trailing slashes", %{raw: raw} do
+      conn =
+        conn(:post, "/api/inngest/", raw)
+        |> put_req_header("content-type", "application/json")
+
+      assert {:ok, _body, conn} = CacheBodyReader.read_body(conn, [], paths: ["/api/inngest"])
+      assert raw == CacheBodyReader.read_cached_body(conn)
+    end
+
+    test "skips caching unrelated request paths", %{raw: raw} do
+      conn =
+        conn(:post, "/api/users", raw)
+        |> put_req_header("content-type", "application/json")
+
+      assert {:ok, _body, conn} = CacheBodyReader.read_body(conn, [], paths: ["/api/inngest"])
+      assert "" == CacheBodyReader.read_cached_body(conn)
+    end
   end
 
   describe "read_cached_body/1" do
-    @tag :skip
     test "should be able to read cached body", %{conn: conn, raw: raw} do
       assert {:ok, _body, conn} = CacheBodyReader.read_body(conn, [])
       assert raw == CacheBodyReader.read_cached_body(conn)
