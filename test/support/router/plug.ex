@@ -41,7 +41,7 @@ defmodule Inngest.Test.PlugRouter do
   plug(Plug.Parsers,
     parsers: [:urlencoded, :json],
     pass: ["text/*"],
-    body_reader: {Inngest.CacheBodyReader, :read_body, []},
+    body_reader: {Inngest.CacheBodyReader, :read_body, [[paths: ["/api/inngest"]]]},
     json_decoder: Jason
   )
 

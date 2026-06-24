@@ -20,12 +20,16 @@ defmodule Inngest.Router.Phoenix do
   requests:
 
       plug Plug.Parsers,
-        parsers: [:urlencoded, :multipart, :json],
+        parsers: [:urlencoded, :json],
         pass: ["*/*"],
-        body_reader: {Inngest.CacheBodyReader, :read_body, []},
+        body_reader: {Inngest.CacheBodyReader, :read_body, [[paths: ["/api/inngest"]]]},
         json_decoder: Phoenix.json_library()
 
       plug MyAppWeb.Router
+
+  Plug's multipart parser does not use the `:body_reader` option. Inngest
+  signed requests are JSON, so the `:json` parser is the important one for
+  signature verification.
   """
   @framework "phoenix"
 

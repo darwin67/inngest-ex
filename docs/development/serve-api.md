@@ -62,14 +62,19 @@ defmodule MyAppWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :my_app
 
   plug Plug.Parsers,
-    parsers: [:urlencoded, :multipart, :json],
+    parsers: [:urlencoded, :json],
     pass: ["*/*"],
-    body_reader: {Inngest.CacheBodyReader, :read_body, []},
+    body_reader: {Inngest.CacheBodyReader, :read_body, [[paths: ["/api/inngest"]]]},
     json_decoder: Phoenix.json_library()
 
   plug MyAppWeb.Router
 end
 ```
+
+The `paths:` option avoids copying unrelated request bodies when `Plug.Parsers`
+runs globally in your endpoint. Plug's multipart parser does not use
+`:body_reader`; Inngest signed requests are JSON, so the `:json` parser is the
+important one for signature verification.
 
 Accepted arguments for the `inngest` macros are
 
