@@ -28,10 +28,13 @@ defmodule Inngest.Test.DevServer do
         :stderr_to_stdout
       ])
 
+    os_pid = os_pid(port)
+    System.at_exit(fn _status -> terminate_os_process(os_pid) end)
+
     wait_until_ready()
     Process.sleep(@discovery_interval)
 
-    {:ok, %{port: port, os_pid: os_pid(port), logs: []}}
+    {:ok, %{port: port, os_pid: os_pid, logs: []}}
   end
 
   @impl true

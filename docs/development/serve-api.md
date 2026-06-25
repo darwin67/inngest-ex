@@ -35,6 +35,12 @@ defmodule MyApp.Router do
 end
 ```
 
+The generated Plug routes parse JSON and urlencoded Inngest request bodies with
+`Inngest.CacheBodyReader` by default. You do not need to add a `Plug.Parsers`
+plug only for Inngest. If your router already runs `Plug.Parsers` before
+dispatching to the Inngest route, configure that parser with
+`Inngest.CacheBodyReader` so signed requests can still be verified.
+
 ### Phoenix.Router
 
 For a Phoenix app, add the router integration to your Phoenix router and mount
