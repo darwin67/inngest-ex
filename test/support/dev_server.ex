@@ -28,10 +28,13 @@ defmodule Inngest.Test.DevServer do
         :stderr_to_stdout
       ])
 
+    os_pid = os_pid(port)
+    System.at_exit(fn _status -> terminate_os_process(os_pid) end)
+
     wait_until_ready()
     Process.sleep(@discovery_interval)
 
-    {:ok, %{port: port, logs: []}}
+    {:ok, %{port: port, os_pid: os_pid, logs: []}}
   end
 
   @impl true
@@ -48,8 +51,9 @@ defmodule Inngest.Test.DevServer do
   end
 
   @impl true
-  def terminate(_reason, %{port: port}) when is_port(port) do
+  def terminate(_reason, %{port: port, os_pid: os_pid}) when is_port(port) do
     if Port.info(port), do: Port.close(port)
+    terminate_os_process(os_pid)
   end
 
   def terminate(_reason, _state), do: :ok
@@ -86,6 +90,39 @@ defmodule Inngest.Test.DevServer do
     System.find_executable("inngest-cli") ||
       System.find_executable("inngest") ||
       raise "inngest-cli executable is required for integration tests"
+  end
+
+  defp os_pid(port) do
+    case Port.info(port, :os_pid) do
+      {:os_pid, pid} -> pid
+      nil -> nil
+    end
+  end
+
+  defp terminate_os_process(pid) when is_integer(pid) do
+    pid = Integer.to_string(pid)
+
+    System.cmd("kill", ["-TERM", pid], stderr_to_stdout: true)
+    Process.sleep(100)
+
+    if process_alive?(pid) do
+      System.cmd("kill", ["-KILL", pid], stderr_to_stdout: true)
+    end
+
+    :ok
+  rescue
+    _ -> :ok
+  end
+
+  defp terminate_os_process(_pid), do: :ok
+
+  defp process_alive?(pid) do
+    case System.cmd("kill", ["-0", pid], stderr_to_stdout: true) do
+      {_, 0} -> true
+      _ -> false
+    end
+  rescue
+    _ -> false
   end
 
   defp wait_until_ready(retries \\ @startup_retries)

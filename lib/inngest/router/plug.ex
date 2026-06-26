@@ -4,8 +4,19 @@ defmodule Inngest.Router.Plug do
 
   ## Examples
       use Inngest.Router, :plug
+
+  Generated Inngest routes parse JSON and urlencoded request bodies with
+  `Inngest.CacheBodyReader` before invoking functions or syncing
+  registrations. If your router runs another `Plug.Parsers` plug before
+  dispatching to Inngest, configure that parser with `Inngest.CacheBodyReader`
+  so signed requests can still be verified against the raw request body.
   """
   @framework "plug"
+  @parser_opts [
+    parsers: [:urlencoded, :json],
+    pass: ["*/*"],
+    json_decoder: Jason
+  ]
 
   defmacro __using__(_opts) do
     quote do
@@ -39,6 +50,7 @@ defmodule Inngest.Router.Plug do
         opts = Inngest.Router.Invoke.init(unquote(opts))
 
         var!(conn)
+        |> Inngest.Router.Plug.__parse_body__(unquote(path))
         |> Inngest.Router.Invoke.call(opts)
       end
 
@@ -47,9 +59,20 @@ defmodule Inngest.Router.Plug do
         opts = Inngest.Router.Register.init(unquote(opts))
 
         var!(conn)
+        |> Inngest.Router.Plug.__parse_body__(unquote(path))
         |> Inngest.Router.Register.call(opts)
       end
     end
+  end
+
+  @doc false
+  def __parse_body__(conn, path) do
+    opts =
+      @parser_opts
+      |> Keyword.put(:body_reader, {Inngest.CacheBodyReader, :read_body, [[paths: [path]]]})
+      |> Plug.Parsers.init()
+
+    Plug.Parsers.call(conn, opts)
   end
 
   defp expand_alias({:__aliases__, _, _} = alias, env),

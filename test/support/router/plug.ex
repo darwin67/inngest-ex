@@ -38,13 +38,6 @@ defmodule Inngest.Test.PlugRouter do
 
   plug(Plug.Logger)
 
-  plug(Plug.Parsers,
-    parsers: [:urlencoded, :json],
-    pass: ["text/*"],
-    body_reader: {Inngest.CacheBodyReader, :read_body, []},
-    json_decoder: Jason
-  )
-
   plug(:match)
   plug(:dispatch)
 

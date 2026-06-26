@@ -35,6 +35,12 @@ defmodule MyApp.Router do
 end
 ```
 
+The generated Plug routes parse JSON and urlencoded Inngest request bodies with
+`Inngest.CacheBodyReader` by default. You do not need to add a `Plug.Parsers`
+plug only for Inngest. If your router already runs `Plug.Parsers` before
+dispatching to the Inngest route, configure that parser with
+`Inngest.CacheBodyReader` so signed requests can still be verified.
+
 ### Phoenix.Router
 
 For a Phoenix app, add the router integration to your Phoenix router and mount
@@ -62,14 +68,19 @@ defmodule MyAppWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :my_app
 
   plug Plug.Parsers,
-    parsers: [:urlencoded, :multipart, :json],
+    parsers: [:urlencoded, :json],
     pass: ["*/*"],
-    body_reader: {Inngest.CacheBodyReader, :read_body, []},
+    body_reader: {Inngest.CacheBodyReader, :read_body, [[paths: ["/api/inngest"]]]},
     json_decoder: Phoenix.json_library()
 
   plug MyAppWeb.Router
 end
 ```
+
+The `paths:` option avoids copying unrelated request bodies when `Plug.Parsers`
+runs globally in your endpoint. Plug's multipart parser does not use
+`:body_reader`; Inngest signed requests are JSON, so the `:json` parser is the
+important one for signature verification.
 
 Accepted arguments for the `inngest` macros are
 

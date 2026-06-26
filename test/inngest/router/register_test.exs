@@ -274,7 +274,7 @@ defmodule Inngest.Router.RegisterTest do
   defp register_conn(body, params \\ %{}) do
     :put
     |> conn("/api/inngest", body)
-    |> Plug.Conn.put_private(:raw_body, [body])
+    |> Plug.Conn.put_private(:inngest_raw_body, [body])
     |> Map.put(:params, params)
   end
 

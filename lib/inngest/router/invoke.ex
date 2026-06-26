@@ -229,8 +229,7 @@ defmodule Inngest.Router.Invoke do
     end
   end
 
-  defp raw_body(%{private: %{raw_body: body}}) when is_list(body), do: Enum.join(body)
-  defp raw_body(_conn), do: ""
+  defp raw_body(conn), do: Inngest.CacheBodyReader.read_cached_body(conn)
 
   defp maybe_retrieve_full_payload(
          %{"ctx" => %{"use_api" => true, "run_id" => run_id}} = params,
